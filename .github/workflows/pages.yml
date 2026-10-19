@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  issues: write   # 新作を取り込んだときの通知(Issue)に使う
   pages: write
   id-token: write
 
@@ -37,7 +38,10 @@ jobs:
         env:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}   # 任意。あれば、Discord にも通知する
         run: |
+          export IMPORT_SUMMARY="$RUNNER_TEMP/import-summary.md"
           python import_works.py
           if [ -n "$(git status --porcelain works booth-items.json)" ]; then
             git config user.name "github-actions[bot]"
@@ -46,6 +50,15 @@ jobs:
             git commit -m "Import new releases"
             git pull --rebase origin main
             git push origin HEAD:main
+          fi
+          # 新しい作品などがあれば、通知する(GitHub の Issue = メールで届く。Discord は任意)。通知に失敗しても、公開は止めない
+          if [ -s "$IMPORT_SUMMARY" ]; then
+            # 担当(assignee)にオーナーを指定しておくと、ウォッチの設定をしていなくても、メールの通知が届く
+            title="新着を取り込みました ($(TZ=Asia/Tokyo date +%Y-%m-%d))"
+            gh issue create --title "$title" --body-file "$IMPORT_SUMMARY" --assignee "$GITHUB_REPOSITORY_OWNER" \
+              || gh issue create --title "$title" --body-file "$IMPORT_SUMMARY" \
+              || echo "Issue の作成に失敗しました"
+            python notify.py "$IMPORT_SUMMARY" || true
           fi
       - run: python build.py
       - uses: actions/configure-pages@v5

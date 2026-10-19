@@ -1,0 +1,41 @@
+# サイトに載せているリンクが切れていないかを、毎週確認する。切れているものがあれば Issue を立て(または更新し)、直ったら自動で閉じる
+name: Check links
+
+on:
+  schedule:
+    - cron: "23 21 * * 0" # 毎週月曜 日本時間 6:23
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TITLE: リンク切れの確認が必要です
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check links
+        run: |
+          export LINKCHECK_REPORT="$RUNNER_TEMP/linkcheck.md"
+          rc=0
+          python check_links.py || rc=$?
+          # 同じタイトルの、開いている Issue を探す
+          num=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
+          if [ "$rc" -ne 0 ] && [ -s "$LINKCHECK_REPORT" ]; then
+            if [ -n "$num" ]; then
+              gh issue edit "$num" --body-file "$LINKCHECK_REPORT"
+              gh issue comment "$num" --body "$(date +%Y-%m-%d) の確認でも、切れているリンクがありました。内容を更新しました。"
+            else
+              gh issue create --title "$TITLE" --body-file "$LINKCHECK_REPORT" --assignee "$GITHUB_REPOSITORY_OWNER" \
+                || gh issue create --title "$TITLE" --body-file "$LINKCHECK_REPORT"
+            fi
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --comment "$(date +%Y-%m-%d) の確認で、切れているリンクはありませんでした。自動で閉じます。"
+          fi

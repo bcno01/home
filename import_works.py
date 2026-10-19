@@ -61,8 +61,11 @@ class Importer:
         self.ledger = read_ledger()
         self.texts = existing_texts()
         self.created = []
+        self.created_items = []   # (日付, タイトル, フォルダ名)。新作の通知に使う
+        self.booth_new = []       # 新しく見つかった BOOTH の商品名
         self.enriched = []
         self.linked = []
+        self.materials = []       # 素材(オフボーカルなど)のリンクを付けた作品
         self.booth = []
 
     def known(self, key, needle):
@@ -71,6 +74,7 @@ class Importer:
     def create(self, key, folder, fields, links, cover=None):
         title = fields[0][1]
         self.created.append("%s  %s" % (fields[1][1], title))
+        self.created_items.append((fields[1][1], title, folder))
         if self.dry:
             return
         d = WORKS / folder
@@ -288,6 +292,7 @@ def import_booth(imp, cfg):
     if items != old:
         added = [i["name"] for i in items if i["id"] not in {o["id"] for o in old}]
         imp.booth.append("%d 点(新しい商品 %d 点)" % (len(items), len(added)))
+        imp.booth_new += added
         if not imp.dry:
             BOOTH_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
@@ -302,19 +307,49 @@ def youtube_channel_id(v):
     return m.group(1) if m else None
 
 
+_MATERIAL = re.compile(r"off\s*vocal|オフボーカル|オフヴォーカル|素材|ダウンロード|download|配布|\bDL\b", re.I)
+
+
+def material_links(desc):
+    """動画の概要欄から、オフボーカル・素材などの配布リンクを拾う。「OffVocal / 歌詞 - https://…」のような行が対象。[(名前, URL)]"""
+    out = []
+    for line in desc.splitlines():
+        m = re.search(r"https?://\S+", line)
+        if not m or not _MATERIAL.search(line[:m.start()]):
+            continue
+        label = line[:m.start()].strip(" \t\u3000-－:：・|｜")
+        if label and (label, m.group(0)) not in out:
+            out.append((label, m.group(0)))
+    return out
+
+
 def import_youtube(imp, cfg):
     ch = youtube_channel_id(cfg["youtube"])
     if not ch:
         print("  ! import.txt の youtube: からチャンネルIDを取得できませんでした。UC から始まるIDを直接書いてください")
         return
     root = ET.fromstring(fetch("https://www.youtube.com/feeds/videos.xml?channel_id=" + ch))
-    ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
+    ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015",
+          "m": "http://search.yahoo.com/mrss/"}
     shorts = cfg.get("youtube-shorts", "no").lower() in YES
     exclude = [w.strip().lower() for w in re.split(r"[,、]", cfg.get("youtube-exclude", "")) if w.strip()]
     for e in root.findall("a:entry", ns):
         vid = e.find("yt:videoId", ns).text
         key = "youtube-" + vid
         link = e.find("a:link", ns)
+        desc_el = e.find("m:group/m:description", ns)
+        mats = material_links(desc_el.text or "") if desc_el is not None else []
+        if mats and imp.known(key, vid):  # すでに取り込んだ作品に、素材のリンクがなければ足す(自動で取り込んだ作品だけ)
+            info = WORKS / ("%s-yt-%s" % (e.find("a:published", ns).text[:10], vid)) / "info.txt"
+            if info.is_file():
+                f, links, _ = build.parse_info(info.read_text(encoding="utf-8"))
+                if build.truthy(f.get("auto")):
+                    have = {u for _, u in links}
+                    new = [(lab, u) for lab, u in mats if u not in have]
+                    if new:
+                        imp.materials.append("%s → %s" % (f.get("title", vid), ", ".join(u for _, u in new)))
+                        if not imp.dry:
+                            rewrite_info(info, {}, add_links=new)
         if imp.known(key, vid) or (not shorts and "/shorts/" in (link.get("href", "") if link is not None else "")):
             continue
         date = e.find("a:published", ns).text[:10]
@@ -323,7 +358,29 @@ def import_youtube(imp, cfg):
             continue  # 除外ワードを含む動画は取り込まない
         imp.create(key, "%s-yt-%s" % (date, vid),
                    [("title", title), ("date", date), ("type", "video")],
-                   ["YouTube: https://www.youtube.com/watch?v=" + vid])
+                   ["YouTube: https://www.youtube.com/watch?v=" + vid] + ["%s: %s" % m for m in mats])
+
+
+def summary_text(imp, base_url):
+    """新作などの取り込み結果を、通知用の文章(Markdown)にする。通知するものがなければ空"""
+    base = base_url.rstrip("/")
+    parts = []
+    if imp.created_items:
+        lines = []
+        for date, title, folder in imp.created_items:
+            url = "%s/w/%s/" % (base, urllib.parse.quote(folder)) if base else ""
+            lines.append("- %s [%s](%s)" % (date, title, url) if url else "- %s %s" % (date, title))
+        parts.append("## 新しい作品\n" + "\n".join(lines))
+    if imp.linked:
+        parts.append("## Spotify のリンクを付けた作品\n" + "\n".join("- " + x for x in imp.linked))
+    if imp.materials:
+        parts.append("## 素材(オフボーカルなど)のリンクを付けた作品\n" + "\n".join("- " + x for x in imp.materials))
+    if imp.booth_new:
+        parts.append("## BOOTH の新しい商品\n" + "\n".join("- " + x for x in imp.booth_new))
+    if not parts:
+        return ""
+    head = "新しい作品などを自動で取り込みました。サイトには、このあと数分で自動で公開されます。\nタイトルや説明を直したいときは、works/<フォルダ名>/info.txt を編集して push してください。\n"
+    return head + "\n" + "\n\n".join(parts) + "\n"
 
 
 def main():
@@ -350,10 +407,19 @@ def main():
         print("%s %d 件(Spotify のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.linked)))
         for line in imp.linked:
             print("  " + line)
+    if imp.materials:
+        print("%s %d 件(オフボーカルなど素材のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.materials)))
+        for line in imp.materials:
+            print("  " + line)
     if imp.booth:
         print("%s BOOTH の商品一覧: %s" % ("更新予定" if dry else "更新しました", imp.booth[0]))
-    if not imp.created and not imp.enriched and not imp.linked and not imp.booth:
+    if not imp.created and not imp.enriched and not imp.linked and not imp.booth and not imp.materials:
         print("新しい作品・リンクはありませんでした")
+    # 環境変数 IMPORT_SUMMARY にファイルのパスがあれば、新作などの通知用の文章を書き出す(GitHub Actions が、これを Issue や Discord に送る)
+    out = os.environ.get("IMPORT_SUMMARY")
+    if out:
+        text = summary_text(imp, build.load_site().get("url", ""))
+        Path(out).write_text(text, encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -181,6 +181,13 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 .top { padding: 22px 0 8px; }
 .top a { text-decoration: none; font: 600 14px/1 var(--head); color: var(--muted); }
 .top a:hover { color: var(--fg); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+/* JA / EN の切り替え */
+.lang { margin: 10px 0 0; font: 600 12px/1.6 var(--head); letter-spacing: .08em; color: var(--muted); }
+.lang a { text-decoration: none; color: var(--muted); }
+.lang a:hover { color: var(--fg); }
+.lang a[aria-current] { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; }
+.top .lang { margin: 0; }
 .work { padding-top: 12px; }
 .work-head { display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: 36px; align-items: start; }
 .work-cover { aspect-ratio: 1 / 1; padding: 8px; background: var(--white); border-radius: var(--radius); box-shadow: 0 6px 20px rgba(0, 0, 0, .1); transition: transform .18s ease-out; }
@@ -193,11 +200,14 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 .orig { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .orig span { opacity: .8; }
 .tracks, .related { max-width: 720px; margin-top: 36px; }
+.work-head > * { min-width: 0; } /* 中身(収録曲の横長のリストなど)が広くても、枠が画面幅より広がらないように */
 .work-info .tracks { margin-top: 22px; max-width: none; }
 .work-info .tracks li { padding: 2px 0; font-size: 14px; }
 .tracks h2, .related h2 { margin: 0 0 8px; font: 700 13px/1 var(--head); letter-spacing: .12em; color: var(--muted); }
-.tracks ol { margin: 0; padding-left: 1.6em; }
-.tracks li { padding: 3px 0; }
+/* 収録曲: 6曲ごとに右の列へ改行する(--rows で変えられる)。入りきらない幅では、横にスクロールする */
+.tracks ol { --rows: 6; margin: 0; padding: 0 0 6px; list-style: none; counter-reset: trk; display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows), auto); grid-auto-columns: max-content; column-gap: 32px; overflow-x: auto; scrollbar-width: thin; }
+.tracks li { counter-increment: trk; display: flex; gap: .5em; padding: 3px 0; white-space: nowrap; }
+.tracks li::before { content: counter(trk) "."; min-width: 1.9em; text-align: right; }
 .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .btn {
   display: inline-block; text-decoration: none; font: 600 15px/1 var(--head);
@@ -352,6 +362,8 @@ body.leaving { opacity: 0; }
 body.bg-on .menu, body.bg-on .rpanel, body.bg-on .foot { color: #fff; text-shadow: 0 1px 10px rgba(6, 8, 28, .7); }
 body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k, body.bg-on .ev time, body.bg-on .ev .v, body.bg-on .ev .k, body.bg-on .foot { color: rgba(255, 255, 255, .78); }
 body.bg-on .sns a:hover { color: #fff; }
+body.bg-on .lang, body.bg-on .lang a { color: rgba(255, 255, 255, .78); }
+body.bg-on .lang a:hover, body.bg-on .lang a[aria-current] { color: #fff; }
 body.bg-on .chip { color: #fff; opacity: .85; }
 body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #0f1330; text-shadow: none; }
 body.bg-on .row, body.bg-on .ev { border-bottom-color: rgba(255, 255, 255, .3); }

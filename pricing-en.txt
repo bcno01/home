@@ -1,0 +1,25 @@
+# English version of pricing.txt (shown on the /en/ pages).
+# Keep exactly the same lines, in the same order and the same number of plan / option lines as pricing.txt (only the wording is translated).
+# The "target" column of an option refers to the group names written HERE (e.g. "Mastering / Single").
+# Emails to BCNO always use the Japanese names from pricing.txt, so BCNO can read them.
+
+plan | MIX & Mastering / Set plan (Standard) | 1-25 tracks | 25000
+plan | MIX & Mastering / Set plan (Standard) | 26-50 tracks | 35000
+plan | MIX & Mastering / Set plan (Standard) | 51 tracks or more | Please inquire
+plan | MIX & Mastering / Set plan (Cover-song plan) | For short videos | 5000
+plan | MIX & Mastering / Set plan (Cover-song plan) | For full-length videos | 10000
+plan | MIX / Single plan | MIX only | Please inquire
+plan | Mastering / Single plan | Per song | 6000
+plan | Mastering / Single plan | Album mastering | 30000
+plan | Other | Other inquiries (corporate requests, event appearances, etc.) | Please inquire
+
+option | Options (additional fee) | Live drum MIX | 2500 | | -Mastering / Single
+option | Options (additional fee) | Vocal editing | 5000 | For several singers: +¥2,500 per person (please state the number of people in your request) | -Mastering / Single
+option | Options (additional fee) | DDP export | Available | Selectable with the Mastering / Single plan | Mastering / Single
+
+note | | All prices include tax
+note | | DDP export is available
+note | | MIX-only requests are also accepted
+note | | Up to 3 retakes are free of charge. Further retakes are quoted separately
+note | | The standard turnaround is about 2 weeks. For a shorter deadline, please ask us first
+note | | Corporate requests are priced separately. Please contact us first
