@@ -3,7 +3,7 @@ name: BCNO
 # 名前の下に小さく出る一言(空なら出ません)
 tagline:
 # 公開後のURL(あとで入れればOK。SNSでシェアしたときの画像表示に使われます)
-url:
+url: https://bcno01.github.io/home/
 # メニューの末尾に出る「Contact」の行き先(メールアドレスかフォームのURL。空なら項目なし)
 contact: officialbcno@gmail.com
 # ロゴ画像を使う場合は、このフォルダに置いたファイル名を書く(例: logo.png)。空なら名前の文字表示
