@@ -1,6 +1,6 @@
 #!/bin/bash
 # ダブルクリックで、Spotify のアルバムのURLを貼り付けて、対応する作品にリンクを付ける
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 python3 add_spotify.py
 echo
 read -p "サイトを更新して公開しますか? [Y/n]: " ans

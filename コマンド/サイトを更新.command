@@ -1,6 +1,6 @@
 #!/bin/bash
 # ダブルクリックで、確認用にサイトを作り直し、変更を GitHub に送って公開する(公開用のビルドは GitHub 側で自動)
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 python3 import_works.py || echo "(新着の取り込みに失敗しました。そのまま続けます)"
 if ! python3 build.py; then
   echo "ビルドに失敗しました。"

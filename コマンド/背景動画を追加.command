@@ -1,6 +1,6 @@
 #!/bin/bash
 # ダブルクリックで、動画ファイルから背景用の短いクリップを作り、作品に付ける(終わったら公開もできる)
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 python3 add_bgclip.py || { echo; read -n 1 -s -r -p "キーを押すと閉じます"; exit 1; }
 echo
 read -p "サイトを更新して公開しますか? [Y/n]: " ans

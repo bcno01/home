@@ -1,6 +1,6 @@
 #!/bin/bash
 # ダブルクリックで、イベント出演の予定を追加する(終わったら公開もできる)
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 python3 add_event.py || { echo; read -n 1 -s -r -p "キーを押すと閉じます"; exit 1; }
 echo
 read -p "サイトを更新して公開しますか? [Y/n]: " ans
