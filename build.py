@@ -672,6 +672,7 @@ def render_contact(site):
     """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければ pricing.txt の料金表をもとにした、メールの下書きを作るフォーム"""
     to = site["contact"] if "@" in site["contact"] and "://" not in site["contact"] else ""
     note = '<p class="note">お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。</p>'
+    required_note = '<p class="fine">※ オプション以外の項目は、すべて入力が必要です。</p>'
     if site["form"]:
         u = esc(site["form"])
         inner = ('%s<iframe class="form-embed" src="%s" title="依頼受付フォーム" loading="lazy"></iframe>'
@@ -693,7 +694,7 @@ def render_contact(site):
             select = '<option value="" disabled selected>選んでください</option>' + select
             options = ""
             if opts:
-                options = '<fieldset class="opts"><legend>オプション(追加料金・複数選べます)</legend>%s</fieldset>' % "".join(
+                options = '<fieldset class="opts"><legend>オプション(追加料金・任意・複数選べます)</legend>%s</fieldset>' % "".join(
                     '<label class="chk"><input type="checkbox" name="オプション" value="%s" data-price="%s"> %s <span class="pc">+%s%s</span></label>' % (
                         esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]), esc(price_text(e)),
                         (' <small>%s</small>' % esc(e["note"])) if e["note"] else "") for e in opts)
@@ -701,13 +702,13 @@ def render_contact(site):
         else:  # pricing.txt がないときの簡易な選択肢
             select = "".join("<option>%s</option>" % k for k in ("楽曲制作", "編曲・ミックス", "歌唱・ボーカル", "イベント出演", "その他"))
             options, prices = "", ""
-        inner = (note + prices + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
+        inner = (note + prices + required_note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
                  '<label>お名前<input name="お名前" required autocomplete="name"></label>'
                  '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
                  '<label>ご依頼のプラン<select name="プラン" required>%s</select></label>'
                  '%s'
                  '<p class="est" aria-live="polite" hidden></p>'
-                 '<label>ご希望の納期<input name="納期" placeholder="例: 2週間後 / ○月○日まで"></label>'
+                 '<label>ご希望の納期<input name="納期" required placeholder="例: 2週間後 / ○月○日まで"></label>'
                  '<label>ご依頼の内容(曲名・トラック数・参考URLなど)<textarea name="内容" rows="6" required></textarea></label>'
                  '<button type="submit">メールの下書きを作る</button>'
                  '<p class="fine">ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。</p>'
