@@ -86,6 +86,13 @@ img { max-width: 100%; display: block; }
 .req [hidden], .mixbox [hidden] { display: none !important; }
 .req input[type="date"] { min-height: 42px; }
 body.bg-on .req input[type="date"] { color-scheme: dark; }
+/* 納期の「年/月/日」(空のとき・「未定」で無効のときも)と、入力欄の例文を、ブラウザの灰色にせず白にする */
+body.bg-on .req input[type="date"], body.bg-on .req input[type="date"]:disabled,
+body.bg-on .req input[type="date"]::-webkit-datetime-edit, body.bg-on .req input[type="date"]::-webkit-datetime-edit-text,
+body.bg-on .req input[type="date"]::-webkit-datetime-edit-year-field, body.bg-on .req input[type="date"]::-webkit-datetime-edit-month-field,
+body.bg-on .req input[type="date"]::-webkit-datetime-edit-day-field { color: #fff; -webkit-text-fill-color: #fff; opacity: 1; }
+body.bg-on .req input[type="date"]:disabled { background: rgba(255, 255, 255, .08); }
+body.bg-on .req input::placeholder, body.bg-on .req textarea::placeholder { color: rgba(255, 255, 255, .75); opacity: 1; }
 .mixbox { margin: 4px 0 0; padding: 4px 0 2px 12px; border-left: 3px solid rgba(61, 75, 255, .5); }
 .mixbox[hidden] { display: none; }
 body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
