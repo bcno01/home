@@ -637,14 +637,14 @@ def load_pricing():
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            parts = [x.strip() for x in line.split("|")] + ["", "", "", ""]
+            parts = [x.strip() for x in line.split("|")] + ["", "", "", "", ""]
             kind = parts[0].lower()
             if kind == "note" and parts[2]:
                 notes.append(parts[2])
             elif kind in ("plan", "option") and parts[2]:
                 digits = re.sub(r"\D", "", parts[3])
                 entry = {"group": parts[1], "item": parts[2], "price": int(digits) if digits and parts[3].replace(",", "").replace("¥", "").strip().isdigit() else None,
-                         "label": parts[3], "note": parts[4]}
+                         "label": parts[3], "note": parts[4], "target": parts[5]}
                 (plans if kind == "plan" else opts).append(entry)
     return plans, opts, notes
 
@@ -692,14 +692,15 @@ def render_contact(site):
                 groups[e["group"]].append(e)
             plan_opts = '<option value="" disabled selected>選んでください</option>' + "".join(
                 '<optgroup label="%s">%s</optgroup>' % (esc(g), "".join(
-                    '<option value="%s" data-price="%s">%s(%s)</option>' % (
-                        esc("%s / %s" % (g, e["item"])), "" if e["price"] is None else e["price"], esc(e["item"]), esc(price_text(e)))
+                    '<option value="%s" data-price="%s" data-group="%s">%s(%s)</option>' % (
+                        esc("%s / %s" % (g, e["item"])), "" if e["price"] is None else e["price"], esc(g), esc(e["item"]), esc(price_text(e)))
                     for e in groups[g])) for g in order)
             options = ""
             if opts:
-                options = '<fieldset class="opts"><legend>オプション(追加料金・任意・複数選べます)</legend>%s</fieldset>' % "".join(
-                    '<label class="chk"><input type="checkbox" name="オプション" value="%s" data-price="%s"> %s <span class="pc">+%s%s</span></label>' % (
-                        esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]), esc(price_text(e)),
+                options = '<fieldset class="opts" hidden><legend>オプション(任意・複数選べます)</legend>%s</fieldset>' % "".join(
+                    '<label class="chk" data-for="%s"><input type="checkbox" name="オプション" value="%s" data-price="%s"> %s <span class="pc">%s%s</span></label>' % (
+                        esc(e["target"]), esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]),
+                        ("+" if e["price"] is not None else "") + esc(price_text(e)),
                         (' <small>%s</small>' % esc(e["note"])) if e["note"] else "") for e in opts)
             mixbox = ('<div class="mixbox" hidden>%s<label>ご依頼のプラン<select name="プラン" disabled required>%s</select></label>%s'
                       '<p class="est" aria-live="polite" hidden></p></div>') % (render_prices(plans, opts, notes), plan_opts, options)
@@ -708,7 +709,8 @@ def render_contact(site):
                  '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
                  '<label>ご依頼の内容<select name="種類" required>%s</select></label>'
                  '%s'
-                 '<label>ご希望の納期<input name="納期" required placeholder="例: 2週間後 / ○月○日まで"></label>'
+                 '<label>ご希望の納期<input type="date" name="納期" required></label>'
+                 '<label class="chk"><input type="checkbox" name="納期未定"> 日付は未定・相談したい</label>'
                  '<label>詳細・ご要望(曲名・トラック数・参考URLなど)<textarea name="内容" rows="6" required></textarea></label>'
                  '<button type="submit">メールの下書きを作る</button>'
                  '<p class="fine">ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。</p>'

@@ -259,6 +259,31 @@
       var o = kindSel.selectedIndex >= 0 ? kindSel.options[kindSel.selectedIndex] : null;
       return !!(o && o.dataset.mix);
     };
+    // オプションは、選んだプランで選べるものだけを出す(pricing.txt の「対象」)。プランが未選択のあいだは出さない
+    var allows = function (rule, group) {
+      var toks = rule.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      var inc = toks.filter(function (t) { return t.charAt(0) !== '-'; });
+      var exc = toks.filter(function (t) { return t.charAt(0) === '-'; }).map(function (t) { return t.slice(1); });
+      if (exc.some(function (t) { return group.indexOf(t) >= 0; })) return false;
+      return !inc.length || inc.some(function (t) { return group.indexOf(t) >= 0; });
+    };
+    var optFs = reqForm.querySelector('.opts');
+    var syncOptions = function () {
+      if (!optFs) return;
+      var sel = reqForm.elements['プラン'];
+      var po = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      var group = po && po.value ? po.dataset.group : null;
+      var any = false;
+      [].forEach.call(optFs.querySelectorAll('.chk'), function (lab) {
+        var ok = group !== null && allows(lab.dataset.for || '', group);
+        var box = lab.querySelector('input');
+        lab.hidden = !ok;
+        box.disabled = !ok || sel.disabled;
+        if (!ok) box.checked = false;
+        if (ok) any = true;
+      });
+      optFs.hidden = !any;
+    };
     // MIX・Mastering のときだけ、プラン・オプション・料金表・見積りの目安を出す(隠している間は入力チェックの対象にもしない)
     var syncMix = function () {
       if (!mixbox) return;
@@ -283,6 +308,7 @@
         text: 'お見積りの目安(税込): ' + yen(total) + '  ※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。' };
     };
     var refresh = function () {
+      syncOptions();
       if (!est) return;
       var q = quote();
       est.hidden = !q;
@@ -302,13 +328,28 @@
         lines.push('オプション: ' + (q && q.options.length ? q.options.join('、') : 'なし'));
         lines.push('お見積りの目安: ' + (q ? (q.total === null ? '要相談' : yen(q.total) + '(税込・目安)') : '-'));
       }
-      lines.push('ご希望の納期: ' + (f['納期'].value || '(未記入)'));
+      var dv = f['納期'].value;
+      var deadline = (f['納期未定'] && f['納期未定'].checked) ? '未定・相談したい' :
+        (dv ? dv.replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日') : '(未記入)');
+      lines.push('ご希望の納期: ' + deadline);
       var body = lines.join('\n') + '\n\n【詳細・ご要望】\n' + f['内容'].value + '\n';
       var short = q ? 'MIX・Mastering(' + q.plan.split(' / ').pop() + ')' : kindSel.value;
       return 'mailto:' + reqForm.dataset.to + '?subject=' +
         encodeURIComponent('【依頼】' + short + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
     };
     reqForm.mailtoFor = mailtoFor; // (確認用に公開しておく)
+
+    // 希望納期: カレンダーで選ぶ(今日より前は選べない)。日付が未定のときは「未定・相談したい」にチェック
+    var dateEl = reqForm.elements['納期'], tbd = reqForm.elements['納期未定'];
+    if (dateEl && dateEl.type === 'date') {
+      var d0 = new Date();
+      dateEl.min = d0.getFullYear() + '-' + ('0' + (d0.getMonth() + 1)).slice(-2) + '-' + ('0' + d0.getDate()).slice(-2);
+      if (tbd) tbd.addEventListener('change', function () {
+        dateEl.disabled = tbd.checked; // 無効にした欄は、入力チェックの対象にならない
+        dateEl.required = !tbd.checked;
+        if (tbd.checked) dateEl.value = '';
+      });
+    }
     reqForm.addEventListener('submit', function (e) {
       e.preventDefault();
       location.href = mailtoFor();
