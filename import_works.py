@@ -251,7 +251,7 @@ def import_spotify(imp, cfg):
             ntracks = len(json.loads(f.get("tracks", "[]")))
         except ValueError:
             ntracks = 0
-        a = match_spotify(albums, [f.get("title"), f.get("title-orig")], date, ntracks) if date else None
+        a = match_spotify(albums, [f.get("title"), f.get("title-orig")] + re.split(r"[,、]", f.get("aliases", "")), date, ntracks) if date else None
         if not a:
             continue
         url = a["external_urls"]["spotify"]

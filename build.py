@@ -300,6 +300,7 @@ def read_work(d):
         "dir": d,
         "title": f.get("title") or d.name,
         "title_orig": f.get("title-orig", ""),
+        "aliases": [x.strip() for x in re.split(r"[,、]", f.get("aliases", "")) if x.strip()],
         "date": date,
         "type": t if t in TYPES else infer_type(links),
         "tracks": tracks,
@@ -399,8 +400,10 @@ def orig_line(w):
     """見出しを出したときに、作品名(と Apple 上の原題)を添える"""
     if not w["headline"]:
         return ""
-    name = esc(w["title"]) + (" <span>(%s)</span>" % esc(w["title_orig"]) if w["title_orig"] else "")
-    return '<p class="orig">作品名: %s</p>' % name
+    parts = ["作品名: " + esc(w["title"]) + (" <span>(%s)</span>" % esc(w["title_orig"]) if w["title_orig"] else "")]
+    if w["aliases"]:
+        parts.append("別名: " + esc("、".join(w["aliases"])))
+    return '<p class="orig">%s</p>' % "　".join(parts)
 
 
 def render_tracks(w):
@@ -437,11 +440,11 @@ def render_work(site, w):
 %s
 %s
 <div class="links">%s</div>
+%s
 </div>
 </div>
 %s
 <div class="body">%s</div>
-%s
 %s
 %s
 </main>""" % (
@@ -449,9 +452,9 @@ def render_work(site, w):
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
-        link_buttons(w["links"]),
+        link_buttons(w["links"]), render_tracks(w),
         "".join(render_embed(e, w["title"]) for e in w["embeds"]),
-        paragraphs(w["body"]), render_tracks(w), render_related(w), gallery)
+        paragraphs(w["body"]), render_related(w), gallery)
     og = None
     if site.get("url") and w["cover"]:
         og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))

@@ -1,7 +1,7 @@
 // サイト全体の演出。
 //  - ページ遷移のフェード(「視差効果を減らす」設定では無効)
 //  - 効果音の ON/OFF ボタン(初期は無音。ON にすると背景動画の音も小さく流れる)
-//  - マウス追従の丸・ジャケットの傾き(マウスのある端末だけ。スマホでは無効)
+//  - 背景動画のレンズ・ジャケットの傾き(マウスのある端末だけ。スマホでは無効)
 (function () {
   var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
   var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -190,36 +190,34 @@
     document.documentElement.addEventListener('pointerleave', function () { peek.classList.remove('on'); });
   }
 
-  // ---- マウス追従の演出 ----
+  // ---- 背景動画のレンズ(マウスのある端末だけ) ----
   if (!fine || calm) return;
 
-  // ふわっと追う丸
-  var ring = document.createElement('div');
-  ring.className = 'cursor';
-  document.body.appendChild(ring);
-  var tx = 0, ty = 0, x = 0, y = 0, running = false;
-
-  // 背景動画があるときは、丸が「レンズ」になる。レンズの内側だけモザイクが消えて映像がクリアに見える。
+  // 背景動画が表示されているときだけ、カーソルの周りのモザイクが消えて映像がクリアに見える(レンズ)。
   // 文字そのもの(READING)の上ではレンズを閉じて、視認性を守る。文字の横の余白ではレンズが開く。
   var LENS_R = 100;
   var READING = '.logo, .tagline, .nav a, .sns a, .works-list .row, .works-list .chip, .about, .sound, .top, .work, .foot';
-  var r = 0, rt = 0;
+  var ring = null; // レンズの縁(背景動画があるページだけ作る)
+  var tx = 0, ty = 0, x = 0, y = 0, r = 0, rt = 0, running = false;
+  if (bg) {
+    ring = document.createElement('div');
+    ring.className = 'cursor lens';
+    document.body.appendChild(ring);
+  }
 
-  function lensActive() { return !!bg && bg.classList.contains('on'); }
+  function lensActive() { return !!ring && bg.classList.contains('on'); }
 
   function loop() {
     x += (tx - x) * 0.18;
     y += (ty - y) * 0.18;
     r += (rt - r) * 0.14;
     ring.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-    if (lensActive()) {
-      bg.style.setProperty('--mx', x.toFixed(1) + 'px');
-      bg.style.setProperty('--my', y.toFixed(1) + 'px');
-      bg.style.setProperty('--lr', Math.max(r, 0).toFixed(1) + 'px');
-      var d = Math.max(r * 2, 14);
-      ring.style.width = ring.style.height = d.toFixed(1) + 'px';
-      ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px';
-    }
+    bg.style.setProperty('--mx', x.toFixed(1) + 'px');
+    bg.style.setProperty('--my', y.toFixed(1) + 'px');
+    bg.style.setProperty('--lr', Math.max(r, 0).toFixed(1) + 'px');
+    var d = Math.max(r * 2, 14);
+    ring.style.width = ring.style.height = d.toFixed(1) + 'px';
+    ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px';
     if (Math.abs(tx - x) > 0.1 || Math.abs(ty - y) > 0.1 || Math.abs(rt - r) > 0.3) {
       requestAnimationFrame(loop);
     } else {
@@ -228,26 +226,21 @@
   }
   function kick() { if (!running) { running = true; requestAnimationFrame(loop); } }
 
-  document.addEventListener('pointermove', function (e) {
-    if (!ring.classList.contains('on')) { x = tx = e.clientX; y = ty = e.clientY; }
-    tx = e.clientX; ty = e.clientY;
-    ring.classList.add('on');
-    if (lensActive()) {
-      ring.classList.add('lens');
-      ring.classList.remove('big');
+  if (ring) {
+    document.addEventListener('pointermove', function (e) {
+      if (!lensActive()) { ring.classList.remove('on'); return; }
+      if (!ring.classList.contains('on')) { x = tx = e.clientX; y = ty = e.clientY; }
+      tx = e.clientX; ty = e.clientY;
+      ring.classList.add('on');
       rt = e.target.closest(READING) ? 0 : LENS_R;
-    } else {
-      ring.classList.remove('lens');
-      ring.style.width = ring.style.height = ring.style.margin = '';
-      ring.classList.toggle('big', !!e.target.closest('a, button, .work-cover'));
-    }
-    kick();
-  });
-  document.documentElement.addEventListener('pointerleave', function () {
-    ring.classList.remove('on');
-    rt = 0;
-    kick();
-  });
+      kick();
+    });
+    document.documentElement.addEventListener('pointerleave', function () {
+      ring.classList.remove('on');
+      rt = 0;
+      if (lensActive()) kick();
+    });
+  }
 
   // ジャケットがカーソルの方向に傾く
   var MAX = 10;

@@ -95,6 +95,8 @@ img { max-width: 100%; display: block; }
 .orig { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .orig span { opacity: .8; }
 .tracks, .related { max-width: 720px; margin-top: 36px; }
+.work-info .tracks { margin-top: 22px; max-width: none; }
+.work-info .tracks li { padding: 2px 0; font-size: 14px; }
 .tracks h2, .related h2 { margin: 0 0 8px; font: 700 13px/1 var(--head); letter-spacing: .12em; color: var(--muted); }
 .tracks ol { margin: 0; padding-left: 1.6em; }
 .tracks li { padding: 3px 0; }
@@ -126,7 +128,7 @@ img { max-width: 100%; display: block; }
   .row { grid-template-columns: 74px 1fr auto; }
   .work-head { grid-template-columns: 1fr; gap: 20px; }
 }
-/* マウス追従の丸(fx.js が生成。マウスのある環境だけ) */
+/* 背景動画のレンズの縁(fx.js が生成。背景動画が出ていて、マウスのある環境だけ) */
 .cursor {
   position: fixed; top: 0; left: 0; z-index: 100; pointer-events: none;
   width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
@@ -135,7 +137,6 @@ img { max-width: 100%; display: block; }
 }
 .cursor.on { opacity: 1; }
 .cursor.lens { transition: opacity .2s ease; border-width: 1.5px; }
-.cursor.big { width: 64px; height: 64px; margin: -32px 0 0 -32px; background: rgba(255, 255, 255, .25); }
 
 /* 背景の動画(ぼかし + タイルの格子 + 背景色のかぶせで、文字を読みやすいモザイク風に) */
 .bgvideo {

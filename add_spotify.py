@@ -32,7 +32,8 @@ def music_works():
         f, links, _ = build.parse_info(info.read_text(encoding="utf-8"))
         if build.TYPE_ALIAS.get(f.get("type", ""), f.get("type", "")) != "music":
             continue
-        names = {build.norm_song(x) for x in (f.get("title", ""), f.get("title-orig", "")) if x}
+        extra = [x.strip() for x in re.split(r"[,、]", f.get("aliases", "")) if x.strip()]
+        names = {build.norm_song(x) for x in [f.get("title", ""), f.get("title-orig", "")] + extra if x}
         out.append((d, f, links, names - {""}))
     return out
 
