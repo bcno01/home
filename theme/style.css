@@ -60,6 +60,13 @@ img { max-width: 100%; display: block; }
 .ev .k { font: 600 11px/1.5 var(--head); color: var(--muted); text-decoration: none; }
 .ev .k:hover { text-decoration: underline; }
 .ev.past { opacity: .6; }
+/* URL のあるイベントは、行全体がリンク */
+a.ev { color: inherit; text-decoration: none; transition: transform .15s ease; }
+a.ev:hover { transform: translateX(6px); }
+a.ev:hover .t { text-decoration: underline; text-decoration-color: var(--main); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a.ev:hover .k { color: var(--fg); }
+body.bg-on a.ev:hover .t { text-decoration-color: #fff; }
+body.bg-on a.ev:hover .k { color: #fff; }
 .note { margin: 0 0 8px; font-size: 13px; opacity: .85; }
 /* 依頼受付フォーム */
 .req label { display: block; margin: 12px 0 0; font: 600 12px/1.4 var(--head); }
@@ -387,7 +394,7 @@ body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff;
   .logo, .tagline, .nav a, .sns, .works-list, .about,
   .top, .work-head, .embed, .body, .gallery { animation: none; }
   body { transition: none; }
-  .row, .btn { transition: none; }
+  .row, .btn, a.ev { transition: none; }
   .thanks { animation: none; }
   .req .fields, .prog .bar i { transition: none; }
 }

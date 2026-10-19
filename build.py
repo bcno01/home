@@ -778,9 +778,12 @@ def render_events(events):
     past = sorted((e for e in events if e["date"] < today), key=lambda e: e["date"], reverse=True)[:6]
 
     def row(e, cls=""):
-        link = ('<a class="k" href="%s" target="_blank" rel="noopener">%s</a>' % (esc(e["url"]), tr("詳細 ↗"))) if e["url"] else "<span></span>"
-        return ('<div class="ev%s"><time>%s</time><div class="evt"><span class="t">%s</span>%s</div>%s</div>'
-                % (cls, fmt_date(e["date"]), esc(e["title"]), ('<span class="v">%s</span>' % esc(e["venue"])) if e["venue"] else "", link))
+        inner = '<time>%s</time><div class="evt"><span class="t">%s</span>%s</div>' % (
+            fmt_date(e["date"]), esc(e["title"]), ('<span class="v">%s</span>' % esc(e["venue"])) if e["venue"] else "")
+        if e["url"]:  # URL があれば、日付・名前・場所の上も含めて、行全体がリンク
+            return '<a class="ev%s" href="%s" target="_blank" rel="noopener">%s<span class="k">%s</span></a>' % (
+                cls, esc(e["url"]), inner, tr("詳細 ↗"))
+        return '<div class="ev%s">%s<span></span></div>' % (cls, inner)
     body = "".join(row(e) for e in up) or '<p class="empty">%s</p>' % tr("現在、出演予定はありません。")
     if past:
         body += '<h3 class="sub">%s</h3>' % tr("過去の出演") + "".join(row(e, " past") for e in past)
