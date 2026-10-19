@@ -252,6 +252,7 @@
   var reqForm = document.querySelector('form.req');
   if (reqForm) {
     var kindSel = reqForm.elements['種類'];
+    var tbd = reqForm.elements['納期未定'];
     var mixbox = reqForm.querySelector('.mixbox');
     var est = reqForm.querySelector('.est');
     var yen = function (n) { return '\u00a5' + n.toLocaleString('ja-JP'); };
@@ -307,17 +308,62 @@
       return { plan: planOpt.value, options: names, total: total,
         text: 'お見積りの目安(税込): ' + yen(total) + '  ※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。' };
     };
+    // お見積りの目安: 大きな金額で見せて、プランを変えると数字がカウントするように切り替わる
+    var estAmt = null, estShown = null, estRaf = 0;
+    if (est) {
+      est.innerHTML = '<span class="lbl">お見積りの目安(税込): </span><span class="amt"></span><span class="sub"></span>';
+      estAmt = est.querySelector('.amt');
+    }
+    var showAmount = function (total) {
+      if (total === null) { cancelAnimationFrame(estRaf); estAmt.textContent = '要相談'; estShown = null; return; }
+      cancelAnimationFrame(estRaf);
+      var from = estShown === null ? total : estShown, t0 = null;
+      if (calm || from === total) { estAmt.textContent = yen(total); estShown = total; return; }
+      var step = function (t) {
+        if (t0 === null) t0 = t;
+        var k = Math.min(1, (t - t0) / 550), e = 1 - Math.pow(1 - k, 3);
+        estShown = Math.round(from + (total - from) * e);
+        estAmt.textContent = yen(estShown);
+        if (k < 1) estRaf = requestAnimationFrame(step);
+      };
+      estRaf = requestAnimationFrame(step);
+    };
+    // 入力の進み具合: 必須項目のうち、入力が済んだ数(日付は「未定」にチェックでも済み)
+    var progEl = reqForm.querySelector('.prog');
+    var progress = function () {
+      if (!progEl) return;
+      var total = 0, done = 0;
+      [].forEach.call(reqForm.elements, function (el) {
+        if (!el.required || el.disabled) return;
+        total++;
+        if (el.checkValidity()) done++;
+      });
+      if (tbd && tbd.checked) { total++; done++; }
+      var pct = total ? Math.round(done / total * 100) : 0;
+      progEl.querySelector('i').style.width = pct + '%';
+      progEl.setAttribute('aria-valuenow', pct);
+      progEl.classList.toggle('done', total > 0 && done === total);
+      progEl.querySelector('.pt').textContent = done === total ? '入力がそろいました。送信できます' : '入力 ' + done + ' / ' + total + '(あと ' + (total - done) + ' 項目)';
+    };
     var refresh = function () {
       syncOptions();
-      if (!est) return;
-      var q = quote();
-      est.hidden = !q;
-      if (q) est.textContent = q.text;
+      if (est) {
+        var q = quote();
+        est.hidden = !q;
+        if (q) {
+          showAmount(q.total);
+          est.querySelector('.sub').textContent = q.total === null ? 'プランの料金は、内容を確認のうえ、ご相談になります。' : '※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。';
+        }
+      }
+      progress();
     };
     reqForm.addEventListener('change', function (e) {
       if (e.target === kindSel) syncMix(); else refresh();
     });
+    reqForm.addEventListener('input', progress);
+    reqForm.addEventListener('reset', function () { setTimeout(function () { syncMix(); refresh(); }, 0); });
     syncMix();
+    refresh();
 
     // 入力内容から、件名・本文などを作る(直接送信にも、メールの下書きにも使う)
     var compose = function () {
@@ -344,7 +390,7 @@
     reqForm.mailtoFor = mailtoFor; // (確認用に公開しておく)
 
     // 希望納期: カレンダーで選ぶ(今日より前は選べない)。日付が未定のときは「未定・相談したい」にチェック
-    var dateEl = reqForm.elements['納期'], tbd = reqForm.elements['納期未定'];
+    var dateEl = reqForm.elements['納期'];
     if (dateEl && dateEl.type === 'date') {
       var d0 = new Date();
       dateEl.min = d0.getFullYear() + '-' + ('0' + (d0.getMonth() + 1)).slice(-2) + '-' + ('0' + d0.getDate()).slice(-2);
@@ -365,6 +411,31 @@
       statusEl.textContent = msg || '';
       statusEl.className = 'status ' + (kind || '');
     };
+    // 送信完了: 入力欄がふわっと消えて、「Thank you」を見せる。内容は、消えたあとにリセットする
+    var fieldsEl = reqForm.querySelector('.fields'), thanksEl = reqForm.querySelector('.thanks');
+    var thanks = function (c) {
+      var summary = c.body;
+      if (!fieldsEl || !thanksEl) { reqForm.reset(); return; }
+      fieldsEl.classList.add('out');
+      setTimeout(function () {
+        reqForm.reset();
+        if (tbd) tbd.dispatchEvent(new Event('change'));
+        fieldsEl.hidden = true;
+        var pre = thanksEl.querySelector('pre');
+        if (pre) pre.textContent = summary || '';
+        var cp = thanksEl.querySelector('.copy');
+        if (cp) cp.href = 'mailto:' + encodeURIComponent(c.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('【控え】' + c.subject) + '&body=' + encodeURIComponent('BCNO への依頼内容の控えです。\n\n' + c.body);
+        thanksEl.hidden = false;
+        thanksEl.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+      }, calm ? 0 : 450);
+    };
+    var again = reqForm.querySelector('.thanks .again');
+    if (again) again.addEventListener('click', function () {
+      thanksEl.hidden = true;
+      fieldsEl.hidden = false;
+      fieldsEl.classList.remove('out');
+      refresh();
+    });
     if (draftBtn) draftBtn.addEventListener('click', function () { location.href = mailtoFor(); });
     reqForm.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -383,10 +454,8 @@
         return r.json().then(function (j) { return { ok: r.ok && j.success, msg: j.message }; });
       }).then(function (res) {
         if (!res.ok) throw new Error(res.msg || 'send failed');
-        say('送信しました。内容を確認のうえ、ご返信します。', 'ok');
-        reqForm.reset();
-        if (tbd) tbd.dispatchEvent(new Event('change'));
-        syncMix();
+        say('');
+        thanks(c);
       }).catch(function () {
         say('送信できませんでした。通信状況をご確認のうえ、もう一度お試しいただくか、「メールアプリで下書きを作る」からお送りください。', 'err');
       }).then(function () { sendBtn.disabled = false; });

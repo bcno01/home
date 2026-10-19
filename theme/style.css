@@ -97,6 +97,29 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 .chk .pc { font: 600 12px var(--head); opacity: .75; }
 .chk small, .pr small { font-size: 11px; opacity: .75; }
 .est { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; background: rgba(61, 75, 255, .1); font-size: 13px; font-weight: 600; line-height: 1.6; }
+.est .sub { margin-left: .6em; font-weight: 400; font-size: 12px; opacity: .85; }
+/* 入力の進み具合 */
+.prog { margin: 10px 0 4px; }
+.prog .bar { height: 3px; border-radius: 2px; background: rgba(20, 24, 58, .18); overflow: hidden; }
+.prog .bar i { display: block; width: 0; height: 100%; background: var(--main); transition: width .35s ease; }
+.prog .pt { margin: 6px 0 0; font: 600 11px/1.4 var(--head); opacity: .8; }
+.prog.done .pt { opacity: 1; }
+/* 送信完了 */
+.req .fields { transition: opacity .45s ease; }
+.req .fields.out { opacity: 0; pointer-events: none; }
+.thanks { padding: 28px 0 18px; text-align: center; animation: thanksIn .9s ease both; }
+.thanks .big { margin: 0; font: 700 clamp(22px, 5.5vw, 32px)/1.2 var(--head); letter-spacing: .03em; }
+.thanks .done { margin: 12px 0 0; font: 600 15px/1.6 var(--head); }
+.thanks .recap { margin: 22px auto 0; max-width: 520px; text-align: left; }
+.thanks .rl { margin: 0 0 4px; font: 700 11px/1.4 var(--head); opacity: .7; }
+.thanks pre { margin: 0; padding: 10px 12px; border-radius: 8px; background: rgba(61, 75, 255, .1); font-family: inherit; font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; opacity: .9; }
+.thanks .cp { margin: 20px 0 0; }
+.thanks .copy { display: inline-block; padding: 11px 18px; border-radius: 10px; background: var(--main); color: var(--white); font: 600 13px/1 var(--head); text-decoration: none; }
+.thanks .copy:hover { filter: brightness(1.1); }
+.thanks .cn { margin: 8px auto 0; max-width: 420px; font-size: 11px; line-height: 1.7; opacity: .8; }
+.req .thanks .again { margin-top: 20px; padding: 11px 16px; background: transparent; color: inherit; border: 1.5px solid currentColor; font-size: 13px; opacity: .85; }
+.req .thanks .again:hover { opacity: 1; filter: none; }
+@keyframes thanksIn { from { opacity: 0; transform: translateY(10px) scale(.98); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
 /* 料金表(折りたたみ) */
 .prices { margin: 6px 0 4px; font-size: 13px; }
 .prices summary { cursor: pointer; font: 600 13px/1.6 var(--head); }
@@ -327,6 +350,12 @@ body.bg-on .req button { background: #fff; color: #0f1330; }
 body.bg-on .opts { border-color: rgba(255, 255, 255, .45); }
 body.bg-on .pr { border-bottom-color: rgba(255, 255, 255, .22); }
 body.bg-on .est { background: rgba(255, 255, 255, .14); }
+body.bg-on .prog .bar { background: rgba(255, 255, 255, .25); }
+body.bg-on .prog .bar i { background: #fff; }
+body.bg-on .req .thanks .again { background: transparent; color: #fff; }
+body.bg-on .empty { color: #fff; }
+body.bg-on .thanks .copy { background: #fff; color: #0f1330; text-shadow: none; }
+body.bg-on .thanks pre { background: rgba(255, 255, 255, .14); }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -334,4 +363,6 @@ body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff;
   .top, .work-head, .embed, .body, .gallery { animation: none; }
   body { transition: none; }
   .row, .btn { transition: none; }
+  .thanks { animation: none; }
+  .req .fields, .prog .bar i { transition: none; }
 }

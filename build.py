@@ -692,8 +692,9 @@ def render_contact(site):
                 groups[e["group"]].append(e)
             plan_opts = '<option value="" disabled selected>選んでください</option>' + "".join(
                 '<optgroup label="%s">%s</optgroup>' % (esc(g), "".join(
-                    '<option value="%s" data-price="%s" data-group="%s">%s(%s)</option>' % (
-                        esc("%s / %s" % (g, e["item"])), "" if e["price"] is None else e["price"], esc(g), esc(e["item"]), esc(price_text(e)))
+                    '<option value="%s" data-price="%s" data-group="%s" data-item="%s" data-pt="%s">%s(%s)</option>' % (
+                        esc("%s / %s" % (g, e["item"])), "" if e["price"] is None else e["price"], esc(g), esc(e["item"]), esc(price_text(e)),
+                        esc(e["item"]), esc(price_text(e)))
                     for e in groups[g])) for g in order)
             options = ""
             if opts:
@@ -707,6 +708,9 @@ def render_contact(site):
         direct = bool(site["form_key"])  # 送信用のキーがあれば、フォームから直接送る(なければ、メールの下書きを作る)
         endpoint = ' data-endpoint="%s" data-key="%s"' % (esc(site["form_endpoint"]), esc(site["form_key"])) if direct else ""
         inner = (note + required_note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain"' + endpoint + '>'
+                 '<div class="fields">'
+                 '<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="入力の進み具合">'
+                 '<div class="bar"><i></i></div><p class="pt"></p></div>'
                  '<label>お名前<input name="お名前" required autocomplete="name"></label>'
                  '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
                  '<label>ご依頼の内容<select name="種類" required>%s</select></label>'
@@ -718,6 +722,13 @@ def render_contact(site):
                  '<div class="actions"><button type="submit" class="send">%s</button>%s</div>'
                  '<p class="status" role="status" aria-live="polite" hidden></p>'
                  '<p class="fine">%s</p>'
+                 '</div>'
+                 '<div class="thanks" hidden><p class="big">Thank you</p>'
+                 '<p class="done">送信完了</p>'
+                 '<div class="recap"><p class="rl">送信した内容</p><pre></pre></div>'
+                 '<p class="cp"><a class="copy" href="#">控えをメールで受け取る</a></p>'
+                 '<p class="cn">ご入力のメールアドレス宛の下書きが、メールアプリで開きます。送信すると、控えとして手元に残ります。</p>'
+                 '<button type="button" class="again">もう一度入力する</button></div>'
                  '</form>') % (esc(to), esc(to), kind_opts, mixbox,
                                "この内容で送信する" if direct else "メールの下書きを作る",
                                '<button type="button" class="draft">メールアプリで下書きを作る</button>' if direct else "",
