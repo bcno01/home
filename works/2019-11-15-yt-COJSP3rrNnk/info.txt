@@ -1,0 +1,7 @@
+title: 1st EP「Day Breaks」XFD
+date: 2019-11-15
+type: video
+source: youtube-COJSP3rrNnk
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=COJSP3rrNnk

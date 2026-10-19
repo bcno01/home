@@ -1,0 +1,8 @@
+title: ぽっぴっぽー/ラマーズP(里石ユカ)
+date: 2026-08-12
+type: project
+source: youtube-39k7-4zThJs
+auto: yes
+yt-title: #vocaloid 里石ユカに「ぽっぴっぽー/ラマーズP」を歌ってもらったよ #utau調声:ピフ優（X:pifuyuu）mix:BCNO（X:bcno01）ust:Ken-chan
+links:
+YouTube: https://www.youtube.com/watch?v=39k7-4zThJs

@@ -1,0 +1,7 @@
+title: 紅の約束 / ボカロP！秋の大リレー作曲大会(かめさんチーム)
+date: 2020-11-08
+type: project
+source: youtube-gQr5CGG5CeE
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=gQr5CGG5CeE

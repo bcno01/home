@@ -1,0 +1,7 @@
+title: 「niche」 闇音レンリ オリジナル曲
+date: 2017-08-04
+type: video
+source: youtube-Lp4m2nrqtEI
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=Lp4m2nrqtEI

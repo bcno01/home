@@ -1,0 +1,8 @@
+title: ランド feat.初音ミク
+date: 2020-10-23
+type: project
+source: youtube-d7DR5trdncU
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=d7DR5trdncU
+オフボーカル・歌詞: https://drive.google.com/drive/folders/1uzTIvAGHfl-x-9QS9MbFRmaXVsS0t65q?usp=sharing

@@ -1,0 +1,7 @@
+title: 「PANDORA」 初音ミク オリジナル曲
+date: 2017-07-13
+type: video
+source: youtube-u4H-Lje6Obk
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=u4H-Lje6Obk

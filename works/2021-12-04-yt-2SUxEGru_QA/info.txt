@@ -1,0 +1,7 @@
+title: MV「逆説と浮遊」BCNO feat.葉月リチョ
+date: 2021-12-04
+type: project
+source: youtube-2SUxEGru_QA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=2SUxEGru_QA

@@ -1,0 +1,7 @@
+title: 無辜のあなた/いよわ - 水槽 (Cover)
+date: 2020-08-24
+type: project
+source: youtube-6oeG4Ja7VAY
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=6oeG4Ja7VAY

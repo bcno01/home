@@ -1,0 +1,8 @@
+title: 少女と舎利 - 流水
+date: 2026-08-22
+type: project
+source: youtube-8PqoOGtidZU
+auto: yes
+yt-title: 少女と舎利 - 流水【Official Music Video】
+links:
+YouTube: https://www.youtube.com/watch?v=8PqoOGtidZU

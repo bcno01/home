@@ -1,0 +1,7 @@
+title: PHONE(feat.suisoh) / BCNO
+date: 2020-01-26
+type: video
+source: youtube-1AqAG_0k26A
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=1AqAG_0k26A

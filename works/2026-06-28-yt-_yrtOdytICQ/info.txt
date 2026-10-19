@@ -1,0 +1,8 @@
+title: 荒野を邁む - Achillea
+date: 2026-06-28
+type: project
+source: youtube-_yrtOdytICQ
+auto: yes
+yt-title: 荒野を邁む - Achillea [Official Video] 【VocaDuo2026】
+links:
+YouTube: https://www.youtube.com/watch?v=_yrtOdytICQ

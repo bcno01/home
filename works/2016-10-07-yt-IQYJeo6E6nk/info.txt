@@ -1,0 +1,7 @@
+title: 「長月」 闇音レンリ オリジナル曲
+date: 2016-10-07
+type: video
+source: youtube-IQYJeo6E6nk
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=IQYJeo6E6nk

@@ -1,0 +1,8 @@
+title: ウルトラトレーラー/マサラダ(里石ユカ)
+date: 2026-08-30
+type: project
+source: youtube-UQdBdb_ub04
+auto: yes
+yt-title: 里石ユカに「ウルトラトレーラー/マサラダ」を歌ってもらったよ #utau
+links:
+YouTube: https://www.youtube.com/watch?v=UQdBdb_ub04

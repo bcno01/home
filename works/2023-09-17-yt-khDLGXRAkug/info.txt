@@ -1,0 +1,7 @@
+title: スイセンの告白 / Aokiro! - Music Video
+date: 2023-09-17
+type: project
+source: youtube-khDLGXRAkug
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=khDLGXRAkug

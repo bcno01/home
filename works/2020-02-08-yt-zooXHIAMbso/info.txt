@@ -1,0 +1,7 @@
+title: これからの話をしよう
+date: 2020-02-08
+type: video
+source: youtube-zooXHIAMbso
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=zooXHIAMbso

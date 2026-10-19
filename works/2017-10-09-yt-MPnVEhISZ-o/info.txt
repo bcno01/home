@@ -1,0 +1,7 @@
+title: 「証」 闇音レンリ オリジナル曲
+date: 2017-10-09
+type: video
+source: youtube-MPnVEhISZ-o
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=MPnVEhISZ-o

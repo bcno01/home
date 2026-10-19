@@ -1,0 +1,8 @@
+title: yama『ランニングアウト』
+date: 2021-08-19
+type: project
+source: youtube-_ABe7rZw7pQ
+auto: yes
+yt-title: yama『ランニングアウト』MV
+links:
+YouTube: https://www.youtube.com/watch?v=_ABe7rZw7pQ

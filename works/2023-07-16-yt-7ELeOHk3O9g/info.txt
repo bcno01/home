@@ -1,0 +1,7 @@
+title: 「白刃」/ けすまる feat.さとうささら
+date: 2023-07-16
+type: project
+source: youtube-7ELeOHk3O9g
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=7ELeOHk3O9g

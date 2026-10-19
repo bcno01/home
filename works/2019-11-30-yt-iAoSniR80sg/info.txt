@@ -1,0 +1,7 @@
+title: IMAWANOKIWA/いよわ - 水槽 (Cover)
+date: 2019-11-30
+type: project
+source: youtube-iAoSniR80sg
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=iAoSniR80sg

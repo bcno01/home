@@ -1,0 +1,7 @@
+title: あの野良猫は、長い冬を越えられずに / しんばるP feat.ゆめこ
+date: 2019-03-04
+type: project
+source: youtube-c_-FIMF_VCU
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=c_-FIMF_VCU

@@ -1,0 +1,8 @@
+title: サマータイムレコード/じん(里石ユカ)
+date: 2026-08-15
+type: project
+source: youtube-dm_zuyx8hGQ
+auto: yes
+yt-title: 里石ユカに「サマータイムレコード/じん」を歌ってもらったよ #utau
+links:
+YouTube: https://www.youtube.com/watch?v=dm_zuyx8hGQ

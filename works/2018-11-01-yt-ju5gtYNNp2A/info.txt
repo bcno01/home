@@ -1,0 +1,8 @@
+title: 「ennui」 IAオリジナル曲
+date: 2018-11-01
+type: video
+source: youtube-ju5gtYNNp2A
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=ju5gtYNNp2A
+Off Vocal: https://drive.google.com/open?id=1OHbaJ5jlP00EaTx1hI2OkvliDE3pLUM-

@@ -1,0 +1,7 @@
+title: 「夜雨」 IAオリジナル曲
+date: 2018-01-17
+type: video
+source: youtube-8jGNL8IJ4Fc
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=8jGNL8IJ4Fc

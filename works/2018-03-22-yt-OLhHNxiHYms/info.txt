@@ -1,0 +1,7 @@
+title: 「オフコース」 初音ミク オリジナル曲
+date: 2018-03-22
+type: video
+source: youtube-OLhHNxiHYms
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=OLhHNxiHYms

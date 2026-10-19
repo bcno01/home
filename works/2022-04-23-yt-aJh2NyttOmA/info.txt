@@ -1,0 +1,8 @@
+title: MV「象牙の塔」BCNO feat.初音ミク
+date: 2022-04-23
+type: video
+source: youtube-aJh2NyttOmA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=aJh2NyttOmA
+OffVocal / 歌詞: http://bit.ly/40pX8Bw

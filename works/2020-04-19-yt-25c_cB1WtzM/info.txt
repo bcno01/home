@@ -1,0 +1,7 @@
+title: 魔法を架ける / ボカロP！春の大リレー作曲大会
+date: 2020-04-19
+type: project
+source: youtube-25c_cB1WtzM
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=25c_cB1WtzM

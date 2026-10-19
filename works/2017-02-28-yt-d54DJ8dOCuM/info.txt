@@ -1,0 +1,7 @@
+title: 「SUNRISE」 IAオリジナル曲
+date: 2017-02-28
+type: video
+source: youtube-d54DJ8dOCuM
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=d54DJ8dOCuM

@@ -152,6 +152,16 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
   transition: transform .18s ease-out;
 }
 .row[hidden] { display: none; }
+/* Works: 年ごとの折りたたみ */
+.yr { margin: 0 0 4px; }
+.yr[hidden] { display: none; }
+.yr summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px; padding: 10px 0 6px; font: 700 13px/1.4 var(--head); letter-spacing: .1em; }
+.yr summary::-webkit-details-marker { display: none; }
+.yr summary::after { content: "+"; margin-left: auto; font-weight: 600; opacity: .7; }
+.yr[open] > summary::after { content: "−"; }
+.yr summary small { font: 600 11px/1 var(--head); opacity: .7; }
+.yr summary:hover .y { text-decoration: underline; text-decoration-color: var(--main); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+body.bg-on .yr summary:hover .y { text-decoration-color: #fff; }
 .row:hover { transform: translateX(6px); }
 .row time { font: 600 12px/1.5 var(--head); color: var(--muted); }
 .row .t { font-size: 15px; line-height: 1.5; font-weight: 600; }
@@ -347,14 +357,6 @@ body::after {
 body { transition: opacity .25s ease; }
 body.leaving { opacity: 0; }
 
-/* 効果音ボタン(右下) */
-.sound {
-  position: fixed; right: 16px; bottom: 16px; z-index: 60;
-  font: 600 11px/1 var(--head); letter-spacing: .06em; padding: 9px 11px; border-radius: 8px; cursor: pointer;
-  background: rgba(255, 255, 255, .7); color: var(--fg); border: 1px solid rgba(20, 24, 58, .25);
-}
-.sound:hover { border-color: var(--fg); }
-.sound[aria-pressed="true"] { background: var(--fg); color: var(--white); border-color: var(--fg); }
 
 /* 背景動画が出ているときだけ、暗いかぶせの上に白い文字を置く。
    (以前の「背景に合わせて反転する文字色」は mix-blend-mode: difference で、color: #fff の
@@ -389,3 +391,27 @@ body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff;
   .thanks { animation: none; }
   .req .fields, .prog .bar i { transition: none; }
 }
+
+/* 今日の一曲(おみくじ) */
+.omk { margin: 14px 0 0; }
+.omk-draw { padding: 12px 22px; border: 0; border-radius: 10px; cursor: pointer; background: var(--main); color: var(--white); font: 600 14px/1 var(--head); }
+.omk-draw:hover { filter: brightness(1.1); }
+.omk-draw.again { padding: 9px 14px; background: transparent; color: inherit; border: 1.5px solid currentColor; font-size: 12px; opacity: .85; }
+.omk-result { margin: 16px 0 0; }
+.omk-card { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 18px; align-items: start; animation: omkIn .5s ease both; }
+.omk-cover-wrap { background: rgba(20, 24, 58, .12); border-radius: 8px; overflow: hidden; line-height: 0; min-height: 120px; }
+.omk-cover { width: 100%; height: auto; display: block; image-rendering: auto; }
+.omk-title { margin: 0; font: 700 clamp(20px, 4vw, 26px)/1.35 var(--head); }
+.omk-title a { text-decoration: none; }
+.omk-title a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.omk-meta { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--head); }
+.omk-links { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.omk-links .btn { font-size: 13px; padding: 9px 14px; }
+.omk-links .btn:not(.primary):not([data-svc]) { background: var(--fg); border-color: var(--fg); color: var(--white); text-shadow: none; }
+body.bg-on .omk-links .btn:not(.primary):not([data-svc]) { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .7); color: #fff; }
+@keyframes omkIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 560px) { .omk-card { grid-template-columns: 1fr; } .omk-cover-wrap { max-width: 260px; } }
+body.bg-on .omk-draw { background: #fff; color: #0f1330; }
+body.bg-on .omk-draw.again { background: transparent; color: #fff; }
+body.bg-on .omk-cover-wrap { background: rgba(255, 255, 255, .12); }
+body.bg-on .omk-title, body.bg-on 

@@ -1,0 +1,7 @@
+title: 新約;ストレイシープ／雪歌ユフ
+date: 2020-10-15
+type: project
+source: youtube-RxSxdxwRl9o
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=RxSxdxwRl9o

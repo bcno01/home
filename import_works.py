@@ -317,7 +317,7 @@ def material_links(desc):
         m = re.search(r"https?://\S+", line)
         if not m or not _MATERIAL.search(line[:m.start()]):
             continue
-        label = line[:m.start()].strip(" \t\u3000-－:：・|｜")
+        label = line[:m.start()].strip(" \t\u3000-－:：・|｜→➡▶▷>＞")
         if label and (label, m.group(0)) not in out:
             out.append((label, m.group(0)))
     return out

@@ -1,0 +1,7 @@
+title: 途中 歌ってみた【オガバジーナ】
+date: 2019-06-09
+type: project
+source: youtube-1jbsuaEHAos
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=1jbsuaEHAos

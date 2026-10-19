@@ -1,0 +1,7 @@
+title: 「PRELAST」 IAオリジナル曲
+date: 2016-10-24
+type: video
+source: youtube-4QdqnSKwCXo
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=4QdqnSKwCXo

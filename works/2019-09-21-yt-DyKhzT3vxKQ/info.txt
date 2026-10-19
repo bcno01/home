@@ -1,0 +1,7 @@
+title: レプリカ/sasakure.UK - 水槽 × VY1 (Cover)
+date: 2019-09-21
+type: project
+source: youtube-DyKhzT3vxKQ
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=DyKhzT3vxKQ

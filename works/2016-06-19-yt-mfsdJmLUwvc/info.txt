@@ -1,0 +1,7 @@
+title: 「ツライト」 IAオリジナル曲
+date: 2016-06-19
+type: video
+source: youtube-mfsdJmLUwvc
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=mfsdJmLUwvc

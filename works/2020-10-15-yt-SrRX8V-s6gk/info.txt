@@ -1,0 +1,7 @@
+title: 新約;ストレイシープ feat.Ann
+date: 2020-10-15
+type: project
+source: youtube-SrRX8V-s6gk
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=SrRX8V-s6gk

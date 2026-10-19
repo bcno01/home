@@ -1,0 +1,7 @@
+title: 「かみさま」 IAオリジナル曲
+date: 2016-06-19
+type: video
+source: youtube-xZfcP36P9fs
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=xZfcP36P9fs

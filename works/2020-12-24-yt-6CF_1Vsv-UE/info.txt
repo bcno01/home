@@ -1,0 +1,8 @@
+title: 葉月リチョ - 影のワルツ
+date: 2020-12-24
+type: project
+source: youtube-6CF_1Vsv-UE
+auto: yes
+yt-title: 葉月リチョ - 影のワルツ(Music Video)
+links:
+YouTube: https://www.youtube.com/watch?v=6CF_1Vsv-UE

@@ -1,0 +1,7 @@
+title: メイデイ / v flower
+date: 2022-10-07
+type: project
+source: youtube-G25GXUWbdNY
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=G25GXUWbdNY

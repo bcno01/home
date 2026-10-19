@@ -1,0 +1,7 @@
+title: 「とある夏」 IAオリジナル曲
+date: 2017-08-18
+type: video
+source: youtube-Lu2XCuuSaN0
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=Lu2XCuuSaN0

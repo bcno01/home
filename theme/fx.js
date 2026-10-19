@@ -1,15 +1,12 @@
 // サイト全体の演出。
 //  - ページ遷移のフェード(「視差効果を減らす」設定では無効)
-//  - 効果音の ON/OFF ボタン(初期は無音。ON にすると背景動画の音も小さく流れる)
 //  - 背景動画のレンズ・ジャケットの傾き(マウスのある端末だけ。スマホでは無効)
 (function () {
   var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
   var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var TARGET = 'a, button';
 
   // ---- 背景動画(PCだけ読み込む)。作品の bg.mp4 クリップをシャッフルして順に再生。クリップがなければ YouTube ----
   var YT = 'https://www.youtube-nocookie.com';
-  var VIDEO_VOLUME = 12; // 効果音 ON のときの動画の音量(0〜100)
   var bg = document.querySelector('.bgvideo');
   var frame = null; // YouTube の iframe
   var vids = null;  // 自前クリップの <video> 2本(交互に使ってクロスフェードする)
@@ -35,25 +32,6 @@
       frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), YT);
     }
   }
-  // 効果音が ON のときだけ動画の音を小さく流す(OFF なら無音)
-  function applyVideoSound() {
-    if (vids) {
-      vids.forEach(function (v) { v.volume = VIDEO_VOLUME / 100; v.muted = !soundOn; });
-      var cv = vids[curVid];
-      if (soundOn && cv.paused) {
-        cv.play().catch(function () { cv.muted = true; cv.play().catch(function () {}); }); // 音つきの再生をブラウザが止めたとき
-      }
-      return;
-    }
-    if (!frame) return;
-    if (soundOn) {
-      ytCommand('setVolume', [VIDEO_VOLUME]);
-      ytCommand('unMute');
-    } else {
-      ytCommand('mute');
-    }
-  }
-
   // クリップを「ランダムな順で、一巡したらシャッフルし直して、ずっと」流す。
   // video を2本重ね、再生中のクリップの終わり際に、次のクリップ(先に読み込んでおく)へクロスフェードするので途切れない。
   function startClips() {
@@ -87,14 +65,6 @@
       v.src = pick();
       v.load();
     }
-    function ramp(v, from, to) { // 音量をなめらかに変える(クロスフェード中に2本が重なって聞こえないように)
-      var n = 0, steps = 10;
-      var timer = setInterval(function () {
-        n++;
-        v.volume = Math.max(0, Math.min(1, from + (to - from) * n / steps));
-        if (n >= steps) clearInterval(timer);
-      }, FADE * 100);
-    }
     function swap() {
       var out = vids[curVid];
       curVid = 1 - curVid;
@@ -104,7 +74,6 @@
       inc.play().catch(function () {});
       inc.classList.add('front');
       out.classList.remove('front');
-      if (soundOn) { inc.volume = 0; ramp(inc, 0, VIDEO_VOLUME / 100); ramp(out, VIDEO_VOLUME / 100, 0); }
       setTimeout(function () { out.pause(); load(out); }, FADE * 1000 + 300); // 古い方に、次のクリップを先読みしておく
     }
 
@@ -169,7 +138,6 @@
       a.removeEventListener('playing', once);
       a.classList.add('front');
       showBackground();
-      applyVideoSound();
       if (vids[1]) load(vids[1]); // 2本目を先読み
     });
     document.addEventListener('visibilitychange', function () {
@@ -193,7 +161,6 @@
     frame.addEventListener('load', function () {
       frame.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), YT);
       showBackground();
-      setTimeout(applyVideoSound, 2500);
     });
     window.addEventListener('message', function (e) {
       if (e.origin !== YT || typeof e.data !== 'string') return;
@@ -206,7 +173,6 @@
       if (d.event === 'onReady') {
         ytCommand('unloadModule', ['captions']); // 自動字幕が出ていたら消す
         ytCommand('unloadModule', ['cc']);
-        applyVideoSound();
       }
     });
     frame.src = YT + '/embed/' + ids[0] + '?autoplay=1&mute=1&controls=0' +
@@ -487,6 +453,110 @@
     });
   }
 
+  // ---- 今日の一曲(おみくじ) ----
+  // 作品の中から1曲を引く。結果(曲)は、その日のあいだ、ブラウザに記憶する。表紙は、モザイクから少しずつ細かくなる
+  var omk = document.getElementById('omikuji');
+  if (omk) {
+    (function () {
+      var en = document.documentElement.lang === 'en';
+      var t = function (ja, e) { return en ? e : ja; };
+      var data = [];
+      try { data = JSON.parse(omk.querySelector('.omk-data').textContent); } catch (err) {}
+      var drawBtn = omk.querySelector('.omk-draw'), out = omk.querySelector('.omk-result');
+      if (!data.length || !drawBtn || !out) return;
+      var today = function () {
+        var d = new Date();
+        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      };
+      var el = function (tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+      };
+      var byId = function (slug) { for (var i = 0; i < data.length; i++) if (data[i].slug === slug) return data[i]; return null; };
+
+      // 表紙を、粗いモザイクから少しずつ細かくして見せる(視差効果を減らす設定では、そのまま出す)
+      var reveal = function (src, host) {
+        var img = new Image();
+        img.onload = function () {
+          var w = Math.min(img.naturalWidth, 420), h = Math.round(w * img.naturalHeight / img.naturalWidth);
+          var c = el('canvas', 'omk-cover');
+          c.width = w; c.height = h;
+          c.setAttribute('role', 'img');
+          host.appendChild(c);
+          var ctx = c.getContext('2d'), tmp = document.createElement('canvas');
+          var steps = calm ? [1] : [44, 30, 20, 13, 8, 5, 3, 1], i = 0;
+          var frame = function () {
+            var cell = steps[i];
+            if (cell === 1) { ctx.imageSmoothingEnabled = true; ctx.drawImage(img, 0, 0, w, h); return; }
+            tmp.width = Math.max(1, Math.round(w / cell)); tmp.height = Math.max(1, Math.round(h / cell));
+            tmp.getContext('2d').drawImage(img, 0, 0, tmp.width, tmp.height);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(tmp, 0, 0, tmp.width, tmp.height, 0, 0, w, h);
+            i++;
+            setTimeout(frame, 150);
+          };
+          frame();
+        };
+        img.onerror = function () { host.classList.add('omk-nocover'); };
+        img.src = src;
+      };
+
+      var show = function (res, animate) {
+        var item = byId(res.slug);
+        if (!item) return;
+        out.textContent = '';
+        var card = el('div', 'omk-card');
+        var cover = el('div', 'omk-cover-wrap');
+        if (animate) reveal(item.cover, cover);
+        else { var im = el('img', 'omk-cover'); im.src = item.cover; im.alt = item.name; cover.appendChild(im); }
+        var info = el('div', 'omk-info');
+        var title = el('h3', 'omk-title');
+        var tl = el('a', null, item.name); // 曲名は、作品ページへのリンク
+        tl.href = item.href;
+        title.appendChild(tl);
+        info.appendChild(title);
+        var meta = el('p', 'omk-meta');
+        meta.appendChild(el('span', 'badge', item.kind));
+        meta.appendChild(el('time', null, item.date));
+        info.appendChild(meta);
+        var links = el('div', 'omk-links');
+        var abs = new URL(item.href, location.href).href;
+        var share = el('a', 'btn', t('Xで共有', 'Share on X') + ' ↗');
+        share.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(t('今日の一曲は「' + item.name + '」です', 'My song for today: "' + item.name + '"')) +
+          '&url=' + encodeURIComponent(abs);
+        share.target = '_blank'; share.rel = 'noopener';
+        links.appendChild(share);
+        if (item.play) { // YouTube があれば YouTube、なければ Apple Music など
+          var play = el('a', 'btn', t(item.play.label + 'で再生', 'Play on ' + item.play.label) + ' ↗');
+          play.href = item.play.url; play.target = '_blank'; play.rel = 'noopener';
+          if (item.play.svc) play.setAttribute('data-svc', item.play.svc);
+          links.appendChild(play);
+        }
+        info.appendChild(links);
+        card.appendChild(cover);
+        card.appendChild(info);
+        out.appendChild(card);
+        out.hidden = false;
+        drawBtn.textContent = t('もう一度引く', 'Draw again');
+        drawBtn.classList.add('again');
+      };
+
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('omikuji') || 'null'); } catch (err) {}
+      if (saved && saved.d === today() && byId(saved.slug)) show(saved, false);
+
+      drawBtn.addEventListener('click', function () {
+        var cur = saved && saved.slug, item;
+        do { item = data[Math.floor(Math.random() * data.length)]; } while (data.length > 1 && item.slug === cur);
+        saved = { d: today(), slug: item.slug };
+        try { localStorage.setItem('omikuji', JSON.stringify(saved)); } catch (err) {}
+        show(saved, true);
+      });
+    })();
+  }
+
   // ---- ページ遷移のフェード ----
   if (!calm) {
     document.addEventListener('click', function (e) {
@@ -501,85 +571,6 @@
     });
     window.addEventListener('pageshow', function (e) {
       if (e.persisted) document.body.classList.remove('leaving');
-    });
-  }
-
-  // ---- 効果音(Web Audio で合成。音源ファイルは不要) ----
-  var AC = window.AudioContext || window.webkitAudioContext;
-  var ctx = null;
-  var soundOn = false;
-  try { soundOn = localStorage.getItem('sound') === 'on'; } catch (err) {}
-
-  function ready(fn) {
-    if (!AC) return;
-    if (!ctx) ctx = new AC();
-    if (ctx.state === 'running') { fn(ctx); return; }
-    ctx.resume().then(function () { fn(ctx); }).catch(function () {});
-  }
-
-  function blip(freq, to, dur, type, vol, delay) {
-    ready(function (c) {
-      var t = c.currentTime + (delay || 0);
-      var o = c.createOscillator();
-      var g = c.createGain();
-      o.type = type;
-      o.frequency.setValueAtTime(freq, t);
-      o.frequency.exponentialRampToValueAtTime(to, t + dur);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g);
-      g.connect(c.destination);
-      o.start(t);
-      o.stop(t + dur + 0.03);
-    });
-  }
-
-  var btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'sound';
-  btn.setAttribute('aria-label', document.documentElement.lang === 'en' ? 'Toggle sound effects' : '効果音の切り替え');
-  function render() {
-    btn.textContent = '♪ ' + (soundOn ? 'ON' : 'OFF');
-    btn.setAttribute('aria-pressed', soundOn);
-  }
-  render();
-  document.body.appendChild(btn);
-
-  btn.addEventListener('click', function () {
-    soundOn = !soundOn;
-    try { localStorage.setItem('sound', soundOn ? 'on' : 'off'); } catch (err) {}
-    render();
-    applyVideoSound();
-    if (soundOn) {
-      [523.25, 659.25, 783.99].forEach(function (f, i) { blip(f, f * 1.01, 0.22, 'sine', 0.06, i * 0.09); });
-    }
-  });
-
-  // 前のページで ON にしていた場合、最初の操作で動画の音を有効にする(ブラウザの自動再生制限のため)
-  document.addEventListener('pointerdown', function () { if (soundOn) applyVideoSound(); }, { once: true });
-
-  document.addEventListener('click', function (e) {
-    if (!soundOn || e.target.closest('.sound') || !e.target.closest(TARGET)) return;
-    blip(330, 170, 0.11, 'triangle', 0.09);
-  });
-
-  if (fine) {
-    var NOTES = [523.25, 587.33, 659.25, 783.99, 880];
-    var last = null, lastT = 0;
-    document.addEventListener('pointerover', function (e) {
-      if (!soundOn) return;
-      var t = e.target.closest(TARGET);
-      if (!t || t === last || t === btn) return;
-      last = t;
-      var now = performance.now();
-      if (now - lastT < 60) return;
-      lastT = now;
-      var f = NOTES[Math.floor(Math.random() * NOTES.length)];
-      blip(f, f * 1.02, 0.16, 'sine', 0.05);
-    });
-    document.addEventListener('pointerout', function (e) {
-      if (last && !last.contains(e.relatedTarget)) last = null;
     });
   }
 
@@ -612,7 +603,7 @@
   // 背景動画が表示されているときだけ、カーソルの周りのモザイクが消えて映像がクリアに見える(レンズ)。
   // 文字そのもの(READING)の上ではレンズを閉じて、視認性を守る。文字の横の余白ではレンズが開く。
   var LENS_R = 100;
-  var READING = '.logo, .tagline, .nav a, .sns a, .rpanel.open, .about, .sound, .top, .work, .foot';
+  var READING = '.logo, .tagline, .nav a, .sns a, .rpanel.open, .about, .top, .work, .foot';
   var ring = null; // レンズの縁(背景動画があるページだけ作る)
   var tx = 0, ty = 0, x = 0, y = 0, r = 0, rt = 0, running = false, inside = false;
   if (bg) {

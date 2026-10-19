@@ -1,0 +1,7 @@
+title: 藍の供述 / ボカロP！秋の大リレー作曲大会(うさぎさんチーム)
+date: 2020-11-08
+type: project
+source: youtube-MOQxrCKdUZE
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=MOQxrCKdUZE

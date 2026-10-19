@@ -1,0 +1,7 @@
+title: 「バースデー」 IAオリジナル曲
+date: 2017-01-26
+type: video
+source: youtube-dUhe5l7aiYY
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=dUhe5l7aiYY

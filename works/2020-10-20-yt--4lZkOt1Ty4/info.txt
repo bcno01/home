@@ -1,0 +1,8 @@
+title: ガタ - 初音ミク
+date: 2020-10-20
+type: project
+source: youtube--4lZkOt1Ty4
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=-4lZkOt1Ty4
+offvocal: https://drive.google.com/drive/folders/18gfRPrv4-GPINdrqSq12hHTxO6UoeAYU

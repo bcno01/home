@@ -1,0 +1,7 @@
+title: 水槽 - きらいな街 (feat.BCNO)
+date: 2020-11-01
+type: project
+source: youtube-ytG_rOlGhEA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=ytG_rOlGhEA

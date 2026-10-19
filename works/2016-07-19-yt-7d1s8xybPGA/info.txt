@@ -1,0 +1,7 @@
+title: 「カレン」 IAオリジナル曲
+date: 2016-07-19
+type: video
+source: youtube-7d1s8xybPGA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=7d1s8xybPGA

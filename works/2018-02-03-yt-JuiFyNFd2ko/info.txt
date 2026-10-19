@@ -1,0 +1,7 @@
+title: 「唯寂しかったんだ僕達は。」 IAオリジナル曲
+date: 2018-02-03
+type: video
+source: youtube-JuiFyNFd2ko
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=JuiFyNFd2ko

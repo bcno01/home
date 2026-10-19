@@ -1,0 +1,7 @@
+title: 「わらえるね」 闇音レンリ オリジナル曲
+date: 2017-02-20
+type: video
+source: youtube-aW0HwVgJHpU
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=aW0HwVgJHpU

@@ -1,0 +1,8 @@
+title: ファフロツキーズ(BCNO Remix) - Crab 蟹 Club
+date: 2022-08-09
+type: project
+source: youtube-8LL_AiVeabM
+auto: yes
+yt-title: ファフロツキーズ(BCNO Remix) - Crab 蟹 Club【Music Video】
+links:
+YouTube: https://www.youtube.com/watch?v=8LL_AiVeabM

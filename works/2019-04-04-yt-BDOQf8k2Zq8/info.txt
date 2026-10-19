@@ -1,0 +1,8 @@
+title: 【初音ミク】あの野良猫は、長い冬を越えられずに
+date: 2019-04-04
+type: project
+source: youtube-BDOQf8k2Zq8
+auto: yes
+yt-title: 【初音ミク】あの野良猫は、長い冬を越えられずに【オリジナルMV】
+links:
+YouTube: https://www.youtube.com/watch?v=BDOQf8k2Zq8

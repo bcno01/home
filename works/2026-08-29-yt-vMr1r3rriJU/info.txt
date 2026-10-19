@@ -1,0 +1,8 @@
+title: アイデア/星野源(里石ユカ)
+date: 2026-08-29
+type: project
+source: youtube-vMr1r3rriJU
+auto: yes
+yt-title: #vocaloid 里石ユカに「アイデア/星野源」を歌ってもらったよ #utau
+links:
+YouTube: https://www.youtube.com/watch?v=vMr1r3rriJU

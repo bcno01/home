@@ -1,0 +1,8 @@
+title: 【葉月リチョ】ボッカデラベリタ
+date: 2020-11-08
+type: project
+source: youtube-fA4kenDh4lw
+auto: yes
+yt-title: 【葉月リチョ】ボッカデラベリタ【歌ってみた】
+links:
+YouTube: https://www.youtube.com/watch?v=fA4kenDh4lw

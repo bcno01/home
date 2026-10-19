@@ -1,0 +1,7 @@
+title: 「自分」 IAオリジナル曲
+date: 2016-07-16
+type: video
+source: youtube-jlegU2m0rMA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=jlegU2m0rMA

@@ -1,0 +1,7 @@
+title: 「Monologue」 初音ミク オリジナル曲
+date: 2018-07-17
+type: video
+source: youtube-ElMsiuYUBU0
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=ElMsiuYUBU0

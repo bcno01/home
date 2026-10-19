@@ -1,0 +1,7 @@
+title: 「日常」 IAオリジナル曲
+date: 2016-06-19
+type: video
+source: youtube-G9Bpnk5tgfw
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=G9Bpnk5tgfw

@@ -1,0 +1,8 @@
+title: さよーならまたいつか！/米津玄師(里石ユカ)
+date: 2026-09-02
+type: project
+source: youtube-ld21-XLoV-w
+auto: yes
+yt-title: #vocaloid 里石ユカに「さよーならまたいつか！/米津玄師」を歌ってもらったよ #utau
+links:
+YouTube: https://www.youtube.com/watch?v=ld21-XLoV-w

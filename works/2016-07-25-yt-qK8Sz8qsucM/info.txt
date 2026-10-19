@@ -1,0 +1,7 @@
+title: 「BECAME」 IAオリジナル曲
+date: 2016-07-25
+type: video
+source: youtube-qK8Sz8qsucM
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=qK8Sz8qsucM

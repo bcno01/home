@@ -1,0 +1,7 @@
+title: 「嫌々」 IAオリジナル曲
+date: 2016-10-18
+type: video
+source: youtube-0B_A3Ou0z_s
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=0B_A3Ou0z_s
