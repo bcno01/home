@@ -13,10 +13,15 @@ logo:
 # 1本に固定したいときはYouTubeのURL、流したくないときは off。PCのみ(スマホでは流れません)。
 # 右下の「♪」を ON にすると、動画の音が小さく流れます(初期は無音)。
 background:
-# 背景動画のモザイク(格子)の大きさ。数字が大きいほど粗くなります。0で格子なし(隙間のない、暗いかぶせだけの背景)
-mosaic: 0
+# 背景動画のモザイク。mosaic: はブロック(または格子)の大きさ(px)で、大きいほど粗くなります。0でモザイクなし。
+# mosaic-style: pixel は、隙間のない四角いブロックの本物のモザイク(自前クリップのときだけ)、grid は格子状の線を重ねる方式。
+mosaic: 14
+mosaic-style: pixel
 
-# 左のメニューに「Works」に続いて並ぶ項目(配信ページ・通販ページなど)
+# 依頼受付フォーム(Contact)に埋め込むフォームのURL(Google フォームなど)。空なら、メールの下書きを作る内蔵フォーム
+form:
+
+# 左のメニューに「Works」「Events」に続いて並ぶ項目(配信ページ・通販ページなど)
 menu:
 Niconico: https://www.nicovideo.jp/user/56254919/mylist/55190914
 bilibili:https://space.bilibili.com/1656380156

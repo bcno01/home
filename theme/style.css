@@ -41,11 +41,40 @@ img { max-width: 100%; display: block; }
 .sns a:hover { color: var(--fg); }
 
 /* Works: 日付・タイトル・種類の文字リスト。行にカーソルを乗せるとジャケットが出る(.peek は fx.js が生成) */
-.works-list { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; transition: opacity .35s ease, visibility .35s; }
-/* メニューの「Works」で、右のリストの表示/非表示を切り替える(fx.js) */
-body.list-off .works-list { opacity: 0; visibility: hidden; pointer-events: none; }
-.nav a.ws.ws-on::after { content: "\2212"; margin-left: .4em; opacity: .55; }
-body.list-off .nav a.ws.ws-on::after { content: "+"; }
+/* 右側のパネル(Works / Events / Contact)。メニューの項目で開閉し、1つ開くとほかは閉じる(fx.js)。
+   開いているパネルをもう一度押すと全部閉じて、映像だけになる。JS がないときは全部ふつうに並べて表示する */
+.rpanels { display: grid; align-items: start; }
+.rpanel { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; margin-bottom: 28px; }
+.js .rpanel { grid-area: 1 / 1; margin-bottom: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s ease, visibility .35s; }
+.js .rpanel.open { opacity: 1; visibility: visible; pointer-events: auto; }
+.nav a.pn.pn-on::after { content: "+"; margin-left: .4em; opacity: .55; }
+.nav a.pn.is-open::after { content: "\2212"; }
+.ptitle { margin: 0 0 10px; font: 700 18px/1.3 var(--head); }
+.sub { margin: 22px 0 4px; font: 700 12px/1.3 var(--head); letter-spacing: .1em; opacity: .7; }
+/* Events の1行 */
+.ev { display: grid; grid-template-columns: 82px 1fr auto; gap: 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid rgba(20, 24, 58, .25); }
+.ev time { font: 600 12px/1.5 var(--head); color: var(--muted); }
+.ev .evt { display: flex; flex-direction: column; }
+.ev .t { font-size: 15px; line-height: 1.5; font-weight: 600; }
+.ev .v { font-size: 12px; color: var(--muted); }
+.ev .k { font: 600 11px/1.5 var(--head); color: var(--muted); text-decoration: none; }
+.ev .k:hover { text-decoration: underline; }
+.ev.past { opacity: .6; }
+.note { margin: 0 0 8px; font-size: 13px; opacity: .85; }
+/* 依頼受付フォーム */
+.req label { display: block; margin: 12px 0 0; font: 600 12px/1.4 var(--head); }
+.req input, .req select, .req textarea {
+  display: block; width: 100%; margin-top: 5px; padding: 10px 12px; border-radius: 8px;
+  border: 1.5px solid rgba(20, 24, 58, .35); background: rgba(255, 255, 255, .7); color: var(--fg); font: 400 14px/1.5 inherit;
+}
+.req textarea { resize: vertical; }
+.req button {
+  margin-top: 16px; padding: 12px 20px; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--main); color: var(--white); font: 600 14px/1 var(--head);
+}
+.req button:hover { filter: brightness(1.1); }
+.req .fine { margin: 10px 0 0; font-size: 11px; opacity: .75; }
+.form-embed { width: 100%; height: 640px; border: 0; border-radius: 10px; background: #fff; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .chip {
   font: 600 12px/1 var(--head); padding: 7px 12px; border-radius: 999px; cursor: pointer;
@@ -113,6 +142,20 @@ body.list-off .nav a.ws.ws-on::after { content: "+"; }
 .btn:hover { transform: translateY(-2px); border-color: var(--dark); }
 .btn.primary { background: var(--main); border-color: var(--main); color: var(--white); }
 .btn.primary:hover { border-color: var(--dark); }
+/* サービスごとのイメージカラー */
+.btn[data-svc] { color: #fff; border-color: transparent; }
+.btn[data-svc]:hover { border-color: var(--dark); }
+.btn[data-svc="apple"] { background: #fa243c; }
+.btn[data-svc="spotify"] { background: #1db954; color: #08210f; }
+.btn[data-svc="youtube"] { background: #ff0000; }
+.btn[data-svc="niconico"] { background: #252525; }
+.btn[data-svc="booth"] { background: #fc4d50; }
+.btn[data-svc="soundcloud"] { background: #ff5500; }
+.btn[data-svc="bandcamp"] { background: #1da0c3; }
+.booth { max-width: 720px; margin-top: 36px; }
+.booth h2 { margin: 0 0 8px; font: 700 13px/1 var(--head); letter-spacing: .12em; color: var(--muted); }
+.booth .row .p { font: 600 12px/1.5 var(--head); color: var(--muted); }
+.more-link { margin: 10px 0 0; font-size: 13px; }
 .embed { margin-top: 28px; }
 .embed.video { aspect-ratio: 16 / 9; }
 .embed iframe { width: 100%; height: 100%; border: 0; border-radius: var(--radius); }
@@ -128,8 +171,11 @@ body.list-off .nav a.ws.ws-on::after { content: "+"; }
 @media (max-width: 760px) {
   .stage { grid-template-columns: 1fr; gap: 40px; }
   .nav a { font-size: 22px; }
-  .works-list { max-height: none; overflow: visible; }
-  body.list-off .works-list { display: none; }
+  .rpanel { max-height: none; overflow: visible; }
+  .js .rpanels { display: block; }
+  .js .rpanel { display: none; }
+  .js .rpanel.open { display: block; }
+  .ev { grid-template-columns: 74px 1fr auto; }
   .row { grid-template-columns: 74px 1fr auto; }
   .work-head { grid-template-columns: 1fr; gap: 20px; }
 }
@@ -165,11 +211,14 @@ body.list-off .nav a.ws.ws-on::after { content: "+"; }
 }
 .bgvideo video.front { opacity: 1; }
 /* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
-.bgvideo::before, .bgvideo::after {
+.bgvideo::before, .bgvideo::after, .bgvideo canvas.mosaic {
   content: ""; position: absolute; inset: 0;
   -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
   mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
 }
+/* 実際のモザイク(mosaic-style: pixel): 動画を小さな canvas に縮小して描き、拡大して四角いブロックにする(fx.js) */
+.bgvideo canvas.mosaic { z-index: 1; width: 100%; height: 100%; image-rendering: pixelated; filter: saturate(1.25) brightness(.9); }
+.bgvideo.px::before { display: none; }
 .bgvideo::before {
   z-index: 1;
   background-image: linear-gradient(var(--tone) 0 2px, transparent 2px), linear-gradient(90deg, var(--tone) 0 2px, transparent 2px);
@@ -218,12 +267,15 @@ body.leaving { opacity: 0; }
 /* 背景動画が出ているときだけ、暗いかぶせの上に白い文字を置く。
    (以前の「背景に合わせて反転する文字色」は mix-blend-mode: difference で、color: #fff の
    ブロックに mix-blend-mode: difference; text-shadow: none; を足し、かぶせを明るい色に戻すと復活する) */
-body.bg-on .menu, body.bg-on .works-list, body.bg-on .foot { color: #fff; text-shadow: 0 1px 10px rgba(6, 8, 28, .7); }
-body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k, body.bg-on .foot { color: rgba(255, 255, 255, .78); }
+body.bg-on .menu, body.bg-on .rpanel, body.bg-on .foot { color: #fff; text-shadow: 0 1px 10px rgba(6, 8, 28, .7); }
+body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k, body.bg-on .ev time, body.bg-on .ev .v, body.bg-on .ev .k, body.bg-on .foot { color: rgba(255, 255, 255, .78); }
 body.bg-on .sns a:hover { color: #fff; }
 body.bg-on .chip { color: #fff; opacity: .85; }
 body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #0f1330; text-shadow: none; }
-body.bg-on .row { border-bottom-color: rgba(255, 255, 255, .3); }
+body.bg-on .row, body.bg-on .ev { border-bottom-color: rgba(255, 255, 255, .3); }
+body.bg-on .req input, body.bg-on .req select, body.bg-on .req textarea { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .6); color: #fff; }
+body.bg-on .req select option { color: #14183a; }
+body.bg-on .req button { background: #fff; color: #0f1330; }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {

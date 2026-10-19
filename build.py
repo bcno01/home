@@ -244,6 +244,39 @@ def make_headline(w, f):
     return ""
 
 
+BOOTH_FILE = ROOT / "booth-items.json"
+_CD = re.compile(r"(EP|Album|Single)「")
+
+
+def load_booth():
+    try:
+        return json.loads(BOOTH_FILE.read_text(encoding="utf-8")) if BOOTH_FILE.exists() else []
+    except ValueError:
+        return []
+
+
+def attach_booth(works, items):
+    """作品の名前(別名・原題も)が商品名に含まれていれば、その商品を作品に紐づける。
+    info.txt の booth: 商品ID(カンマ区切り)で、手で指定もできる。自分の商品は w["booth"]、関連作品の商品は w["booth_rel"]"""
+    by_id = {str(i["id"]): i for i in items}
+    inorm = {i["id"]: norm_song(i["name"]) for i in items}
+    for w in works:
+        names = {norm_song(x) for x in [w["title"], w["title_orig"]] + w["aliases"] if x}
+        names = {n for n in names if len(n) >= 3}
+        own = [i for i in items if w["type"] != "video" and any(n in inorm[i["id"]] for n in names)]
+        own += [by_id[x] for x in w["booth_ids"] if x in by_id and by_id[x] not in own]
+        w["booth"] = sorted(own, key=lambda i: (not _CD.search(i["name"]), -i["id"]))
+    for w in works:
+        seen = {i["id"] for i in w["booth"]}
+        rel = []
+        for r in w["related"]:
+            for i in r["booth"]:
+                if i["id"] not in seen:
+                    seen.add(i["id"])
+                    rel.append((r, i))
+        w["booth_rel"] = sorted(rel, key=lambda ri: (not _CD.search(ri[1]["name"]), -ri[1]["id"]))
+
+
 def link_related(works):
     """同じ曲を含む作品どうし(と info.txt の related: で指定したもの)を相互に関連づける"""
     def explicit(a, b):
@@ -305,6 +338,7 @@ def read_work(d):
         "type": t if t in TYPES else infer_type(links),
         "tracks": tracks,
         "related_raw": [x.strip() for x in f.get("related", "").split(",") if x.strip()],
+        "booth_ids": [x.strip() for x in re.split(r"[,、]", f.get("booth", "")) if x.strip()],
         "related": [],
         "desc": f.get("description", ""),
         "body": body,
@@ -370,6 +404,7 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap">
+<script>document.documentElement.className += " js"</script>
 <link rel="stylesheet" href="%sstyle.css">
 <script src="%sfx.js" defer></script>
 </head>
@@ -382,9 +417,43 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
        datetime.date.today().year, esc(site["name"]))
 
 
+def svc_of(url):
+    """ボタンの色分け用。サービス名(style.css の .btn[data-svc=…] に対応)"""
+    name = platform_label(url)
+    return {"Apple Music": "apple", "Spotify": "spotify", "YouTube": "youtube", "YouTube Music": "youtube",
+            "ニコニコ動画": "niconico", "BOOTH": "booth", "SoundCloud": "soundcloud", "Bandcamp": "bandcamp"}.get(name, "")
+
+
 def link_buttons(links):
-    return "\n".join('<a class="btn%s" href="%s" target="_blank" rel="noopener">%s<span aria-hidden="true"> ↗</span></a>'
-                     % ("" if i else " primary", esc(u), esc(lab)) for i, (lab, u) in enumerate(links))
+    out = []
+    for i, (lab, u) in enumerate(links):
+        svc = svc_of(u)
+        out.append('<a class="btn%s"%s href="%s" target="_blank" rel="noopener">%s<span aria-hidden="true"> ↗</span></a>'
+                   % (" primary" if (i == 0 and not svc) else "", ' data-svc="%s"' % svc if svc else "", esc(u), esc(lab)))
+    return "\n".join(out)
+
+
+def booth_buttons(w):
+    """BOOTH のボタン。自分の CD、なければ関連作品の CD(最大2つ)"""
+    own = [i for i in w["booth"] if _CD.search(i["name"])]
+    if own:
+        return [("BOOTH", i["url"]) for i in own[:2]]
+    return [("BOOTH(%s)" % r["title"], i["url"]) for r, i in w["booth_rel"] if _CD.search(i["name"])][:2]
+
+
+def render_booth(w):
+    rel_only = not w["booth"]
+    rows = [(i, None) for i in w["booth"]] + ([(i, r) for r, i in w["booth_rel"][:4]] if rel_only else [])
+    if not rows:
+        return ""
+    body = "\n".join('<a class="row" href="%s" target="_blank" rel="noopener"><span class="p">¥%s</span><span class="t">%s</span>'
+                     '<span class="k">%s</span></a>' % (esc(i["url"]), "{:,}".format(i["price"]), esc(i["name"]),
+                                                      esc(r["title"]) if r else "BOOTH ↗") for i, r in rows)
+    more = ""
+    if rel_only and len(w["booth_rel"]) > 4:
+        more = '<p class="more-link"><a href="https://myship.booth.pm/" target="_blank" rel="noopener">ほかの商品は BOOTH で ↗</a></p>'
+    return '<section class="booth"><h2>%s</h2><div class="rows">%s</div>%s</section>' % (
+        "BOOTH" if w["booth"] else "関連する商品(BOOTH)", body, more)
 
 
 def render_embed(e, title):
@@ -453,9 +522,9 @@ def render_work(site, w):
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
-        link_buttons(w["links"]), render_tracks(w),
+        link_buttons(list(w["links"]) + booth_buttons(w)), render_tracks(w),
         "".join(render_embed(e, w["title"]) for e in w["embeds"]),
-        paragraphs(w["body"]), render_related(w), gallery)
+        paragraphs(w["body"]), render_booth(w) + render_related(w), gallery)
     og = None
     if site.get("url") and w["cover"]:
         og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
@@ -487,9 +556,10 @@ def render_bgvideo(site):
     """背景の動画。自前クリップがあればそれを、なければ YouTube を使う。再生順のシャッフルは fx.js(PCだけ読み込む)"""
     clips = background_clips(site)
     if clips:
-        return ('<div class="bgvideo" aria-hidden="true" style="--cell:%dpx" data-clips="%s">'
+        pixel = ' data-mosaic="pixel"' if site["mosaic_style"] == "pixel" and site["mosaic"] > 0 else ""
+        return ('<div class="bgvideo" aria-hidden="true" style="--cell:%dpx" data-clips="%s"%s>'
                 '<video muted playsinline preload="auto" tabindex="-1"></video></div>\n') % (
-            site["mosaic"], esc(",".join(clips)))
+            site["mosaic"], esc(",".join(clips)), pixel)
     ids = background_ids(site)
     if not ids:
         return ""
@@ -506,7 +576,9 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    attrs = ' target="_blank" rel="noopener"' if ext else (' class="ws" aria-controls="works"' if url == "#works" else "")
+    panel = {"#works": "works", "#events": "events", "#contact": "contact"}.get(url)
+    attrs = ' target="_blank" rel="noopener"' if ext else (
+        ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
 
 
@@ -515,6 +587,65 @@ def cover_src(w):
     if w["cover"]:
         return "w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
     return w["cover_url"] or ""
+
+
+EVENTS_FILE = ROOT / "events.txt"
+
+
+def load_events():
+    """events.txt の「日付 | タイトル | 場所 | URL」を読む(# で始まる行は無視)"""
+    out = []
+    if EVENTS_FILE.exists():
+        for line in EVENTS_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = [x.strip() for x in line.split("|")] + ["", "", ""]
+            d = parse_date(parts[0])
+            if d and parts[1]:
+                out.append({"date": d, "title": parts[1], "venue": parts[2], "url": parts[3]})
+    return out
+
+
+def render_events(events):
+    today = datetime.date.today()
+    up = sorted((e for e in events if e["date"] >= today), key=lambda e: e["date"])
+    past = sorted((e for e in events if e["date"] < today), key=lambda e: e["date"], reverse=True)[:6]
+
+    def row(e, cls=""):
+        link = ('<a class="k" href="%s" target="_blank" rel="noopener">詳細 ↗</a>' % esc(e["url"])) if e["url"] else "<span></span>"
+        return ('<div class="ev%s"><time>%s</time><div class="evt"><span class="t">%s</span>%s</div>%s</div>'
+                % (cls, fmt_date(e["date"]), esc(e["title"]), ('<span class="v">%s</span>' % esc(e["venue"])) if e["venue"] else "", link))
+    body = "".join(row(e) for e in up) or '<p class="empty">現在、出演予定はありません。</p>'
+    if past:
+        body += '<h3 class="sub">過去の出演</h3>' + "".join(row(e, " past") for e in past)
+    return '<section class="rpanel" id="events" aria-label="Events"><h2 class="ptitle">Events</h2>%s</section>' % body
+
+
+def render_contact(site):
+    """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければメールの下書きを作るフォーム"""
+    to = site["contact"] if "@" in site["contact"] and "://" not in site["contact"] else ""
+    note = '<p class="note">お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。</p>'
+    if site["form"]:
+        u = esc(site["form"])
+        inner = ('%s<iframe class="form-embed" src="%s" title="依頼受付フォーム" loading="lazy"></iframe>'
+                 '<p class="more-link"><a href="%s" target="_blank" rel="noopener">表示されないときは別のタブで開く ↗</a></p>') % (note, u, u)
+    elif to:
+        kinds = "".join("<option>%s</option>" % k for k in ("楽曲制作", "編曲・ミックス", "歌唱・ボーカル", "イベント出演", "その他"))
+        inner = (note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
+                 '<label>お名前<input name="お名前" required autocomplete="name"></label>'
+                 '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
+                 '<label>ご依頼の種類<select name="種類">%s</select></label>'
+                 '<label>ご希望の納期・ご予算(任意)<input name="納期・予算"></label>'
+                 '<label>ご依頼の内容<textarea name="内容" rows="6" required></textarea></label>'
+                 '<button type="submit">メールの下書きを作る</button>'
+                 '<p class="fine">ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。</p>'
+                 '</form>') % (esc(to), esc(to), kinds)
+    elif site["contact"]:
+        inner = note + '<p><a class="btn primary" href="%s" target="_blank" rel="noopener">依頼フォームを開く <span aria-hidden="true">↗</span></a></p>' % esc(site["contact"])
+    else:
+        inner = note
+    return '<section class="rpanel" id="contact" aria-label="依頼受付フォーム"><h2 class="ptitle">依頼受付フォーム</h2>%s</section>' % inner
 
 
 def render_index(site, works):
@@ -533,8 +664,8 @@ def render_index(site, works):
 
     bgvideo = render_bgvideo(site)
 
-    items = ([("Works", "#works")] + ([("About", "#about")] if site["about"] else []) + site["menu"]
-             + ([("Contact", contact_href(site["contact"]))] if site["contact"] else []))
+    items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + site["menu"]
+             + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
     sns = "".join(nav_link(lab or platform_label(u), u) for lab, u in site["links"])
     logo = ('<h1 class="logo"><img src="%s" alt="%s"></h1>' % (quote(site["logo"]), esc(site["name"]))
@@ -560,16 +691,20 @@ document.querySelectorAll('.chip').forEach(function (b) {
 </nav>
 <p class="sns">%s</p>
 </section>
-<section class="works-list" id="works" aria-label="Works">
+<div class="rpanels">
+<section class="rpanel works-list" id="works" aria-label="Works">
 %s
 <div class="rows">
 %s
 </div>
 </section>
+%s
+%s
+</div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
-         nav, sns, chips, rows, about, script)
+         nav, sns, chips, rows, render_events(load_events()), render_contact(site), about, script)
     og = None
     for w in works:
         if site.get("url") and w["cover"]:
@@ -588,6 +723,8 @@ def load_site():
         mosaic = 16
     return {
         "background": f.get("background", ""),
+        "form": f.get("form", ""),
+        "mosaic_style": f.get("mosaic-style", "grid").strip().lower(),
         "mosaic": mosaic,
         "name": f.get("name") or "My Works",
         "tagline": f.get("tagline", ""),
@@ -610,6 +747,7 @@ def main():
                 works.append(w)
     works.sort(key=lambda w: (w["date"], w["slug"]), reverse=True)
     link_related(works)
+    attach_booth(works, load_booth())
     site["work_clips"] = ["w/%s/%s" % (quote(w["slug"]), quote(p.name)) for w in works for p in w["clips"]]
     site["work_videos"] = list(dict.fromkeys(
         v for w in works for _, u in w["links"] for v in [youtube_id(u)] if v))

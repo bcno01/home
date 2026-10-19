@@ -61,6 +61,7 @@
     var FADE = 1; // クロスフェードの秒数(style.css の transition と合わせる)
     var a = bg.querySelector('video');
     var order = [], pos = 0, last = '';
+    var xf = null; // クロスフェード中の {out, inc, t0}(モザイクの描画で使う)
     vids = [a];
     if (all.length > 1) {
       var b = a.cloneNode(false);
@@ -98,6 +99,7 @@
       var out = vids[curVid];
       curVid = 1 - curVid;
       var inc = vids[curVid];
+      xf = { out: out, inc: inc, t0: performance.now() };
       inc.currentTime = 0;
       inc.play().catch(function () {});
       inc.classList.add('front');
@@ -119,6 +121,50 @@
         if (v === vids[curVid]) v.play().catch(function () {});
       });
     });
+    // 実際のモザイク: 動画を小さな canvas に縮小して描く(同じサイトの動画なので読み取れる)。レンズの中だけ、元の映像が見える
+    function startMosaic() {
+      var cell = parseInt(getComputedStyle(bg).getPropertyValue('--cell'), 10) || 14;
+      var cv = document.createElement('canvas');
+      var mid = document.createElement('canvas'); // いったん4倍の大きさに描いてから縮めると、平均に近い色になる
+      cv.className = 'mosaic';
+      bg.appendChild(cv);
+      bg.classList.add('px');
+      var ctx = cv.getContext('2d'), mctx = mid.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      mctx.imageSmoothingQuality = 'high';
+      function size() {
+        cv.width = Math.max(8, Math.ceil(innerWidth / cell));
+        cv.height = Math.max(8, Math.ceil(innerHeight / cell));
+        mid.width = cv.width * 4;
+        mid.height = cv.height * 4;
+      }
+      size();
+      window.addEventListener('resize', size);
+      function draw(v, alpha) {
+        if (!v.videoWidth || v.readyState < 2) return;
+        var s = Math.max(mid.width / v.videoWidth, mid.height / v.videoHeight); // object-fit: cover と同じ切り取り
+        var sw = mid.width / s, sh = mid.height / s;
+        mctx.drawImage(v, (v.videoWidth - sw) / 2, (v.videoHeight - sh) / 2, sw, sh, 0, 0, mid.width, mid.height);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(mid, 0, 0, cv.width, cv.height);
+      }
+      var lastT = 0;
+      (function tick(t) {
+        requestAnimationFrame(tick);
+        if (document.hidden || t - lastT < 33) return; // 30fps で十分
+        lastT = t;
+        if (xf && t - xf.t0 < FADE * 1000) {
+          var k = Math.max(0, (t - xf.t0) / (FADE * 1000));
+          draw(xf.out, 1);
+          draw(xf.inc, k);
+        } else {
+          xf = null;
+          draw(vids[curVid], 1);
+        }
+      })(0);
+    }
+    if (bg.dataset.mosaic === 'pixel') startMosaic();
+
     a.addEventListener('playing', function once() {
       a.removeEventListener('playing', once);
       a.classList.add('front');
@@ -173,22 +219,49 @@
     if (bg.dataset.clips) startClips(); else startYouTube();
   }
 
-  // ---- Works の開閉: メニューの「Works」で右のリストを隠して、映像だけを見られる(状態は記憶する) ----
-  var wsLink = document.querySelector('.nav a.ws');
-  if (wsLink && document.querySelector('.works-list')) {
-    var setWorks = function (show) {
-      document.body.classList.toggle('list-off', !show);
-      wsLink.classList.add('ws-on');
-      wsLink.setAttribute('aria-expanded', show);
-      wsLink.title = show ? 'Works を隠して、映像だけを見る' : 'Works を表示する';
-      try { localStorage.setItem('works', show ? 'shown' : 'hidden'); } catch (err) {}
+  // ---- 右側のパネル(Works / Events / Contact): メニューの項目で開閉。1つ開くとほかは閉じ、開いているものをもう一度押すと全部閉じる ----
+  var pLinks = [].slice.call(document.querySelectorAll('.nav a.pn'));
+  if (pLinks.length) {
+    var panelEls = {};
+    [].forEach.call(document.querySelectorAll('.rpanel'), function (p) { panelEls[p.id] = p; });
+    var openPanel = function (name) { // name が空なら、全部閉じる
+      Object.keys(panelEls).forEach(function (k) { panelEls[k].classList.toggle('open', k === name); });
+      pLinks.forEach(function (a) {
+        var on = a.dataset.panel === name;
+        a.classList.add('pn-on');
+        a.classList.toggle('is-open', on);
+        a.setAttribute('aria-expanded', on);
+      });
+      document.body.dataset.panel = name;
+      try { localStorage.setItem('panel', name || 'none'); } catch (err) {}
     };
-    var worksHidden = false;
-    try { worksHidden = localStorage.getItem('works') === 'hidden'; } catch (err) {}
-    setWorks(!worksHidden);
-    wsLink.addEventListener('click', function (e) {
+    var saved = null;
+    try { saved = localStorage.getItem('panel'); } catch (err) {}
+    var hashName = location.hash.replace('#', '');
+    var start = panelEls[hashName] ? hashName : (saved === 'none' ? '' : (panelEls[saved] ? saved : 'works'));
+    openPanel(start);
+    pLinks.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        openPanel(document.body.dataset.panel === a.dataset.panel ? '' : a.dataset.panel);
+      });
+    });
+  }
+
+  // ---- 依頼受付フォーム: 入力内容をメールの下書きにする(送信はメールアプリで) ----
+  var reqForm = document.querySelector('form.req');
+  if (reqForm) {
+    var mailtoFor = function () {
+      var f = reqForm.elements;
+      var body = 'お名前: ' + f['お名前'].value + '\n返信先: ' + f['返信先'].value + '\nご依頼の種類: ' + f['種類'].value +
+        '\n納期・ご予算: ' + (f['納期・予算'].value || '(未記入)') + '\n\n【ご依頼の内容】\n' + f['内容'].value + '\n';
+      return 'mailto:' + reqForm.dataset.to + '?subject=' +
+        encodeURIComponent('【依頼】' + f['種類'].value + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
+    };
+    reqForm.mailtoFor = mailtoFor; // (確認用に公開しておく)
+    reqForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      setWorks(document.body.classList.contains('list-off'));
+      location.href = mailtoFor();
     });
   }
 
@@ -317,7 +390,7 @@
   // 背景動画が表示されているときだけ、カーソルの周りのモザイクが消えて映像がクリアに見える(レンズ)。
   // 文字そのもの(READING)の上ではレンズを閉じて、視認性を守る。文字の横の余白ではレンズが開く。
   var LENS_R = 100;
-  var READING = '.logo, .tagline, .nav a, .sns a, .works-list .row, .works-list .chip, .about, .sound, .top, .work, .foot';
+  var READING = '.logo, .tagline, .nav a, .sns a, .rpanel.open, .about, .sound, .top, .work, .foot';
   var ring = null; // レンズの縁(背景動画があるページだけ作る)
   var tx = 0, ty = 0, x = 0, y = 0, r = 0, rt = 0, running = false, inside = false;
   if (bg) {

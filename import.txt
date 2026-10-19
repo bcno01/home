@@ -18,3 +18,6 @@ youtube-exclude: Trailer, Teaser
 # キー(Client ID / Client Secret)が必要です。GitHub の Secrets(SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET)に登録するか、
 # 手元で試すときは spotify-keys.txt(GitHub には載りません)に書きます。キーがなければスキップされます。
 spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b
+
+# BOOTH のショップのURL。ショップの全商品を booth-items.json に保存し、名前の合う作品のページに「BOOTH」として載せます
+booth: https://myship.booth.pm/

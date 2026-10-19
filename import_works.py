@@ -6,6 +6,7 @@
 # 設定は import.txt。取り込み済みの記録は works/.imported.txt(消した作品が復活しないように残す)
 import base64
 import datetime
+import html
 import json
 import os
 import re
@@ -21,6 +22,7 @@ import build
 ROOT = Path(__file__).resolve().parent
 WORKS = ROOT / "works"
 LEDGER = WORKS / ".imported.txt"
+BOOTH_FILE = ROOT / "booth-items.json"  # BOOTH の商品一覧(サイトのビルドはこのファイルだけを使う)
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; portfolio-importer)", "Accept-Language": "ja,en;q=0.8",
            "Cookie": "CONSENT=YES+1"}
 YES = ("yes", "true", "1", "on", "y", "はい")
@@ -61,6 +63,7 @@ class Importer:
         self.created = []
         self.enriched = []
         self.linked = []
+        self.booth = []
 
     def known(self, key, needle):
         return key in self.ledger or any(needle in t for t in self.texts)
@@ -260,6 +263,35 @@ def import_spotify(imp, cfg):
             rewrite_info(info, {}, add_links=[("Spotify", url)])
 
 
+def import_booth(imp, cfg):
+    """BOOTH のショップの全商品(名前・価格・URL)を booth-items.json に保存する"""
+    m = re.match(r"https?://([a-z0-9-]+\.booth\.pm)", cfg["booth"].strip())
+    if not m:
+        print("  ! import.txt の booth: からショップのURLを読み取れませんでした")
+        return
+    base = "https://%s/items" % m.group(1)
+    ids = []
+    for page in range(1, 11):  # 商品が増えても、10ページ(最大約300点)まで
+        raw = html.unescape(fetch(base + ("?page=%d" % page if page > 1 else "")).decode("utf-8", "replace"))
+        new = [i for i in dict.fromkeys(re.findall(r'"tracking_data":\{"product_id":(\d+)', raw)) if i not in ids]
+        if not new:
+            break
+        ids += new
+    items = []
+    for pid in ids:
+        d = json.loads(fetch("https://booth.pm/ja/items/%s.json" % pid))
+        items.append({"id": int(pid), "name": d["name"], "price": int(re.sub(r"\D", "", str(d.get("price", "0"))) or 0),
+                      "url": d.get("url") or "https://%s/items/%s" % (m.group(1), pid)})
+        time.sleep(0.3)
+    items.sort(key=lambda x: -x["id"])
+    old = json.loads(BOOTH_FILE.read_text(encoding="utf-8")) if BOOTH_FILE.exists() else []
+    if items != old:
+        added = [i["name"] for i in items if i["id"] not in {o["id"] for o in old}]
+        imp.booth.append("%d 点(新しい商品 %d 点)" % (len(items), len(added)))
+        if not imp.dry:
+            BOOTH_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+
 def youtube_channel_id(v):
     m = re.search(r"UC[\w-]{22}", v)
     if m:
@@ -300,7 +332,7 @@ def main():
     cfg = build.parse_info(cfg_path.read_text(encoding="utf-8"))[0] if cfg_path.exists() else {}
     WORKS.mkdir(exist_ok=True)
     imp = Importer(dry)
-    for name, fn in (("apple", import_apple), ("youtube", import_youtube), ("spotify", import_spotify)):
+    for name, fn in (("apple", import_apple), ("youtube", import_youtube), ("spotify", import_spotify), ("booth", import_booth)):
         if cfg.get(name):
             try:
                 fn(imp, cfg)
@@ -318,7 +350,9 @@ def main():
         print("%s %d 件(Spotify のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.linked)))
         for line in imp.linked:
             print("  " + line)
-    if not imp.created and not imp.enriched and not imp.linked:
+    if imp.booth:
+        print("%s BOOTH の商品一覧: %s" % ("更新予定" if dry else "更新しました", imp.booth[0]))
+    if not imp.created and not imp.enriched and not imp.linked and not imp.booth:
         print("新しい作品・リンクはありませんでした")
 
 
