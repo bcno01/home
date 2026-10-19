@@ -7,11 +7,27 @@
   var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var TARGET = 'a, button';
 
-  // ---- 背景動画(PCだけ読み込む。Works の動画をシャッフルして、1本ずつ順に再生。読み込めたらゆっくり表示) ----
+  // ---- 背景動画(PCだけ読み込む)。作品の bg.mp4 クリップをシャッフルして順に再生。クリップがなければ YouTube ----
   var YT = 'https://www.youtube-nocookie.com';
   var VIDEO_VOLUME = 12; // 効果音 ON のときの動画の音量(0〜100)
   var bg = document.querySelector('.bgvideo');
-  var frame = null;
+  var frame = null; // YouTube の iframe
+  var vid = null;   // 自前クリップの <video>
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function showBackground() { // 読み込めたらゆっくり表示し、文字を白に(style.css の bg-on)
+    setTimeout(function () {
+      bg.classList.add('on');
+      document.body.classList.add('bg-on');
+    }, 1200);
+  }
 
   function ytCommand(func, args) {
     if (frame && frame.contentWindow) {
@@ -20,6 +36,14 @@
   }
   // 効果音が ON のときだけ動画の音を小さく流す(OFF なら無音)
   function applyVideoSound() {
+    if (vid) {
+      vid.volume = VIDEO_VOLUME / 100;
+      vid.muted = !soundOn;
+      if (soundOn && vid.paused) {
+        vid.play().catch(function () { vid.muted = true; vid.play().catch(function () {}); }); // 音つきの再生をブラウザが止めたとき
+      }
+      return;
+    }
     if (!frame) return;
     if (soundOn) {
       ytCommand('setVolume', [VIDEO_VOLUME]);
@@ -29,13 +53,33 @@
     }
   }
 
-  if (bg && fine && !calm) {
-    frame = bg.querySelector('iframe');
-    var ids = bg.dataset.videos.split(',').filter(Boolean);
-    for (var i = ids.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+  function startClips() {
+    var list = shuffle(bg.dataset.clips.split(',').filter(Boolean));
+    var i = 0, failed = 0;
+    vid = bg.querySelector('video');
+    vid.loop = list.length < 2;
+    function next() {
+      i = (i + 1) % list.length;
+      vid.src = list[i];
+      vid.play().catch(function () {});
     }
+    vid.addEventListener('ended', next);
+    vid.addEventListener('error', function () { if (++failed < list.length) next(); });
+    vid.addEventListener('playing', function once() {
+      vid.removeEventListener('playing', once);
+      showBackground();
+      applyVideoSound();
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) vid.pause(); else vid.play().catch(function () {});
+    });
+    vid.src = list[0];
+    vid.play().catch(function () {});
+  }
+
+  function startYouTube() {
+    frame = bg.querySelector('iframe');
+    var ids = shuffle(bg.dataset.videos.split(',').filter(Boolean));
     var idx = 0;
     // 再生リストにすると前へ/次へのアイコンが出るので、1本ずつ再生し、終わったら次の動画に切り替える
     function nextVideo() {
@@ -45,10 +89,7 @@
     }
     frame.addEventListener('load', function () {
       frame.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), YT);
-      setTimeout(function () {
-        bg.classList.add('on');
-        document.body.classList.add('bg-on'); // 文字色を背景に合わせる(style.css の bg-on)
-      }, 1200);
+      showBackground();
       setTimeout(applyVideoSound, 2500);
     });
     window.addEventListener('message', function (e) {
@@ -69,6 +110,10 @@
       (ids.length < 2 ? '&loop=1&playlist=' + ids[0] : '') +
       '&playsinline=1&modestbranding=1&rel=0&disablekb=1&iv_load_policy=3&cc_load_policy=0&fs=0&enablejsapi=1&origin=' +
       encodeURIComponent(location.origin);
+  }
+
+  if (bg && fine && !calm) {
+    if (bg.dataset.clips) startClips(); else startYouTube();
   }
 
   // ---- ページ遷移のフェード ----

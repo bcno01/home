@@ -153,6 +153,10 @@ img { max-width: 100%; display: block; }
   transform: translate(-50%, -55%) scale(1.2);
   filter: saturate(1.25) brightness(.9);  /* 動画そのものの明るさ */
 }
+.bgvideo video {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0;
+  filter: saturate(1.25) brightness(.9);
+}
 /* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
 .bgvideo::before, .bgvideo::after {
   content: ""; position: absolute; inset: 0;

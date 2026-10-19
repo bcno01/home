@@ -312,6 +312,7 @@ def read_work(d):
         "embeds": embeds,
         "cover": cover,
         "cover_url": cover_url,
+        "clip": (d / "bg.mp4") if (d / "bg.mp4").is_file() else None,  # 背景用のクリップ(add_bgclip.py が作る)
         "gallery": [p for p in images if p != cover],
     }
     w["headline"] = make_headline(w, f)
@@ -474,8 +475,21 @@ def background_ids(site):
     return site.get("work_videos", [])
 
 
+def background_clips(site):
+    """背景に流す自前クリップ(works/<作品>/bg.mp4)。background: が空/works のときだけ使う"""
+    bg = site["background"].strip().lower()
+    if bg in ("off", "none", "なし") or (bg and bg not in ("works", "auto")):
+        return []
+    return site.get("work_clips", [])
+
+
 def render_bgvideo(site):
-    """背景のYouTube動画。再生順のシャッフルと src の組み立ては fx.js(PCだけ読み込む)"""
+    """背景の動画。自前クリップがあればそれを、なければ YouTube を使う。再生順のシャッフルは fx.js(PCだけ読み込む)"""
+    clips = background_clips(site)
+    if clips:
+        return ('<div class="bgvideo" aria-hidden="true" style="--cell:%dpx" data-clips="%s">'
+                '<video muted playsinline preload="auto" tabindex="-1"></video></div>\n') % (
+            site["mosaic"], esc(",".join(clips)))
     ids = background_ids(site)
     if not ids:
         return ""
@@ -595,6 +609,7 @@ def main():
                 works.append(w)
     works.sort(key=lambda w: (w["date"], w["slug"]), reverse=True)
     link_related(works)
+    site["work_clips"] = ["w/%s/bg.mp4" % quote(w["slug"]) for w in works if w["clip"]]
     site["work_videos"] = list(dict.fromkeys(
         v for w in works for _, u in w["links"] for v in [youtube_id(u)] if v))
 
@@ -607,6 +622,11 @@ def main():
             save_image(w["cover"], wdir / w["cover"].name, 900, written)
         for p in w["gallery"]:
             save_image(p, wdir / p.name, 1800, written)
+        if w["clip"]:
+            dst = wdir / "bg.mp4"
+            written.add(dst)
+            if not (dst.exists() and dst.stat().st_mtime >= w["clip"].stat().st_mtime):
+                shutil.copy2(w["clip"], dst)
         (wdir / "index.html").write_text(render_work(site, w), encoding="utf-8")
         written.add(wdir / "index.html")
         if not w["links"] and not w["embeds"]:
