@@ -728,7 +728,7 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    panel = {"#works": "works", "#events": "events", "#contact": "contact", "#guideline": "guideline", "#omikuji": "omikuji"}.get(url)
+    panel = {"#works": "works", "#events": "events", "#contact": "contact", "#guideline": "guideline"}.get(url)
     attrs = ' target="_blank" rel="noopener"' if ext else (
         ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
@@ -961,48 +961,6 @@ def render_contact(site):
     return '<section class="rpanel" id="contact" aria-label="%s"><h2 class="ptitle">%s</h2>%s</section>' % (tr("依頼受付フォーム"), tr("依頼受付フォーム"), inner)
 
 
-def omikuji_play(w):
-    """「再生」ボタンのリンク。その作品の YouTube、なければ関連する MV の YouTube、それもなければ Apple Music / Spotify"""
-    def find(links, svcs):
-        for svc in svcs:
-            for lab, u in links:
-                if svc_of(u) == svc:
-                    return {"label": lab, "url": u, "svc": svc}
-        return None
-    own = find(w["links"], ("youtube",))
-    if own:
-        return own
-    for r in w["related"]:
-        hit = find(r["links"], ("youtube",)) if r["type"] == "video" else None
-        if hit:
-            return hit
-    return find(w["links"], ("apple", "spotify", "niconico"))
-
-
-def omikuji_items(works):
-    """「今日の一曲」で引ける作品(音楽と動画)。表紙のあるものだけ。ページの言語に合わせた名前で、JSON にして埋め込む"""
-    items = []
-    for w in works:
-        if w["type"] not in ("music", "video") or not (w["cover"] or w["cover_url"]):
-            continue
-        name = (w["title"] if w["type"] == "music" else (w.get("song_en") if LANG == "en" and w.get("song_en") else video_song(w["title"])))
-        items.append({"slug": w["slug"], "name": name, "kind": TYPES[w["type"]], "date": fmt_date(w["date"]),
-                      "href": "w/%s/" % quote(w["slug"]), "cover": cover_src(w), "play": omikuji_play(w)})
-    return items
-
-
-def render_omikuji(site, works):
-    """「今日の一曲」(おみくじ)のパネル。引く処理は fx.js。site.txt の omikuji: off で出さない"""
-    items = omikuji_items(works) if site.get("omikuji", True) else []
-    if not items:
-        return ""
-    data = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
-    return ('<section class="rpanel" id="omikuji" aria-label="%s"><h2 class="ptitle">%s</h2><p class="note">%s</p>'
-            '<div class="omk"><button type="button" class="omk-draw">%s</button><div class="omk-result" aria-live="polite" hidden></div></div>'
-            '<script type="application/json" class="omk-data">%s</script></section>') % (
-        tr("今日の一曲"), tr("今日の一曲"), tr("今日聴く一曲を、おみくじで決めましょう。1日に1回、結果が記憶されます。"), tr("おみくじを引く"), data)
-
-
 def render_index(site, works):
     types_present = [t for t in TYPES if any(w["type"] == t for w in works)]
     chips = ""
@@ -1025,9 +983,7 @@ def render_index(site, works):
 
     guideline = load_guideline()
     menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # guideline.txt がなければ「Guideline」の項目は出さない
-    omikuji = render_omikuji(site, works)
-    items = ([("Works", "#works"), ("Events", "#events")] + ([("Today's Song", "#omikuji")] if omikuji else [])
-             + ([("About", "#about")] if site["about"] else []) + menu
+    items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + menu
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
     sns = "".join(nav_link(lab or platform_label(u), u) for lab, u in site["links"])
@@ -1075,13 +1031,12 @@ document.querySelectorAll('.chip').forEach(function (b) {
 %s
 %s
 %s
-%s
 </div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
          nav, sns, lang_switch("../", "./") if LANG == "en" else lang_switch("./", "en/"),
-         chips, rows, render_events(load_events()), omikuji, render_guideline(guideline), render_contact(site), about, script)
+         chips, rows, render_events(load_events()), render_guideline(guideline), render_contact(site), about, script)
     og = None
     for w in works:
         if site.get("url") and w["cover"]:
@@ -1106,7 +1061,6 @@ def load_site():
         "form_endpoint": f.get("form-endpoint", "https://api.web3forms.com/submit").strip(),
         "mosaic_style": f.get("mosaic-style", "grid").strip().lower(),
         "mosaic": mosaic,
-        "omikuji": f.get("omikuji", "yes").strip().lower() not in ("no", "off", "false", "0", "なし"),  # 「今日の一曲」を出すか
         "name": f.get("name") or "My Works",
         "tagline": f.get("tagline", ""),
         "url": f.get("url", ""),

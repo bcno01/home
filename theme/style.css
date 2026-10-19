@@ -391,27 +391,3 @@ body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff;
   .thanks { animation: none; }
   .req .fields, .prog .bar i { transition: none; }
 }
-
-/* 今日の一曲(おみくじ) */
-.omk { margin: 14px 0 0; }
-.omk-draw { padding: 12px 22px; border: 0; border-radius: 10px; cursor: pointer; background: var(--main); color: var(--white); font: 600 14px/1 var(--head); }
-.omk-draw:hover { filter: brightness(1.1); }
-.omk-draw.again { padding: 9px 14px; background: transparent; color: inherit; border: 1.5px solid currentColor; font-size: 12px; opacity: .85; }
-.omk-result { margin: 16px 0 0; }
-.omk-card { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 18px; align-items: start; animation: omkIn .5s ease both; }
-.omk-cover-wrap { background: rgba(20, 24, 58, .12); border-radius: 8px; overflow: hidden; line-height: 0; min-height: 120px; }
-.omk-cover { width: 100%; height: auto; display: block; image-rendering: auto; }
-.omk-title { margin: 0; font: 700 clamp(20px, 4vw, 26px)/1.35 var(--head); }
-.omk-title a { text-decoration: none; }
-.omk-title a:hover { text-decoration: underline; text-underline-offset: 4px; }
-.omk-meta { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--head); }
-.omk-links { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.omk-links .btn { font-size: 13px; padding: 9px 14px; }
-.omk-links .btn:not(.primary):not([data-svc]) { background: var(--fg); border-color: var(--fg); color: var(--white); text-shadow: none; }
-body.bg-on .omk-links .btn:not(.primary):not([data-svc]) { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .7); color: #fff; }
-@keyframes omkIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (max-width: 560px) { .omk-card { grid-template-columns: 1fr; } .omk-cover-wrap { max-width: 260px; } }
-body.bg-on .omk-draw { background: #fff; color: #0f1330; }
-body.bg-on .omk-draw.again { background: transparent; color: #fff; }
-body.bg-on .omk-cover-wrap { background: rgba(255, 255, 255, .12); }
-body.bg-on .omk-title, body.bg-on 

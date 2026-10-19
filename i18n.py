@@ -16,10 +16,6 @@ EN = {
     # トップ
     "絞り込み": "Filter",
     "まだ作品がありません。works フォルダに作品フォルダを追加してください。": "No works yet.",
-    # 今日の一曲
-    "今日の一曲": "Today's Song",
-    "今日聴く一曲を、おみくじで決めましょう。1日に1回、結果が記憶されます。": "Let a fortune pick the song you listen to today. Your result for the day is remembered.",
-    "おみくじを引く": "Draw a fortune",
     # Events
     "詳細 ↗": "Details ↗",
     "現在、出演予定はありません。": "No upcoming appearances at the moment.",
