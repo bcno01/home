@@ -12,9 +12,9 @@ plan | MIX & Mastering / セットプラン(通常プラン) | 26〜50トラッ�
 plan | MIX & Mastering / セットプラン(通常プラン) | 51トラック以上 | 要相談
 plan | MIX & Mastering / セットプラン(歌ってみたプラン) | ショート動画用 | 5000
 plan | MIX & Mastering / セットプラン(歌ってみたプラン) | フルバージョン動画用 | 10000
+plan | MIX / 単体プラン | MIX単体でのご依頼 | 要相談
 plan | Mastering / 単体プラン | 1曲あたり | 6000
 plan | Mastering / 単体プラン | アルバムマスタリング | 30000
-plan | MIX / 単体プラン | MIX単体でのご依頼 | 要相談
 plan | その他 | その他のご相談(法人のご依頼・イベント出演など) | 要相談
 
 option | オプション(追加料金) | 生ドラムMIX | 2500 | | -Mastering / 単体
