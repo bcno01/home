@@ -213,16 +213,16 @@ def spotify_date(s):
     return datetime.date(int(y), int(m), int(d))
 
 
-def match_spotify(albums, album_title, date, ntracks):
-    """Apple の作品に対応する Spotify のアルバムを探す。同じ名前を優先し、なければ「近い日付・同じ曲数」で1件に絞れたときだけ"""
-    nt = build.norm_song(album_title)
+def match_spotify(albums, names, date, ntracks):
+    """Apple の作品に対応する Spotify のアルバムを探す。同じ名前(作品名・原題のどちらか)を優先し、なければ「近い日付・同じ曲数」で1件に絞れたときだけ"""
+    nts = {build.norm_song(n) for n in names if n} - {""}
     same, close = [], []
     for a in albums:
         try:
             gap = abs((spotify_date(a["release_date"]) - date).days)
         except Exception:
             continue
-        if build.norm_song(a["name"]) == nt:
+        if build.norm_song(a["name"]) in nts:
             same.append((gap, a))
         elif gap <= 3 and a.get("total_tracks") == ntracks:
             close.append(a)
@@ -251,7 +251,7 @@ def import_spotify(imp, cfg):
             ntracks = len(json.loads(f.get("tracks", "[]")))
         except ValueError:
             ntracks = 0
-        a = match_spotify(albums, f.get("title-orig") or f.get("title", ""), date, ntracks) if date else None
+        a = match_spotify(albums, [f.get("title"), f.get("title-orig")], date, ntracks) if date else None
         if not a:
             continue
         url = a["external_urls"]["spotify"]

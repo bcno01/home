@@ -9,3 +9,4 @@ tracks: ["毒と花弁"]
 title-orig: Poison and Petals
 links:
 Apple Music: https://music.apple.com/jp/album/poison-and-petals-single/1825065845
+Spotify: https://open.spotify.com/album/5HclXvrWoaos5TU2F0afjC

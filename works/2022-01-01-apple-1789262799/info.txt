@@ -8,3 +8,4 @@ release: ep
 tracks: ["あなたへ", "Bottle of Words", "Hzとカンフル", "ヤラズ", "速度ある理由"]
 links:
 Apple Music: https://music.apple.com/jp/album/nightfall-ep/1789262799
+Spotify: https://open.spotify.com/album/2Vr3Vu6dXWopv0ghKiRMFs
