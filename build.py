@@ -622,8 +622,54 @@ def render_events(events):
     return '<section class="rpanel" id="events" aria-label="Events"><h2 class="ptitle">Events</h2>%s</section>' % body
 
 
+PRICING_FILE = ROOT / "pricing.txt"
+
+
+def yen(n):
+    return "¥{:,}".format(n)
+
+
+def load_pricing():
+    """pricing.txt を (プラン, オプション, 注意事項) に読む。プラン/オプションは {group, item, price(整数 or None), note}"""
+    plans, opts, notes = [], [], []
+    if PRICING_FILE.exists():
+        for line in PRICING_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = [x.strip() for x in line.split("|")] + ["", "", "", ""]
+            kind = parts[0].lower()
+            if kind == "note" and parts[2]:
+                notes.append(parts[2])
+            elif kind in ("plan", "option") and parts[2]:
+                digits = re.sub(r"\D", "", parts[3])
+                entry = {"group": parts[1], "item": parts[2], "price": int(digits) if digits and parts[3].replace(",", "").replace("¥", "").strip().isdigit() else None,
+                         "label": parts[3], "note": parts[4]}
+                (plans if kind == "plan" else opts).append(entry)
+    return plans, opts, notes
+
+
+def price_text(e):
+    return yen(e["price"]) if e["price"] is not None else (e["label"] or "要相談")
+
+
+def render_prices(plans, opts, notes):
+    """料金表(折りたたみ)。pricing.txt から作る"""
+    def table(entries):
+        out, last = [], None
+        for e in entries:
+            if e["group"] != last:
+                out.append('<h4>%s</h4>' % esc(e["group"]))
+                last = e["group"]
+            out.append('<div class="pr"><span>%s</span><span>%s%s</span></div>' % (
+                esc(e["item"]), esc(price_text(e)), (' <small>%s</small>' % esc(e["note"])) if e["note"] else ""))
+        return "".join(out)
+    notes_html = ('<h4>ご依頼にあたって</h4><ul>%s</ul>' % "".join("<li>%s</li>" % esc(n) for n in notes)) if notes else ""
+    return '<details class="prices"><summary>料金表を見る(税込)</summary>%s%s%s</details>' % (table(plans), table(opts), notes_html)
+
+
 def render_contact(site):
-    """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければメールの下書きを作るフォーム"""
+    """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければ pricing.txt の料金表をもとにした、メールの下書きを作るフォーム"""
     to = site["contact"] if "@" in site["contact"] and "://" not in site["contact"] else ""
     note = '<p class="note">お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。</p>'
     if site["form"]:
@@ -631,16 +677,41 @@ def render_contact(site):
         inner = ('%s<iframe class="form-embed" src="%s" title="依頼受付フォーム" loading="lazy"></iframe>'
                  '<p class="more-link"><a href="%s" target="_blank" rel="noopener">表示されないときは別のタブで開く ↗</a></p>') % (note, u, u)
     elif to:
-        kinds = "".join("<option>%s</option>" % k for k in ("楽曲制作", "編曲・ミックス", "歌唱・ボーカル", "イベント出演", "その他"))
-        inner = (note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
+        plans, opts, notes = load_pricing()
+        if plans:
+            groups, order = {}, []
+            for e in plans:
+                if e["group"] not in groups:
+                    groups[e["group"]] = []
+                    order.append(e["group"])
+                groups[e["group"]].append(e)
+            select = "".join(
+                '<optgroup label="%s">%s</optgroup>' % (esc(g), "".join(
+                    '<option value="%s" data-price="%s">%s(%s)</option>' % (
+                        esc("%s / %s" % (g, e["item"])), "" if e["price"] is None else e["price"], esc(e["item"]), esc(price_text(e)))
+                    for e in groups[g])) for g in order)
+            select = '<option value="" disabled selected>選んでください</option>' + select
+            options = ""
+            if opts:
+                options = '<fieldset class="opts"><legend>オプション(追加料金・複数選べます)</legend>%s</fieldset>' % "".join(
+                    '<label class="chk"><input type="checkbox" name="オプション" value="%s" data-price="%s"> %s <span class="pc">+%s%s</span></label>' % (
+                        esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]), esc(price_text(e)),
+                        (' <small>%s</small>' % esc(e["note"])) if e["note"] else "") for e in opts)
+            prices = render_prices(plans, opts, notes)
+        else:  # pricing.txt がないときの簡易な選択肢
+            select = "".join("<option>%s</option>" % k for k in ("楽曲制作", "編曲・ミックス", "歌唱・ボーカル", "イベント出演", "その他"))
+            options, prices = "", ""
+        inner = (note + prices + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
                  '<label>お名前<input name="お名前" required autocomplete="name"></label>'
                  '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
-                 '<label>ご依頼の種類<select name="種類">%s</select></label>'
-                 '<label>ご希望の納期・ご予算(任意)<input name="納期・予算"></label>'
-                 '<label>ご依頼の内容<textarea name="内容" rows="6" required></textarea></label>'
+                 '<label>ご依頼のプラン<select name="プラン" required>%s</select></label>'
+                 '%s'
+                 '<p class="est" aria-live="polite" hidden></p>'
+                 '<label>ご希望の納期<input name="納期" placeholder="例: 2週間後 / ○月○日まで"></label>'
+                 '<label>ご依頼の内容(曲名・トラック数・参考URLなど)<textarea name="内容" rows="6" required></textarea></label>'
                  '<button type="submit">メールの下書きを作る</button>'
                  '<p class="fine">ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。</p>'
-                 '</form>') % (esc(to), esc(to), kinds)
+                 '</form>') % (esc(to), esc(to), select, options)
     elif site["contact"]:
         inner = note + '<p><a class="btn primary" href="%s" target="_blank" rel="noopener">依頼フォームを開く <span aria-hidden="true">↗</span></a></p>' % esc(site["contact"])
     else:

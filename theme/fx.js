@@ -251,12 +251,41 @@
   // ---- 依頼受付フォーム: 入力内容をメールの下書きにする(送信はメールアプリで) ----
   var reqForm = document.querySelector('form.req');
   if (reqForm) {
+    var est = reqForm.querySelector('.est');
+    var yen = function (n) { return '\u00a5' + n.toLocaleString('ja-JP'); };
+    // 選ばれたプランとオプションから、お見積りの目安(確定ではありません)を作る
+    var quote = function () {
+      var sel = reqForm.elements['プラン'];
+      var planOpt = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      if (!planOpt || !planOpt.value) return null;
+      var opts = [].slice.call(reqForm.querySelectorAll('input[name="オプション"]:checked'));
+      var names = opts.map(function (o) { return o.value; });
+      var base = planOpt.dataset.price;
+      if (base === '') return { plan: planOpt.value, options: names, total: null, text: 'プランの料金は、内容を確認のうえ、ご相談になります。' };
+      var total = Number(base);
+      opts.forEach(function (o) { if (o.dataset.price !== '') total += Number(o.dataset.price); });
+      return { plan: planOpt.value, options: names, total: total,
+        text: 'お見積りの目安(税込): ' + yen(total) + '  ※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。' };
+    };
+    var refresh = function () {
+      if (!est) return;
+      var q = quote();
+      est.hidden = !q;
+      if (q) est.textContent = q.text;
+    };
+    reqForm.addEventListener('change', refresh);
+
     var mailtoFor = function () {
       var f = reqForm.elements;
-      var body = 'お名前: ' + f['お名前'].value + '\n返信先: ' + f['返信先'].value + '\nご依頼の種類: ' + f['種類'].value +
-        '\n納期・ご予算: ' + (f['納期・予算'].value || '(未記入)') + '\n\n【ご依頼の内容】\n' + f['内容'].value + '\n';
+      var q = quote();
+      var plan = q ? q.plan : '(未選択)';
+      var body = 'お名前: ' + f['お名前'].value + '\n返信先: ' + f['返信先'].value + '\nご依頼のプラン: ' + plan +
+        '\nオプション: ' + (q && q.options.length ? q.options.join('、') : 'なし') +
+        '\nお見積りの目安: ' + (q ? (q.total === null ? '要相談' : yen(q.total) + '(税込・目安)') : '-') +
+        '\nご希望の納期: ' + (f['納期'].value || '(未記入)') + '\n\n【ご依頼の内容】\n' + f['内容'].value + '\n';
+      var short = plan.split(' / ').pop();
       return 'mailto:' + reqForm.dataset.to + '?subject=' +
-        encodeURIComponent('【依頼】' + f['種類'].value + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
+        encodeURIComponent('【依頼】' + short + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
     };
     reqForm.mailtoFor = mailtoFor; // (確認用に公開しておく)
     reqForm.addEventListener('submit', function (e) {
@@ -433,7 +462,8 @@
 
     // ---- クリックの波紋: クリックした場所から、レンズが水の波紋のように広がる(同時に3つまで) ----
     var RIPPLE_MS = 1600; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
-    var RIPPLE_R = 560; // 波が広がる半径(px)
+    var RIPPLE_R = 560;    // 波が広がる半径(px)
+    var RIPPLE_BAND = 110; // 波の輪の太さ(px)。この輪の部分だけ元の映像が見え、輪の内側は描かない(モザイクのまま)
     var ripples = [null, null, null], rIdx = 0, rRunning = false;
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
     function clearRipple(i) {
@@ -450,8 +480,8 @@
         var t = (now - rp.t0) / rp.ms;
         if (t >= 1) { clearRipple(i); return; }
         any = true;
-        var ro = RIPPLE_R * easeOut(t);                              // 波の先端
-        var ri = RIPPLE_R * easeOut(Math.max(0, (t - 0.2) / 0.8));  // 内側は少し遅れて追いかける(中心から元のモザイクに戻る)
+        var ro = RIPPLE_R * easeOut(t);                       // 波の先端
+        var ri = ro - RIPPLE_BAND * (1 - 0.6 * t);            // 輪の内側の縁(広がるにつれて、輪は少しずつ細くなる)
         bg.style.setProperty('--p' + i + 'i', ri.toFixed(1) + 'px');
         bg.style.setProperty('--p' + i + 'o', ro.toFixed(1) + 'px');
         rp.el.style.width = rp.el.style.height = (ro * 2).toFixed(1) + 'px';
