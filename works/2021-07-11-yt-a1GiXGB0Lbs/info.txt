@@ -6,3 +6,4 @@ auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=a1GiXGB0Lbs
 ◾︎offvocal/: https://www.dropbox.com/s/n2yp5naeqhyshwe/%E8%87%AA%E4%B8%BB_instBPM136.wav?dl=0
+配信リンク: https://rosu.lnk.to/Jishu

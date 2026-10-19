@@ -5,3 +5,4 @@ source: youtube-gWzc23syR_c
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=gWzc23syR_c
+配信リンク: https://orcd.co/fukagyaku

@@ -5,3 +5,4 @@ source: youtube-NPmxXF_wS5c
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=NPmxXF_wS5c
+Apple Music: https://music.apple.com/jp/album/%E3%82%A2%E3%82%B6%E3%83%AC%E3%82%A2%E3%81%AE%E5%BF%83%E8%87%93/656611175

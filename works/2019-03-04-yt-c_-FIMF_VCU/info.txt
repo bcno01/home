@@ -5,3 +5,4 @@ source: youtube-c_-FIMF_VCU
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=c_-FIMF_VCU
+ニコニコ動画: https://www.nicovideo.jp/watch/sm34720182

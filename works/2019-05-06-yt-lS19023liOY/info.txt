@@ -5,4 +5,3 @@ source: youtube-lS19023liOY
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=lS19023liOY
-Off Vocal: http://urx2.nu/YXOJ

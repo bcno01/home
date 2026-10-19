@@ -5,3 +5,4 @@ source: youtube-ytG_rOlGhEA
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=ytG_rOlGhEA
+配信リンク: https://suisoh.lnk.to/Kirainamachi

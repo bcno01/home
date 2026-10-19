@@ -7,6 +7,8 @@
 #         python3 add_youtube.py --force URL            以前に消した・除外した動画も、もう一度追加する
 #         python3 add_youtube.py --type 案件 URL        「案件」(関わらせて頂いた作品)として追加する(すでにサイトにある動画は、そのまま)
 #         python3 add_youtube.py --type 案件 --reclassify URL   すでにサイトにある動画も、分類を「案件」に変える
+#         python3 add_youtube.py --refresh-links            自動で取り込んだ「案件」すべての概要欄から、配信リンクを足す(--dry-run で一覧だけ)
+# 「案件」は、概要欄の配信・販売のリンク(Spotify / Apple Music / ニコニコ動画 / Bandcamp / BOOTH / linkco.re など)も、ボタンとして自動で付きます。
 # タイトル・公開日・概要欄のオフボーカルなどの配布リンクは、動画のページから自動で読み取ります。
 # 作られるのは、自動取り込みと同じ形の works/<公開日>-yt-<動画ID>/info.txt です(取り込み済みの記録にも残るので、あとで重複しません)。
 import html
@@ -18,6 +20,7 @@ import urllib.request
 from urllib.parse import parse_qs, urlparse
 
 import build
+import check_links
 import import_works as iw
 
 
@@ -139,6 +142,8 @@ def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False):
         print("  - %s: 「%s」は除外ワードを含むので、飛ばしました(追加するなら --force)" % (vid, title))
         return False
     mats = iw.material_links(desc)
+    if wtype == "project":  # 案件は、概要欄の配信・販売のリンクも、ボタンにする
+        mats += alive([m for m in iw.stream_links(desc) if m[1] not in {u for _, u in mats}])
     fields = [("title", title), ("date", date), ("type", wtype)]
     if wtype == "project":  # 案件は、長い題名を短くする(元の題名は yt-title: に残す)
         short = tidy_title(title)
@@ -152,8 +157,50 @@ def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False):
     return True
 
 
+def alive(links):
+    """リンクが切れていない(404 など)ものだけを残す。切れているものは、表示して飛ばす"""
+    out = []
+    for lab, u in links:
+        if check_links.classify(u)[0] == "broken":
+            print("    (リンク切れのため飛ばしました: %s %s)" % (lab, u))
+        else:
+            out.append((lab, u))
+    return out
+
+
+def refresh_links(dry):
+    """自動で取り込んだ「案件」すべての概要欄を読み直して、まだ付いていない配信・販売のリンクを足す(同じサービスのリンクがすでにあれば、足さない)"""
+    changed = 0
+    for info in sorted(iw.WORKS.glob("*/info.txt")):
+        f, links, _ = build.parse_info(info.read_text(encoding="utf-8"))
+        if f.get("type") != "project" or not build.truthy(f.get("auto")):
+            continue
+        vid = next((build.youtube_id(u) for _, u in links if build.youtube_id(u)), None)
+        if not vid:
+            continue
+        try:
+            desc = parse_page(watch_page(vid))[2]
+        except Exception as e:
+            print("  ! %s: 動画のページを読み込めませんでした(%s)" % (f.get("title", vid), e))
+            continue
+        have = {build.svc_of(u) or lab for lab, u in links} | {iw.norm_url(u) for _, u in links}
+        new = [(lab, u) for lab, u in iw.stream_links(desc) if (build.svc_of(u) or lab) not in have and iw.norm_url(u) not in have]
+        new = alive(new)
+        time.sleep(0.3)
+        if not new:
+            continue
+        changed += 1
+        print("  + %s  %s" % (f.get("title", vid)[:34], "  ".join("%s %s" % (lab, u) for lab, u in new)))
+        if not dry:
+            iw.rewrite_info(info, {}, add_links=new)
+    print("\n%d 件の作品に、配信リンクを%s。" % (changed, "足す予定です(--dry-run なので、何も変えていません)" if dry else "足しました"))
+    return 0
+
+
 def main():
     argv = sys.argv[1:]
+    if "--refresh-links" in argv:
+        return refresh_links("--dry-run" in argv)
     wtype, type_given = "video", "--type" in argv
     if "--type" in argv:  # --type 案件(または project)
         i = argv.index("--type")

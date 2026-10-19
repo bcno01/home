@@ -578,7 +578,7 @@ def link_buttons(links):
     for i, (lab, u) in enumerate(links):
         svc = svc_of(u)
         out.append('<a class="btn%s"%s href="%s" target="_blank" rel="noopener">%s<span aria-hidden="true"> ↗</span></a>'
-                   % (" primary" if (i == 0 and not svc) else "", ' data-svc="%s"' % svc if svc else "", esc(u), esc(lab)))
+                   % (" primary" if (i == 0 and not svc) else "", ' data-svc="%s"' % svc if svc else "", esc(u), esc(tr(lab))))
     return "\n".join(out)
 
 

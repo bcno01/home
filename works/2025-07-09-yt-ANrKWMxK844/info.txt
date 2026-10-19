@@ -5,3 +5,4 @@ source: youtube-ANrKWMxK844
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=ANrKWMxK844
+BOOTH: https://toukasa.booth.pm/items/7204990

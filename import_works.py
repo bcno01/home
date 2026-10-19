@@ -323,6 +323,48 @@ def material_links(desc):
     return out
 
 
+def norm_url(u):
+    """リンクの重複判定用: 追跡用の ?si= などと、Spotify の intl-ja、スキームの違い、末尾の / をそろえる"""
+    from urllib.parse import urlparse
+    p = urlparse(u.strip())
+    host = p.netloc.lower().replace("www.", "")
+    path = re.sub(r"^/intl-[a-z]+", "", p.path).rstrip("/")
+    return host + path
+
+
+def _stream_label(u):
+    """配信・販売などのリンクなら、ボタンの名前を返す(それ以外は None)。ユーザーやアーティストのページは対象外"""
+    from urllib.parse import urlparse
+    p = urlparse(u)
+    host, path = p.netloc.lower().replace("www.", ""), re.sub(r"^/intl-[a-z]+", "", p.path)
+    if host == "open.spotify.com" and re.match(r"^/(track|album|playlist|episode)/", path):
+        return "Spotify"
+    if host in ("music.apple.com", "itunes.apple.com") and not re.search(r"/artist/", path):
+        return "Apple Music"
+    if host == "nicovideo.jp" and path.startswith("/watch/"):
+        return "ニコニコ動画"
+    if host.endswith(".bandcamp.com") and re.match(r"^/(album|track)/", path):
+        return "Bandcamp"
+    if host.endswith("booth.pm") and path.startswith("/items/"):
+        return "BOOTH"
+    if host in ("linkco.re", "orcd.co", "lnk.to") or host.endswith(".lnk.to"):
+        return "配信リンク"
+    return None
+
+
+def stream_links(desc):
+    """動画の概要欄から、配信・販売のリンク(Spotify / Apple Music / ニコニコ動画 / Bandcamp / BOOTH / リンクまとめ)を拾う。
+    同じサービスは、最初の1つだけ。[(名前, URL)]"""
+    out, seen = [], set()
+    for u in re.findall(r"https?://[^\s<>\"'\u3000]+", desc):
+        u = u.rstrip(".,、。)」』】")
+        lab = _stream_label(u)
+        if lab and lab not in seen:
+            seen.add(lab)
+            out.append((lab, re.sub(r"^http://", "https://", re.sub(r"/intl-[a-z]+", "", re.sub(r"[?&]si=[^&]*", "", u))).rstrip("?")))
+    return out
+
+
 def import_youtube(imp, cfg):
     ch = youtube_channel_id(cfg["youtube"])
     if not ch:

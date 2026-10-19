@@ -6,3 +6,5 @@ auto: yes
 yt-title: 【初音ミク】あの野良猫は、長い冬を越えられずに【オリジナルMV】
 links:
 YouTube: https://www.youtube.com/watch?v=BDOQf8k2Zq8
+Spotify: https://open.spotify.com/album/1LDpxHGOKNgY2FL2HbVDEC
+Apple Music: https://itunes.apple.com/us/album/%E3%81%82%E3%81%AE%E9%87%8E%E8%89%AF%E7%8C%AB%E3%81%AF-%E9%95%B7%E3%81%84%E5%86%AC%E3%82%92%E8%B6%8A%E3%81%88%E3%82%89%E3%82%8C%E3%81%9A%E3%81%AB-feat-%E5%88%9D%E9%9F%B3%E3%83%9F%E3%82%AF-single/1456770338?uo=4

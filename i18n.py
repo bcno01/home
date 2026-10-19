@@ -4,6 +4,7 @@
 
 EN = {
     # 作品ページ
+    "配信リンク": "Streaming links",
     "作品名: ": "Title: ",
     "別名: ": "Also known as: ",
     "、": ", ",

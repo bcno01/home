@@ -6,3 +6,4 @@ auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=ASgYwluvvos
 歌詞素材（利用規約をご一読ください）: https://www.dropbox.com/scl/fo/mgapqc5auj9ymrjhxaple/h?rlkey=1lqr5libo72xkvktd5qme1mb3&dl=0
+配信リンク: https://linkco.re/fXA60n7R?lang=ja

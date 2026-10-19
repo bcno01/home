@@ -6,3 +6,4 @@ auto: yes
 yt-title: yama『ランニングアウト』MV
 links:
 YouTube: https://www.youtube.com/watch?v=_ABe7rZw7pQ
+配信リンク: https://yama.lnk.to/ftvxgS
