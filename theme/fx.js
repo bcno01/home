@@ -198,7 +198,7 @@
   var LENS_R = 100;
   var READING = '.logo, .tagline, .nav a, .sns a, .works-list .row, .works-list .chip, .about, .sound, .top, .work, .foot';
   var ring = null; // レンズの縁(背景動画があるページだけ作る)
-  var tx = 0, ty = 0, x = 0, y = 0, r = 0, rt = 0, running = false;
+  var tx = 0, ty = 0, x = 0, y = 0, r = 0, rt = 0, running = false, inside = false;
   if (bg) {
     ring = document.createElement('div');
     ring.className = 'cursor lens';
@@ -218,6 +218,7 @@
     var d = Math.max(r * 2, 14);
     ring.style.width = ring.style.height = d.toFixed(1) + 'px';
     ring.style.margin = (-d / 2).toFixed(1) + 'px 0 0 ' + (-d / 2).toFixed(1) + 'px';
+    ring.classList.toggle('on', inside && r > 6); // レンズが閉じている(文字・ボタンの上)ときは縁も出さない
     if (Math.abs(tx - x) > 0.1 || Math.abs(ty - y) > 0.1 || Math.abs(rt - r) > 0.3) {
       requestAnimationFrame(loop);
     } else {
@@ -228,14 +229,15 @@
 
   if (ring) {
     document.addEventListener('pointermove', function (e) {
-      if (!lensActive()) { ring.classList.remove('on'); return; }
-      if (!ring.classList.contains('on')) { x = tx = e.clientX; y = ty = e.clientY; }
+      if (!lensActive()) { inside = false; ring.classList.remove('on'); return; }
+      if (!inside) { x = tx = e.clientX; y = ty = e.clientY; }
+      inside = true;
       tx = e.clientX; ty = e.clientY;
-      ring.classList.add('on');
       rt = e.target.closest(READING) ? 0 : LENS_R;
       kick();
     });
     document.documentElement.addEventListener('pointerleave', function () {
+      inside = false;
       ring.classList.remove('on');
       rt = 0;
       if (lensActive()) kick();

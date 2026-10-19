@@ -140,8 +140,8 @@ img { max-width: 100%; display: block; }
 
 /* 背景の動画(ぼかし + タイルの格子 + 背景色のかぶせで、文字を読みやすいモザイク風に) */
 .bgvideo {
-  --dim: .66;  /* かぶせの濃さ(小さいほど動画がはっきり見える) */
-  --tone: color-mix(in srgb, var(--bg) 80%, #14183a);  /* かぶせと格子の色(背景色を少し暗くしたもの) */
+  --dim: .62;  /* かぶせの濃さ(小さいほど動画がはっきり見える) */
+  --tone: #0f1330;  /* かぶせと格子の色(白い文字が読める暗い紺)。明るい文字色に戻すなら color-mix(in srgb, var(--bg) 80%, #14183a) と --dim: .66 */
   position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
   opacity: 0; transition: opacity 1.6s ease;
 }
@@ -151,7 +151,7 @@ img { max-width: 100%; display: block; }
   width: max(100vw, 177.78vh); height: max(56.25vw, 100vh);
   /* 少し拡大して上にずらし、動画の下端(自動字幕やロゴの出る位置)を画面の外に出す */
   transform: translate(-50%, -55%) scale(1.2);
-  filter: saturate(1.25) brightness(.78);  /* 動画そのものを少し暗く */
+  filter: saturate(1.25) brightness(.9);  /* 動画そのものの明るさ */
 }
 /* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
 .bgvideo::before, .bgvideo::after {
@@ -204,14 +204,15 @@ body.leaving { opacity: 0; }
 .sound:hover { border-color: var(--fg); }
 .sound[aria-pressed="true"] { background: var(--fg); color: var(--white); border-color: var(--fg); }
 
-/* 文字色を背景に合わせて変える(背景動画が出ているときだけ)。
-   白文字を「差の絶対値」でブレンドすると、背景が明るい所は暗く、暗い所は明るい文字になる。
-   うまくいかなければ、この1ブロックを消すと元の固定色に戻る。 */
-body.bg-on .menu, body.bg-on .works-list { color: #fff; mix-blend-mode: difference; text-shadow: none; }
-body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k { color: inherit; opacity: .8; }
-body.bg-on .chip { color: inherit; opacity: .85; }
-body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #000; }
-body.bg-on .row { border-bottom-color: rgba(255, 255, 255, .4); }
+/* 背景動画が出ているときだけ、暗いかぶせの上に白い文字を置く。
+   (以前の「背景に合わせて反転する文字色」は mix-blend-mode: difference で、color: #fff の
+   ブロックに mix-blend-mode: difference; text-shadow: none; を足し、かぶせを明るい色に戻すと復活する) */
+body.bg-on .menu, body.bg-on .works-list, body.bg-on .foot { color: #fff; text-shadow: 0 1px 10px rgba(6, 8, 28, .7); }
+body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k, body.bg-on .foot { color: rgba(255, 255, 255, .78); }
+body.bg-on .sns a:hover { color: #fff; }
+body.bg-on .chip { color: #fff; opacity: .85; }
+body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #0f1330; text-shadow: none; }
+body.bg-on .row { border-bottom-color: rgba(255, 255, 255, .3); }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
