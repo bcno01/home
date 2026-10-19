@@ -281,7 +281,12 @@ def read_work(d):
             if vid:
                 cover_url = "https://i.ytimg.com/vi/%s/hqdefault.jpg" % vid
                 break
-    embeds = [e for e in (embed_for(u) for _, u in links) if e][:3]
+    embeds = [e for e in (embed_for(u) for _, u in links) if e]
+    audio = [e for e in embeds if e[0] == "audio"]
+    if len(audio) > 1:  # 音楽プレーヤーは1つだけ(Spotify があれば優先)
+        keep = next((e for e in audio if "open.spotify.com" in e[1]), audio[0])
+        embeds = [e for e in embeds if e[0] != "audio" or e is keep]
+    embeds = embeds[:3]
     date = parse_date(f.get("date")) or parse_date(d.name)
     if not date:
         print("  ! %s: 日付がありません(info.txt に date: を書くか、フォルダ名の頭に 2026-10-01- を付けてください)。今日の日付になります" % d.name)

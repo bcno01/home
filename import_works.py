@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-# Apple Music と YouTube の新着を works/ に取り込む(標準ライブラリのみ・APIキー不要)
+# Apple Music と YouTube の新着を works/ に取り込み、Spotify のリンクを付ける(標準ライブラリのみ)
+# Spotify のリンクだけは、Spotify の開発者アプリのキー(SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET)が必要。なければスキップする
 # 使い方: python3 import_works.py            取り込み
 #         python3 import_works.py --dry-run  何が取り込まれるか表示するだけ
 # 設定は import.txt。取り込み済みの記録は works/.imported.txt(消した作品が復活しないように残す)
+import base64
+import datetime
 import json
+import os
 import re
 import sys
 import time
@@ -22,11 +26,11 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; portfolio-importer)", "Accept
 YES = ("yes", "true", "1", "on", "y", "はい")
 
 
-def fetch(url):
+def fetch(url, headers=None):
     last = None
     for i in range(3):
         try:
-            req = urllib.request.Request(url, headers=HEADERS)
+            req = urllib.request.Request(url, headers=dict(HEADERS, **(headers or {})))
             with urllib.request.urlopen(req, timeout=25) as r:
                 return r.read()
         except Exception as e:  # 通信の一時的な失敗は少し待って再試行
@@ -56,6 +60,7 @@ class Importer:
         self.texts = existing_texts()
         self.created = []
         self.enriched = []
+        self.linked = []
 
     def known(self, key, needle):
         return key in self.ledger or any(needle in t for t in self.texts)
@@ -135,11 +140,12 @@ def import_apple(imp, cfg):
     enrich_apple(imp, albums, country)
 
 
-def rewrite_info(path, updates):
-    """info.txt の項目を更新する(links や本文、ほかの項目はそのまま残す)"""
+def rewrite_info(path, updates, add_links=None):
+    """info.txt の項目を更新する(links や本文、ほかの項目はそのまま残す)。add_links は [(名前, URL)]"""
     f, links, body = build.parse_info(path.read_text(encoding="utf-8"))
     for k, v in updates.items():
         f[k] = " ".join(str(v).split())
+    links = links + list(add_links or [])
     lines = ["%s: %s" % (k, v) for k, v in f.items() if not k.startswith("_")]
     lines.append("links:")
     lines += [("%s: %s" % (lab, u)) if lab else u for lab, u in links]
@@ -169,6 +175,89 @@ def enrich_apple(imp, albums, country):
         if not imp.dry:
             rewrite_info(info, updates)
         time.sleep(0.3)
+
+
+def spotify_keys():
+    """環境変数(GitHub の Secrets)か、手元の spotify-keys.txt からキーを読む"""
+    cid, sec = os.environ.get("SPOTIFY_CLIENT_ID"), os.environ.get("SPOTIFY_CLIENT_SECRET")
+    path = ROOT / "spotify-keys.txt"
+    if not (cid and sec) and path.exists():
+        f = build.parse_info(path.read_text(encoding="utf-8"))[0]
+        cid, sec = f.get("client_id"), f.get("client_secret")
+    return (cid.strip(), sec.strip()) if cid and sec else None
+
+
+def spotify_token(cid, sec):
+    auth = base64.b64encode(("%s:%s" % (cid, sec)).encode()).decode()
+    req = urllib.request.Request("https://accounts.spotify.com/api/token", data=b"grant_type=client_credentials",
+                                 headers={"Authorization": "Basic " + auth,
+                                          "Content-Type": "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(req, timeout=25) as r:
+        return json.load(r)["access_token"]
+
+
+def spotify_albums(token, artist_id, market):
+    url = ("https://api.spotify.com/v1/artists/%s/albums?include_groups=album,single,appears_on,compilation"
+           "&market=%s&limit=50" % (artist_id, market))
+    out = []
+    while url:
+        d = json.loads(fetch(url, {"Authorization": "Bearer " + token}))
+        out += d.get("items", [])
+        url = d.get("next")
+        time.sleep(0.2)
+    return out
+
+
+def spotify_date(s):
+    y, m, d = (s + "-01-01").split("-")[:3]  # 年だけ・年月だけの日付にも対応
+    return datetime.date(int(y), int(m), int(d))
+
+
+def match_spotify(albums, album_title, date, ntracks):
+    """Apple の作品に対応する Spotify のアルバムを探す。同じ名前を優先し、なければ「近い日付・同じ曲数」で1件に絞れたときだけ"""
+    nt = build.norm_song(album_title)
+    same, close = [], []
+    for a in albums:
+        try:
+            gap = abs((spotify_date(a["release_date"]) - date).days)
+        except Exception:
+            continue
+        if build.norm_song(a["name"]) == nt:
+            same.append((gap, a))
+        elif gap <= 3 and a.get("total_tracks") == ntracks:
+            close.append(a)
+    if same:
+        return min(same, key=lambda x: x[0])[1]
+    return close[0] if len(close) == 1 else None
+
+
+def import_spotify(imp, cfg):
+    keys = spotify_keys()
+    if not keys:
+        print("  (Spotify のキーが未設定なので、Spotify のリンクはスキップしました)")
+        return
+    m = re.search(r"[A-Za-z0-9]{22}", cfg["spotify"])
+    if not m:
+        print("  ! import.txt の spotify: からアーティストIDを読み取れませんでした")
+        return
+    albums = spotify_albums(spotify_token(*keys), m.group(0), cfg.get("apple-country", "jp").upper())
+    for d in sorted(WORKS.glob("*-apple-*")):
+        info = d / "info.txt"
+        f, links, _ = build.parse_info(info.read_text(encoding="utf-8"))
+        if any("open.spotify.com" in u for _, u in links):
+            continue
+        date = build.parse_date(f.get("date"))
+        try:
+            ntracks = len(json.loads(f.get("tracks", "[]")))
+        except ValueError:
+            ntracks = 0
+        a = match_spotify(albums, f.get("title-orig") or f.get("title", ""), date, ntracks) if date else None
+        if not a:
+            continue
+        url = a["external_urls"]["spotify"]
+        imp.linked.append("%s → %s" % (f.get("title"), url))
+        if not imp.dry:
+            rewrite_info(info, {}, add_links=[("Spotify", url)])
 
 
 def youtube_channel_id(v):
@@ -211,7 +300,7 @@ def main():
     cfg = build.parse_info(cfg_path.read_text(encoding="utf-8"))[0] if cfg_path.exists() else {}
     WORKS.mkdir(exist_ok=True)
     imp = Importer(dry)
-    for name, fn in (("apple", import_apple), ("youtube", import_youtube)):
+    for name, fn in (("apple", import_apple), ("youtube", import_youtube), ("spotify", import_spotify)):
         if cfg.get(name):
             try:
                 fn(imp, cfg)
@@ -225,8 +314,12 @@ def main():
         print("%s %d 件(日本語の作品名・種別・収録曲を補う):" % ("補完予定" if dry else "補完しました", len(imp.enriched)))
         for line in imp.enriched:
             print("  " + line)
-    if not imp.created and not imp.enriched:
-        print("新しい作品はありませんでした")
+    if imp.linked:
+        print("%s %d 件(Spotify のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.linked)))
+        for line in imp.linked:
+            print("  " + line)
+    if not imp.created and not imp.enriched and not imp.linked:
+        print("新しい作品・リンクはありませんでした")
 
 
 if __name__ == "__main__":

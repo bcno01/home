@@ -12,3 +12,8 @@ youtube: UCcWRWyaHi1_RTHYUk6KG4kg
 youtube-shorts: no
 # タイトルにこれらの言葉を含む YouTube 動画は取り込まない(カンマ区切り。大文字小文字は区別しません)
 youtube-exclude: Trailer, Teaser
+
+# Spotify のアーティストページのURL(Apple Music の作品に、対応する Spotify のリンクを付けます)
+# キー(Client ID / Client Secret)が必要です。GitHub の Secrets(SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET)に登録するか、
+# 手元で試すときは spotify-keys.txt(GitHub には載りません)に書きます。キーがなければスキップされます。
+spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b

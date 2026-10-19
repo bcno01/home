@@ -3,3 +3,5 @@ docs/
 __pycache__/
 .DS_Store
 .claude/
+# Spotify のキー(絶対に GitHub に載せない)
+spotify-keys.txt

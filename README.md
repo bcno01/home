@@ -93,7 +93,8 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 - **見出し文**: 音楽の作品には「シングル「レゴリス」を配信開始しました」、動画には「「レゴリス」のMVを公開しました」のような見出しが、一覧と作品ページに自動で付きます。自分で書きたいときは、その作品の `info.txt` に `headline: 好きな文章` を書くと、そちらが使われます。
 - **作品ページの内容**: 見出し・名義・作品名(Apple 上の原題つき)・リンク・埋め込みプレーヤー・収録曲・関連作品。
 - **関連作品の相互リンク**: 同じ曲を含む作品どうし(例: シングル「レゴリス」・EP「Gestalt」・MV「レゴリス」)が、お互いのページにリンクされます。曲名はAppleの収録曲と動画のタイトルから自動で判定します。判定されないものを結びたいときは、`info.txt` に `related: 相手のフォルダ名の頭(2025-09-03 など)` や `related: 相手の作品名` を書いてください(カンマ区切りで複数可。書いた側と相手の両方に表示されます)。
-- **Spotify・ニコニコ動画などのリンク**: `info.txt` の `links:` に `Spotify: URL` や `ニコニコ動画: URL` を1行ずつ書くと、作品ページのボタンになります(ニコニコ動画は埋め込みプレーヤーも付きます)。
+- **Spotify のリンク**: Apple Music の作品には、対応する Spotify のアルバムのリンクが自動で付きます(下の「Spotify の設定」)。音楽の埋め込みプレーヤーは、Spotify があれば Spotify の1つだけを出します。
+- **ニコニコ動画などのリンク**: `info.txt` の `links:` に `ニコニコ動画: URL` のように1行ずつ書くと、作品ページのボタンになります(ニコニコ動画は埋め込みプレーヤーも付きます)。
 
 ## 新着の自動取り込み(Apple Music / YouTube)
 
@@ -109,6 +110,22 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 
 注意: Apple Music のアーティストページに載っている作品は、他のアーティスト名義のもの(フィーチャリング参加など)も取り込まれます。不要なものは上の方法で外してください。
 GitHub の定時実行は、リポジトリに60日以上動きがないと止まることがあります(Actions タブから再開できます)。
+
+## Spotify の設定(リンクの自動付与)
+
+Spotify の公式 API を使うので、Spotify の開発者アプリのキーが必要です(無料)。
+
+1. https://developer.spotify.com/dashboard で、BCNO 用の Spotify アカウントでログインし、アプリを1つ作る(名前は自由。Redirect URI には公開サイトのURL `https://bcno01.github.io/home/` を入れ、使う API は「Web API」を選ぶ)。
+2. アプリの Settings に出る **Client ID** と **Client Secret** を控える。
+3. GitHub に登録する(ターミナルで実行すると、値の入力を求められます。画面にもコミットにも残りません):
+   - `gh secret set SPOTIFY_CLIENT_ID --repo bcno01/home`
+   - `gh secret set SPOTIFY_CLIENT_SECRET --repo bcno01/home`
+4. GitHub の「Actions」タブで「Deploy site」を手動実行すると、リンクが付きます。以降は毎日の自動実行で、新作にも付きます。
+
+キーの扱い:
+- キーは **GitHub の Secrets(暗号化)** にだけ置きます。`site.txt`・`import.txt`・README など、リポジトリのファイルには絶対に書かないでください(公開されます)。
+- Mac で試したいときだけ、`spotify-keys.txt` に `client_id: …` と `client_secret: …` を書きます。このファイルは `.gitignore` で除外してあり、GitHub には送られません。
+- 万一漏れたときは、Spotify のダッシュボードで Client Secret を再発行すれば、古いものは使えなくなります。
 
 ## 公開のしくみ(GitHub Pages + 自動ビルド)
 

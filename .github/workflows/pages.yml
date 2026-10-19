@@ -30,9 +30,12 @@ jobs:
           python-version: "3.12"
       # 大きい画像を縮小するために Pillow を使う
       - run: pip install pillow
-      # 定時・手動実行のときだけ、Apple Music / YouTube の新着を works/ に取り込んでコミットする
+      # 定時・手動実行のときだけ、Apple Music / YouTube の新着の取り込みと Spotify のリンク付けをして、works/ にコミットする
       - name: Import new releases
         if: github.event_name != 'push'
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
           python import_works.py
           if [ -n "$(git status --porcelain works)" ]; then
