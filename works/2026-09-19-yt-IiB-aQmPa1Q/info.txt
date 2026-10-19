@@ -1,0 +1,7 @@
+title: LonePi「Female」XFD
+date: 2026-09-19
+type: video
+source: youtube-IiB-aQmPa1Q
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=IiB-aQmPa1Q
