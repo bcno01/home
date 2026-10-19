@@ -1,0 +1,31 @@
+# サイト全体の設定。ここは最初に一度書き換えるだけでOK
+name: BCNO
+# 名前の下に小さく出る一言(空なら出ません)
+tagline:
+# 公開後のURL(あとで入れればOK。SNSでシェアしたときの画像表示に使われます)
+url:
+# メニューの末尾に出る「Contact」の行き先(メールアドレスかフォームのURL。空なら項目なし)
+contact: officialbcno@gmail.com
+# ロゴ画像を使う場合は、このフォルダに置いたファイル名を書く(例: logo.png)。空なら名前の文字表示
+logo:
+
+# トップページの背景で流す動画。空のままなら、Works に入れたYouTubeの動画をシャッフルして流します。
+# 1本に固定したいときはYouTubeのURL、流したくないときは off。PCのみ(スマホでは流れません)。
+# 右下の「♪」を ON にすると、動画の音が小さく流れます(初期は無音)。
+background:
+# 背景動画のモザイク(タイル)の大きさ。数字が大きいほど粗くなります。0でモザイクなし
+mosaic: 16
+
+# 左のメニューに「Works」に続いて並ぶ項目(配信ページ・通販ページなど)
+menu:
+Spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b
+Apple Music: https://music.apple.com/jp/artist/bcno/1456770341
+Shop: https://myship.booth.pm/
+
+# メニューの下に小さく並ぶSNSなどのリンク(名前は省略するとURLから自動で付きます)
+links:
+X: https://x.com/bcno01
+Instagram: https://www.instagram.com/bcno01/
+
+# 自己紹介を入れる場合は、下に「---」だけの行を書き、その次の行から文章を書きます(空行で段落が分かれます)。
+# 書くとメニューに「About」が現れます。

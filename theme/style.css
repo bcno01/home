@@ -1,0 +1,213 @@
+:root {
+  --bg: #edf0fb;
+  --fg: #14183a;
+  --muted: #5a5f85;
+  --main: #3d4bff;
+  --sub: #ffdd33;
+  --dark: #1a1a1a;
+  --white: #ffffff;
+  --radius: 12px;
+  --head: "Montserrat", "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  line-height: 1.8;
+}
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+/* トップ: 左に名前とメニュー、右に Works の文字リスト */
+.stage {
+  display: grid; grid-template-columns: minmax(240px, 340px) minmax(320px, 520px);
+  gap: 72px; justify-content: center; align-items: center; min-height: 100vh; padding: 48px 16px;
+}
+.logo { width: fit-content; margin: 0 0 20px; font: 700 clamp(30px, 4vw, 40px)/1.15 var(--head); letter-spacing: -.01em; }
+.logo img { max-height: 48px; width: auto; }
+.menu { text-shadow: 0 0 10px var(--bg), 0 0 3px var(--bg); } /* レンズで映像がクリアになっても文字が読めるように */
+.tagline { width: fit-content; margin: -8px 0 20px; font-size: 13px; color: var(--muted); }
+.nav { display: flex; flex-direction: column; gap: 8px; }
+.nav a { font: 600 24px/1.3 var(--head); text-decoration: none; width: fit-content; }
+.nav a:hover { text-decoration: underline; text-decoration-color: var(--main); text-decoration-thickness: 3px; text-underline-offset: 5px; }
+.sns { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 20px 0 0; }
+.sns a { font: 600 13px/1.6 var(--head); color: var(--muted); text-decoration: none; }
+.sns a:hover { color: var(--fg); }
+
+/* Works: 日付・タイトル・種類の文字リスト。行にカーソルを乗せるとジャケットが出る(.peek は fx.js が生成) */
+.works-list { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.chip {
+  font: 600 12px/1 var(--head); padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid currentColor; background: transparent; color: var(--fg); opacity: .55;
+}
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--white); opacity: 1; }
+.row {
+  display: grid; grid-template-columns: 82px 1fr auto; gap: 14px; align-items: baseline;
+  padding: 12px 0; text-decoration: none; border-bottom: 1px solid rgba(20, 24, 58, .25);
+  transition: transform .18s ease-out;
+}
+.row[hidden] { display: none; }
+.row:hover { transform: translateX(6px); }
+.row time { font: 600 12px/1.5 var(--head); color: var(--muted); }
+.row .t { font-size: 15px; line-height: 1.5; font-weight: 600; }
+.row:hover .t { text-decoration: underline; text-decoration-color: var(--main); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.row .k { font: 600 11px/1.5 var(--head); color: var(--muted); }
+.empty { margin: 0; color: var(--muted); font-size: 13px; }
+.peek {
+  position: fixed; top: 0; left: 0; z-index: 70; width: 150px; padding: 5px; background: var(--white);
+  border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity .15s ease;
+  box-shadow: 0 6px 18px rgba(20, 24, 58, .25);
+}
+.peek.on { opacity: 1; }
+.peek img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 5px; }
+
+/* 表紙がないときの代替 */
+.ph {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  background: linear-gradient(135deg, hsl(var(--h) 55% 72%), hsl(calc(var(--h) + 40) 55% 58%));
+}
+.ph span { font: 700 44px/1 var(--head); color: rgba(255, 255, 255, .88); }
+
+/* About */
+.about { padding-top: 72px; max-width: 720px; }
+.about h2 { font: 700 14px/1 var(--head); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* 作品ページ */
+.top { padding: 22px 0 8px; }
+.top a { text-decoration: none; font: 600 14px/1 var(--head); color: var(--muted); }
+.top a:hover { color: var(--fg); }
+.work { padding-top: 12px; }
+.work-head { display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: 36px; align-items: start; }
+.work-cover { aspect-ratio: 1 / 1; padding: 8px; background: var(--white); border-radius: var(--radius); box-shadow: 0 6px 20px rgba(0, 0, 0, .1); transition: transform .18s ease-out; }
+.work-cover img, .work-cover .ph { border-radius: 6px; }
+.work-cover img { width: 100%; height: 100%; object-fit: cover; }
+.work-info h1 { margin: 10px 0 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.4; }
+.meta { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--head); color: var(--muted); }
+.badge { padding: 5px 11px; border-radius: 999px; background: var(--main); color: var(--white); }
+.lead { margin: 12px 0 0; color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.btn {
+  display: inline-block; text-decoration: none; font: 600 15px/1 var(--head);
+  padding: 13px 20px; border-radius: var(--radius); background: var(--white); border: 2px solid var(--white);
+  transition: transform .15s ease;
+}
+.btn:hover { transform: translateY(-2px); border-color: var(--dark); }
+.btn.primary { background: var(--main); border-color: var(--main); color: var(--white); }
+.btn.primary:hover { border-color: var(--dark); }
+.embed { margin-top: 28px; }
+.embed.video { aspect-ratio: 16 / 9; }
+.embed iframe { width: 100%; height: 100%; border: 0; border-radius: var(--radius); }
+.embed.audio iframe { height: auto; }
+.body { max-width: 720px; margin-top: 32px; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 32px; }
+.gallery img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; background: var(--white); }
+
+/* フッター */
+.foot { margin-top: 72px; padding: 28px 0 40px; text-align: center; color: var(--muted); font: 600 12px/1.6 var(--head); }
+.foot p { margin: 0; }
+
+@media (max-width: 760px) {
+  .stage { grid-template-columns: 1fr; gap: 40px; }
+  .nav a { font-size: 22px; }
+  .works-list { max-height: none; overflow: visible; }
+  .row { grid-template-columns: 74px 1fr auto; }
+  .work-head { grid-template-columns: 1fr; gap: 20px; }
+}
+/* マウス追従の丸(fx.js が生成。マウスのある環境だけ) */
+.cursor {
+  position: fixed; top: 0; left: 0; z-index: 100; pointer-events: none;
+  width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  border: 2px solid #fff; mix-blend-mode: difference;
+  opacity: 0; transition: opacity .2s ease, width .2s ease, height .2s ease, margin .2s ease, background-color .2s ease;
+}
+.cursor.on { opacity: 1; }
+.cursor.lens { transition: opacity .2s ease; border-width: 1.5px; }
+.cursor.big { width: 64px; height: 64px; margin: -32px 0 0 -32px; background: rgba(255, 255, 255, .25); }
+
+/* 背景の動画(ぼかし + タイルの格子 + 背景色のかぶせで、文字を読みやすいモザイク風に) */
+.bgvideo {
+  --dim: .72;
+  position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  opacity: 0; transition: opacity 1.6s ease;
+}
+.bgvideo.on { opacity: 1; }
+.bgvideo iframe {
+  position: absolute; top: 50%; left: 50%; border: 0;
+  width: max(100vw, 177.78vh); height: max(56.25vw, 100vh);
+  transform: translate(-50%, -50%) scale(1.06);
+  filter: saturate(1.25);
+}
+/* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
+.bgvideo::before, .bgvideo::after {
+  content: ""; position: absolute; inset: 0;
+  -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
+  mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
+}
+.bgvideo::before {
+  z-index: 1;
+  background-image: linear-gradient(var(--bg) 0 2px, transparent 2px), linear-gradient(90deg, var(--bg) 0 2px, transparent 2px);
+  background-size: var(--cell) var(--cell);
+}
+.bgvideo::after { z-index: 2; background: var(--bg); opacity: var(--dim); }
+
+/* 紙のようなざらつき(静止したノイズを全体に薄く重ねる) */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: .14;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* 開いたときのフェードイン(順番にふわっと現れる) */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.logo, .tagline, .nav a, .sns, .works-list, .about,
+.top, .work-head, .embed, .body, .gallery {
+  animation: rise .8s cubic-bezier(.2, .7, .2, 1) backwards;
+}
+.logo { animation-delay: .1s; }
+.tagline { animation-delay: .2s; }
+.nav a:nth-child(1) { animation-delay: .3s; }
+.nav a:nth-child(2) { animation-delay: .37s; }
+.nav a:nth-child(3) { animation-delay: .44s; }
+.nav a:nth-child(4) { animation-delay: .51s; }
+.nav a:nth-child(n+5) { animation-delay: .58s; }
+.sns { animation-delay: .7s; }
+.works-list { animation-delay: .45s; }
+.about { animation-delay: .8s; }
+.work-head { animation-delay: .15s; }
+.embed { animation-delay: .3s; }
+.body { animation-delay: .4s; }
+.gallery { animation-delay: .5s; }
+body { transition: opacity .25s ease; }
+body.leaving { opacity: 0; }
+
+/* 効果音ボタン(右下) */
+.sound {
+  position: fixed; right: 16px; bottom: 16px; z-index: 60;
+  font: 600 11px/1 var(--head); letter-spacing: .06em; padding: 9px 11px; border-radius: 8px; cursor: pointer;
+  background: rgba(255, 255, 255, .7); color: var(--fg); border: 1px solid rgba(20, 24, 58, .25);
+}
+.sound:hover { border-color: var(--fg); }
+.sound[aria-pressed="true"] { background: var(--fg); color: var(--white); border-color: var(--fg); }
+
+/* 文字色を背景に合わせて変える(背景動画が出ているときだけ)。
+   白文字を「差の絶対値」でブレンドすると、背景が明るい所は暗く、暗い所は明るい文字になる。
+   うまくいかなければ、この1ブロックを消すと元の固定色に戻る。 */
+body.bg-on .menu, body.bg-on .works-list { color: #fff; mix-blend-mode: difference; text-shadow: none; }
+body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k { color: inherit; opacity: .8; }
+body.bg-on .chip { color: inherit; }
+body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #000; }
+body.bg-on .row { border-bottom-color: rgba(255, 255, 255, .4); }
+body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo, .tagline, .nav a, .sns, .works-list, .about,
+  .top, .work-head, .embed, .body, .gallery { animation: none; }
+  body { transition: none; }
+  .row, .btn { transition: none; }
+}

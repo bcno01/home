@@ -1,0 +1,5 @@
+# ビルド結果は GitHub 側で作るのでコミットしない
+docs/
+__pycache__/
+.DS_Store
+.claude/
