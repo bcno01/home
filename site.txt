@@ -8,6 +8,8 @@ url: https://bcno01.github.io/home/
 contact: officialbcno@gmail.com
 # ロゴ画像を使う場合は、このフォルダに置いたファイル名を書く(例: logo.png)。空なら名前の文字表示
 logo:
+# SNSやDiscordなどでサイトのURLを貼ったときに出る画像(例: ogp.png。横長 1200×630 が目安)。このフォルダに置いたファイル名を書く。空なら、いちばん新しい作品の表紙
+og-image: ogp.jpg
 
 # トップページの背景で流す動画。空のままなら、「背景動画を追加.command」で作ったクリップをシャッフルして流します(なければ Works のYouTube動画)。
 # 1本に固定したいときはYouTubeのURL、流したくないときは off。PCのみ(スマホでは流れません)。

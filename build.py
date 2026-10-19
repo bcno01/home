@@ -1038,8 +1038,12 @@ document.querySelectorAll('.chip').forEach(function (b) {
          nav, sns, lang_switch("../", "./") if LANG == "en" else lang_switch("./", "en/"),
          chips, rows, render_events(load_events()), render_guideline(guideline), render_contact(site), about, script)
     og = None
+    if site.get("url") and site["og_image"] and (ROOT / site["og_image"]).is_file():  # site.txt の og-image: で指定した画像
+        og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)
     for w in works:
-        if site.get("url") and w["cover"]:
+        if og:
+            break
+        if site.get("url") and w["cover"]:  # 指定がなければ、いちばん新しい作品の表紙
             og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
             break
     alt = alt_urls(site)
@@ -1061,6 +1065,7 @@ def load_site():
         "form_endpoint": f.get("form-endpoint", "https://api.web3forms.com/submit").strip(),
         "mosaic_style": f.get("mosaic-style", "grid").strip().lower(),
         "mosaic": mosaic,
+        "og_image": f.get("og-image", "").strip(),  # リンクのプレビュー(Discord・X など)に出す、サイト全体の画像
         "name": f.get("name") or "My Works",
         "tagline": f.get("tagline", ""),
         "url": f.get("url", ""),
@@ -1134,6 +1139,8 @@ def main():
     shutil.copy2(THEME / "fx.js", OUT / "fx.js")
     if site["logo"]:
         shutil.copy2(ROOT / site["logo"], OUT / site["logo"])
+    if site["og_image"] and (ROOT / site["og_image"]).is_file():
+        shutil.copy2(ROOT / site["og_image"], OUT / Path(site["og_image"]).name)
     sm = render_sitemap(site, works)
     if sm:
         (OUT / "sitemap.xml").write_text(sm, encoding="utf-8")
