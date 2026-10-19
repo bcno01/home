@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # ubuntu-latest が Ubuntu 26 に切り替わる時期は、実行待ちが長引くことがあったので、安定版に固定している
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
