@@ -12,7 +12,8 @@
   var VIDEO_VOLUME = 12; // 効果音 ON のときの動画の音量(0〜100)
   var bg = document.querySelector('.bgvideo');
   var frame = null; // YouTube の iframe
-  var vid = null;   // 自前クリップの <video>
+  var vids = null;  // 自前クリップの <video> 2本(交互に使ってクロスフェードする)
+  var curVid = 0;
 
   function shuffle(a) {
     for (var i = a.length - 1; i > 0; i--) {
@@ -36,11 +37,11 @@
   }
   // 効果音が ON のときだけ動画の音を小さく流す(OFF なら無音)
   function applyVideoSound() {
-    if (vid) {
-      vid.volume = VIDEO_VOLUME / 100;
-      vid.muted = !soundOn;
-      if (soundOn && vid.paused) {
-        vid.play().catch(function () { vid.muted = true; vid.play().catch(function () {}); }); // 音つきの再生をブラウザが止めたとき
+    if (vids) {
+      vids.forEach(function (v) { v.volume = VIDEO_VOLUME / 100; v.muted = !soundOn; });
+      var cv = vids[curVid];
+      if (soundOn && cv.paused) {
+        cv.play().catch(function () { cv.muted = true; cv.play().catch(function () {}); }); // 音つきの再生をブラウザが止めたとき
       }
       return;
     }
@@ -53,28 +54,84 @@
     }
   }
 
+  // クリップを「ランダムな順で、一巡したらシャッフルし直して、ずっと」流す。
+  // video を2本重ね、再生中のクリップの終わり際に、次のクリップ(先に読み込んでおく)へクロスフェードするので途切れない。
   function startClips() {
-    var list = shuffle(bg.dataset.clips.split(',').filter(Boolean));
-    var i = 0, failed = 0;
-    vid = bg.querySelector('video');
-    vid.loop = list.length < 2;
-    function next() {
-      i = (i + 1) % list.length;
-      vid.src = list[i];
-      vid.play().catch(function () {});
+    var all = bg.dataset.clips.split(',').filter(Boolean);
+    var FADE = 1; // クロスフェードの秒数(style.css の transition と合わせる)
+    var a = bg.querySelector('video');
+    var order = [], pos = 0, last = '';
+    vids = [a];
+    if (all.length > 1) {
+      var b = a.cloneNode(false);
+      bg.appendChild(b);
+      vids.push(b);
+    } else {
+      a.loop = true;
     }
-    vid.addEventListener('ended', next);
-    vid.addEventListener('error', function () { if (++failed < list.length) next(); });
-    vid.addEventListener('playing', function once() {
-      vid.removeEventListener('playing', once);
+
+    function pick() {
+      if (pos >= order.length) {
+        order = shuffle(all.slice());
+        if (all.length > 1 && order[0] === last) { // 一巡の切れ目で同じクリップが続かないように
+          var t = order[0]; order[0] = order[order.length - 1]; order[order.length - 1] = t;
+        }
+        pos = 0;
+      }
+      last = order[pos++];
+      return last;
+    }
+    function load(v) {
+      v._swapping = false;
+      v.src = pick();
+      v.load();
+    }
+    function ramp(v, from, to) { // 音量をなめらかに変える(クロスフェード中に2本が重なって聞こえないように)
+      var n = 0, steps = 10;
+      var timer = setInterval(function () {
+        n++;
+        v.volume = Math.max(0, Math.min(1, from + (to - from) * n / steps));
+        if (n >= steps) clearInterval(timer);
+      }, FADE * 100);
+    }
+    function swap() {
+      var out = vids[curVid];
+      curVid = 1 - curVid;
+      var inc = vids[curVid];
+      inc.currentTime = 0;
+      inc.play().catch(function () {});
+      inc.classList.add('front');
+      out.classList.remove('front');
+      if (soundOn) { inc.volume = 0; ramp(inc, 0, VIDEO_VOLUME / 100); ramp(out, VIDEO_VOLUME / 100, 0); }
+      setTimeout(function () { out.pause(); load(out); }, FADE * 1000 + 300); // 古い方に、次のクリップを先読みしておく
+    }
+
+    vids.forEach(function (v) {
+      v.addEventListener('timeupdate', function () {
+        if (all.length < 2 || v !== vids[curVid] || v._swapping) return;
+        if (v.duration && v.duration - v.currentTime < FADE + 0.2) { v._swapping = true; swap(); }
+      });
+      v.addEventListener('ended', function () { // timeupdate が間に合わなかったとき
+        if (all.length > 1 && v === vids[curVid] && !v._swapping) { v._swapping = true; swap(); }
+      });
+      v.addEventListener('error', function () { // 読み込めないクリップは飛ばす
+        load(v);
+        if (v === vids[curVid]) v.play().catch(function () {});
+      });
+    });
+    a.addEventListener('playing', function once() {
+      a.removeEventListener('playing', once);
+      a.classList.add('front');
       showBackground();
       applyVideoSound();
+      if (vids[1]) load(vids[1]); // 2本目を先読み
     });
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) vid.pause(); else vid.play().catch(function () {});
+      var cv = vids[curVid];
+      if (document.hidden) cv.pause(); else cv.play().catch(function () {});
     });
-    vid.src = list[0];
-    vid.play().catch(function () {});
+    load(a);
+    a.play().catch(function () {});
   }
 
   function startYouTube() {

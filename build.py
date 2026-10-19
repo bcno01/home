@@ -312,7 +312,7 @@ def read_work(d):
         "embeds": embeds,
         "cover": cover,
         "cover_url": cover_url,
-        "clip": (d / "bg.mp4") if (d / "bg.mp4").is_file() else None,  # 背景用のクリップ(add_bgclip.py が作る)
+        "clips": sorted(p for p in d.glob("bg*.mp4") if p.name != "bg.part.mp4"),  # 背景用のクリップ(add_bgclip.py が作る)
         "gallery": [p for p in images if p != cover],
     }
     w["headline"] = make_headline(w, f)
@@ -609,7 +609,7 @@ def main():
                 works.append(w)
     works.sort(key=lambda w: (w["date"], w["slug"]), reverse=True)
     link_related(works)
-    site["work_clips"] = ["w/%s/bg.mp4" % quote(w["slug"]) for w in works if w["clip"]]
+    site["work_clips"] = ["w/%s/%s" % (quote(w["slug"]), quote(p.name)) for w in works for p in w["clips"]]
     site["work_videos"] = list(dict.fromkeys(
         v for w in works for _, u in w["links"] for v in [youtube_id(u)] if v))
 
@@ -622,11 +622,11 @@ def main():
             save_image(w["cover"], wdir / w["cover"].name, 900, written)
         for p in w["gallery"]:
             save_image(p, wdir / p.name, 1800, written)
-        if w["clip"]:
-            dst = wdir / "bg.mp4"
+        for clip in w["clips"]:
+            dst = wdir / clip.name
             written.add(dst)
-            if not (dst.exists() and dst.stat().st_mtime >= w["clip"].stat().st_mtime):
-                shutil.copy2(w["clip"], dst)
+            if not (dst.exists() and dst.stat().st_mtime >= clip.stat().st_mtime):
+                shutil.copy2(clip, dst)
         (wdir / "index.html").write_text(render_work(site, w), encoding="utf-8")
         written.add(wdir / "index.html")
         if not w["links"] and not w["embeds"]:

@@ -3,8 +3,10 @@
 # 使い方: python3 add_bgclip.py                              質問に答える
 #         python3 add_bgclip.py 動画.mp4 --work 3 --start 1:05 --length 20
 #         (--work は一覧の番号。--slug 2025-09-03-apple-… でフォルダ名の指定もできる)
-# 作られた works/<作品>/bg.mp4 は、ビルドするとサイトに載り、トップの背景でランダムに再生される。
+# 作られた works/<作品>/bg.mp4(2本目以降は bg-<名前>.mp4)は、ビルドするとサイトに載り、トップの背景でランダムに再生される。
+#   1つの作品に何本でも置ける。--name 名前 で bg-名前.mp4 として追加する。
 import argparse
+import re
 import shlex
 import shutil
 import subprocess
@@ -40,11 +42,38 @@ def probe(path):
     return float(out), bool(audio)
 
 
+def detect_crop(src, start, length):
+    """黒帯(レターボックス)を検出して crop フィルタの値を返す。なければ None。
+    暗い場面での誤検出を避けるため、サンプルした全フレームのうち一番大きい枠を採用する"""
+    out = subprocess.run(["ffmpeg", "-ss", str(start), "-t", str(length), "-i", str(src), "-vf",
+                          "fps=2,cropdetect=limit=24:round=2:reset=0", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    boxes = [tuple(map(int, m)) for m in re.findall(r"crop=(\d+):(\d+):(\d+):(\d+)", out)]
+    if not boxes:
+        return None
+    w, h, x, y = max(boxes, key=lambda b: b[0] * b[1])
+    vw, vh = probe_size(src)
+    if w >= vw * 0.97 and h >= vh * 0.97:
+        return None
+    return "crop=%d:%d:%d:%d" % (w, h, x, y)
+
+
+def probe_size(path):
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+                          "-of", "csv=p=0:s=x", str(path)], capture_output=True, text=True).stdout.strip()
+    w, h = out.split("x")
+    return int(w), int(h)
+
+
 def make_clip(src, dst, start, length):
-    """src の start 秒から length 秒を、480p の小さな mp4 にして dst に書き出す。サイズ(バイト)を返す"""
+    """src の start 秒から length 秒を、480p の小さな mp4 にして dst に書き出す。サイズ(バイト)を返す。
+    映像の頭と尻のフェードは付けない(サイト側のクロスフェードでつなぐ)"""
     _, has_audio = probe(src)
-    fade = min(0.5, length / 4)
-    vf = "fps=24,scale=-2:%d,fade=t=in:st=0:d=%.2f,fade=t=out:st=%.2f:d=%.2f" % (HEIGHT, fade, length - fade, fade)
+    fade = min(0.25, length / 8)  # 音のプチ音防止だけ
+    crop = detect_crop(src, start, length)
+    if crop:
+        print("  黒帯を検出して切り落とします(%s)" % crop)
+    vf = ",".join(([crop] if crop else []) + ["fps=24", "scale=-2:%d" % HEIGHT])
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", str(start), "-t", str(length), "-i", str(src), "-vf", vf,
            "-c:v", "libx264", "-crf", "30", "-maxrate", MAX_RATE, "-bufsize", "2400k", "-preset", "slow",
            "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
@@ -53,7 +82,7 @@ def make_clip(src, dst, start, length):
                 "-c:a", "aac", "-b:a", "64k"]
     else:
         cmd += ["-an"]
-    tmp = dst.with_name("bg.part.mp4")
+    tmp = dst.with_name("bg.part.mp4")  # 書き出し中のファイル(ビルドは無視する)
     subprocess.run(cmd + [str(tmp)], check=True)
     tmp.replace(dst)
     return dst.stat().st_size
@@ -77,15 +106,18 @@ def main():
     ap.add_argument("--slug")
     ap.add_argument("--start")
     ap.add_argument("--length", type=float)
+    ap.add_argument("--name", help="2本目以降の名前(bg-名前.mp4 として追加する)")
     a = ap.parse_args()
 
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
         print("ffmpeg が見つかりません。ターミナルで brew install ffmpeg を実行してから、もう一度試してください。")
         return 1
 
-    raw = a.video or input("動画ファイル(Finderからドラッグ&ドロップして Enter): ").strip()
-    parts = shlex.split(raw) if raw else []
-    src = Path(parts[0]).expanduser() if parts else None
+    if a.video:  # コマンドの引数は、空白を含むパスもそのまま使う
+        src = Path(a.video).expanduser()
+    else:  # ドラッグ&ドロップで貼り付けたパスは、空白が \ で escape されているので shlex で戻す
+        parts = shlex.split(input("動画ファイル(Finderからドラッグ&ドロップして Enter): ").strip() or "''")
+        src = Path(parts[0]).expanduser() if parts and parts[0] else None
     if not src or not src.is_file():
         print("動画ファイルが見つかりません。")
         return 1
@@ -100,7 +132,8 @@ def main():
     else:
         print("\nどの作品の背景にしますか?")
         for i, w in enumerate(works, 1):
-            mark = "  [背景あり]" if (w["dir"] / "bg.mp4").exists() else ""
+            n = len([p for p in w["dir"].glob("bg*.mp4") if p.name != "bg.part.mp4"])
+            mark = "  [背景 %d本]" % n if n else ""
             print("  %2d  %s  %s%s" % (i, build.fmt_date(w["date"]), w["headline"] or w["title"], mark))
         n = input("番号: ").strip()
         work = works[int(n) - 1] if n.isdigit() and 1 <= int(n) <= len(works) else None
@@ -117,7 +150,20 @@ def main():
         print("開始位置が動画の長さを超えています。")
         return 1
 
-    dst = work["dir"] / "bg.mp4"
+    existing = sorted(p for p in work["dir"].glob("bg*.mp4") if p.name != "bg.part.mp4")
+    if a.name:
+        dst = work["dir"] / ("bg-%s.mp4" % re.sub(r"[^A-Za-z0-9_-]+", "-", a.name).strip("-"))
+    elif existing and not (a.video and (a.work or a.slug)):  # 質問に答える形で、すでにクリップがあるとき
+        print("\nこの作品には、すでに背景クリップが %d 本あります: %s" % (len(existing), ", ".join(p.name for p in existing)))
+        if input("追加しますか?(Enter=追加 / o=bg.mp4 を作り直して上書き): ").strip().lower() == "o":
+            dst = work["dir"] / "bg.mp4"
+        else:
+            n = 2
+            while (work["dir"] / ("bg-%d.mp4" % n)).exists():
+                n += 1
+            dst = work["dir"] / ("bg-%d.mp4" % n)
+    else:
+        dst = work["dir"] / "bg.mp4"
     print("\n作成中…(%s から %s 秒)" % (fmt_time(start), int(length)))
     size = make_clip(src, dst, start, length)
     print("できました: %s(%.1f MB)" % (dst.relative_to(build.ROOT), size / 1048576))
