@@ -74,6 +74,9 @@ img { max-width: 100%; display: block; }
 }
 .req button:hover { filter: brightness(1.1); }
 .req .fine { margin: 10px 0 0; font-size: 11px; opacity: .75; }
+.mixbox { margin: 4px 0 0; padding: 4px 0 2px 12px; border-left: 3px solid rgba(61, 75, 255, .5); }
+.mixbox[hidden] { display: none; }
+body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 .req input[type="checkbox"] { display: inline-block; width: auto; margin: 0 8px 0 0; vertical-align: -2px; }
 .req select optgroup { font-style: normal; }
 .opts { margin: 14px 0 0; padding: 8px 12px 10px; border: 1.5px solid rgba(20, 24, 58, .25); border-radius: 8px; }

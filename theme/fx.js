@@ -251,10 +251,25 @@
   // ---- 依頼受付フォーム: 入力内容をメールの下書きにする(送信はメールアプリで) ----
   var reqForm = document.querySelector('form.req');
   if (reqForm) {
+    var kindSel = reqForm.elements['種類'];
+    var mixbox = reqForm.querySelector('.mixbox');
     var est = reqForm.querySelector('.est');
     var yen = function (n) { return '\u00a5' + n.toLocaleString('ja-JP'); };
+    var mixOn = function () { // 「MIX・Mastering」が選ばれているか
+      var o = kindSel.selectedIndex >= 0 ? kindSel.options[kindSel.selectedIndex] : null;
+      return !!(o && o.dataset.mix);
+    };
+    // MIX・Mastering のときだけ、プラン・オプション・料金表・見積りの目安を出す(隠している間は入力チェックの対象にもしない)
+    var syncMix = function () {
+      if (!mixbox) return;
+      var on = mixOn();
+      mixbox.hidden = !on;
+      [].forEach.call(mixbox.querySelectorAll('select, input'), function (el) { el.disabled = !on; });
+      refresh();
+    };
     // 選ばれたプランとオプションから、お見積りの目安(確定ではありません)を作る
     var quote = function () {
+      if (!mixbox || !mixOn()) return null;
       var sel = reqForm.elements['プラン'];
       var planOpt = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
       if (!planOpt || !planOpt.value) return null;
@@ -273,17 +288,23 @@
       est.hidden = !q;
       if (q) est.textContent = q.text;
     };
-    reqForm.addEventListener('change', refresh);
+    reqForm.addEventListener('change', function (e) {
+      if (e.target === kindSel) syncMix(); else refresh();
+    });
+    syncMix();
 
     var mailtoFor = function () {
       var f = reqForm.elements;
       var q = quote();
-      var plan = q ? q.plan : '(未選択)';
-      var body = 'お名前: ' + f['お名前'].value + '\n返信先: ' + f['返信先'].value + '\nご依頼のプラン: ' + plan +
-        '\nオプション: ' + (q && q.options.length ? q.options.join('、') : 'なし') +
-        '\nお見積りの目安: ' + (q ? (q.total === null ? '要相談' : yen(q.total) + '(税込・目安)') : '-') +
-        '\nご希望の納期: ' + (f['納期'].value || '(未記入)') + '\n\n【ご依頼の内容】\n' + f['内容'].value + '\n';
-      var short = plan.split(' / ').pop();
+      var lines = ['お名前: ' + f['お名前'].value, '返信先: ' + f['返信先'].value, 'ご依頼の内容: ' + kindSel.value];
+      if (mixOn()) {
+        lines.push('ご依頼のプラン: ' + (q ? q.plan : '(未選択)'));
+        lines.push('オプション: ' + (q && q.options.length ? q.options.join('、') : 'なし'));
+        lines.push('お見積りの目安: ' + (q ? (q.total === null ? '要相談' : yen(q.total) + '(税込・目安)') : '-'));
+      }
+      lines.push('ご希望の納期: ' + (f['納期'].value || '(未記入)'));
+      var body = lines.join('\n') + '\n\n【詳細・ご要望】\n' + f['内容'].value + '\n';
+      var short = q ? 'MIX・Mastering(' + q.plan.split(' / ').pop() + ')' : kindSel.value;
       return 'mailto:' + reqForm.dataset.to + '?subject=' +
         encodeURIComponent('【依頼】' + short + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
     };
