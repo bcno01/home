@@ -228,18 +228,18 @@ img { max-width: 100%; display: block; }
 .bgvideo video.front { opacity: 1; }
 /* タイルとかぶせは、次の「穴」の内側だけ抜けて、元の映像が見える(fx.js が変数を更新する)。
    ・レンズ: カーソルの周り(--mx / --my / --lr)
-   ・クリックの波紋: クリックした場所から広がる輪(--p0x〜 --p2x / --pNy / --pNi(内側) / --pNo(外側))、同時に3つまで
+   ・クリックの波紋: クリックした場所から広がる円(--p0x〜 --p2x / --pNy / --pNo(半径)/ --pNs(穴の濃さ。終わり際に 1→0 にして、円全体をいっせいに元のモザイクへ戻す))、同時に3つまで
    穴どうしは intersect(マスクどうしの共通部分)で重ねるので、どれか1つでも穴ならそこは抜ける */
 .bgvideo::before, .bgvideo::after, .bgvideo canvas.mosaic {
   content: ""; position: absolute; inset: 0;
   -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
-    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), #000 var(--p0i, 0px), transparent calc(var(--p0i, 0px) + 30px), transparent calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
-    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), #000 var(--p1i, 0px), transparent calc(var(--p1i, 0px) + 30px), transparent calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
-    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), #000 var(--p2i, 0px), transparent calc(var(--p2i, 0px) + 30px), transparent calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), rgba(0, 0, 0, calc(1 - var(--p0s, 1))) calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
+    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), rgba(0, 0, 0, calc(1 - var(--p1s, 1))) calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
+    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), rgba(0, 0, 0, calc(1 - var(--p2s, 1))) calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
   mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
-    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), #000 var(--p0i, 0px), transparent calc(var(--p0i, 0px) + 30px), transparent calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
-    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), #000 var(--p1i, 0px), transparent calc(var(--p1i, 0px) + 30px), transparent calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
-    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), #000 var(--p2i, 0px), transparent calc(var(--p2i, 0px) + 30px), transparent calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), rgba(0, 0, 0, calc(1 - var(--p0s, 1))) calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
+    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), rgba(0, 0, 0, calc(1 - var(--p1s, 1))) calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
+    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), rgba(0, 0, 0, calc(1 - var(--p2s, 1))) calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
   -webkit-mask-composite: source-in, source-in, source-in, source-in;
   mask-composite: intersect, intersect, intersect, intersect;
 }

@@ -461,15 +461,14 @@
     });
 
     // ---- クリックの波紋: クリックした場所から、レンズが水の波紋のように広がる(同時に3つまで) ----
-    var RIPPLE_MS = 1600; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
+    var RIPPLE_MS = 1100; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
     var RIPPLE_R = 560;    // 波が広がる半径(px)
-    var RIPPLE_BAND = 110; // 波の輪の太さ(px)。この輪の部分だけ元の映像が見え、輪の内側は描かない(モザイクのまま)
     var ripples = [null, null, null], rIdx = 0, rRunning = false;
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
     function clearRipple(i) {
       var rp = ripples[i];
       if (!rp) return;
-      ['x', 'y', 'i', 'o'].forEach(function (k) { bg.style.removeProperty('--p' + i + k); });
+      ['x', 'y', 's', 'o'].forEach(function (k) { bg.style.removeProperty('--p' + i + k); });
       rp.el.remove();
       ripples[i] = null;
     }
@@ -480,9 +479,9 @@
         var t = (now - rp.t0) / rp.ms;
         if (t >= 1) { clearRipple(i); return; }
         any = true;
-        var ro = RIPPLE_R * easeOut(t);                       // 波の先端
-        var ri = ro - RIPPLE_BAND * (1 - 0.6 * t);            // 輪の内側の縁(広がるにつれて、輪は少しずつ細くなる)
-        bg.style.setProperty('--p' + i + 'i', ri.toFixed(1) + 'px');
+        var ro = RIPPLE_R * easeOut(t);  // 波の先端。円の内側は、広がっている間ずっとモザイクが外れたまま
+        var fade = Math.max(0, (t - 0.65) / 0.35); // 終わり際だけ、円全体がいっせいに元のモザイクへ戻る(内側から外へ追いかける動きはしない)
+        bg.style.setProperty('--p' + i + 's', (1 - fade * fade * (3 - 2 * fade)).toFixed(3));
         bg.style.setProperty('--p' + i + 'o', ro.toFixed(1) + 'px');
         rp.el.style.width = rp.el.style.height = (ro * 2).toFixed(1) + 'px';
         rp.el.style.opacity = (0.9 * Math.pow(1 - t, 1.3)).toFixed(3);
@@ -504,7 +503,7 @@
       ripples[i] = { t0: performance.now(), el: el, ms: parseInt(bg.dataset.rippleMs, 10) || RIPPLE_MS };
       bg.style.setProperty('--p' + i + 'x', e.clientX + 'px');
       bg.style.setProperty('--p' + i + 'y', e.clientY + 'px');
-      bg.style.setProperty('--p' + i + 'i', '0px');
+      bg.style.setProperty('--p' + i + 's', '1');
       bg.style.setProperty('--p' + i + 'o', '0px');
       if (!rRunning) { rRunning = true; requestAnimationFrame(rippleTick); }
     });
