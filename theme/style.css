@@ -210,11 +210,28 @@ img { max-width: 100%; display: block; }
   opacity: 0; transition: opacity 1s linear;  /* 2本の video を重ねて、次のクリップにクロスフェードする */
 }
 .bgvideo video.front { opacity: 1; }
-/* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
+/* タイルとかぶせは、次の「穴」の内側だけ抜けて、元の映像が見える(fx.js が変数を更新する)。
+   ・レンズ: カーソルの周り(--mx / --my / --lr)
+   ・クリックの波紋: クリックした場所から広がる輪(--p0x〜 --p2x / --pNy / --pNi(内側) / --pNo(外側))、同時に3つまで
+   穴どうしは intersect(マスクどうしの共通部分)で重ねるので、どれか1つでも穴ならそこは抜ける */
 .bgvideo::before, .bgvideo::after, .bgvideo canvas.mosaic {
   content: ""; position: absolute; inset: 0;
-  -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
-  mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px));
+  -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
+    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), #000 var(--p0i, 0px), transparent calc(var(--p0i, 0px) + 30px), transparent calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
+    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), #000 var(--p1i, 0px), transparent calc(var(--p1i, 0px) + 30px), transparent calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
+    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), #000 var(--p2i, 0px), transparent calc(var(--p2i, 0px) + 30px), transparent calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+  mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
+    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), #000 var(--p0i, 0px), transparent calc(var(--p0i, 0px) + 30px), transparent calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
+    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), #000 var(--p1i, 0px), transparent calc(var(--p1i, 0px) + 30px), transparent calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
+    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), #000 var(--p2i, 0px), transparent calc(var(--p2i, 0px) + 30px), transparent calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+  -webkit-mask-composite: source-in, source-in, source-in, source-in;
+  mask-composite: intersect, intersect, intersect, intersect;
+}
+/* クリックの波紋の先端の光の輪(fx.js が作る) */
+.bgvideo .ripple {
+  position: absolute; z-index: 3; border-radius: 50%; pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, .85);
+  box-shadow: 0 0 26px rgba(150, 185, 255, .5), inset 0 0 26px rgba(150, 185, 255, .3);
 }
 /* 実際のモザイク(mosaic-style: pixel): 動画を小さな canvas に縮小して描き、拡大して四角いブロックにする(fx.js) */
 .bgvideo canvas.mosaic { z-index: 1; width: 100%; height: 100%; image-rendering: pixelated; filter: saturate(1.25) brightness(.9); }

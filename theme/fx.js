@@ -430,6 +430,54 @@
       rt = e.target.closest(READING) ? 0 : LENS_R;
       kick();
     });
+
+    // ---- クリックの波紋: クリックした場所から、レンズが水の波紋のように広がる(同時に3つまで) ----
+    var RIPPLE_MS = 1600; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
+    var RIPPLE_R = 560; // 波が広がる半径(px)
+    var ripples = [null, null, null], rIdx = 0, rRunning = false;
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function clearRipple(i) {
+      var rp = ripples[i];
+      if (!rp) return;
+      ['x', 'y', 'i', 'o'].forEach(function (k) { bg.style.removeProperty('--p' + i + k); });
+      rp.el.remove();
+      ripples[i] = null;
+    }
+    function rippleTick(now) {
+      var any = false;
+      ripples.forEach(function (rp, i) {
+        if (!rp) return;
+        var t = (now - rp.t0) / rp.ms;
+        if (t >= 1) { clearRipple(i); return; }
+        any = true;
+        var ro = RIPPLE_R * easeOut(t);                              // 波の先端
+        var ri = RIPPLE_R * easeOut(Math.max(0, (t - 0.2) / 0.8));  // 内側は少し遅れて追いかける(中心から元のモザイクに戻る)
+        bg.style.setProperty('--p' + i + 'i', ri.toFixed(1) + 'px');
+        bg.style.setProperty('--p' + i + 'o', ro.toFixed(1) + 'px');
+        rp.el.style.width = rp.el.style.height = (ro * 2).toFixed(1) + 'px';
+        rp.el.style.opacity = (0.9 * Math.pow(1 - t, 1.3)).toFixed(3);
+      });
+      if (any) requestAnimationFrame(rippleTick); else rRunning = false;
+    }
+    document.addEventListener('pointerdown', function (e) {
+      if (e.button || !lensActive()) return;
+      if (e.target.closest('a, button, input, select, textarea, label, iframe, summary')) return; // 操作する部品の上では出さない
+      var i = rIdx;
+      rIdx = (rIdx + 1) % ripples.length;
+      clearRipple(i);
+      var el = document.createElement('div');
+      el.className = 'ripple';
+      el.style.left = e.clientX + 'px';
+      el.style.top = e.clientY + 'px';
+      el.style.transform = 'translate(-50%, -50%)';
+      bg.appendChild(el);
+      ripples[i] = { t0: performance.now(), el: el, ms: parseInt(bg.dataset.rippleMs, 10) || RIPPLE_MS };
+      bg.style.setProperty('--p' + i + 'x', e.clientX + 'px');
+      bg.style.setProperty('--p' + i + 'y', e.clientY + 'px');
+      bg.style.setProperty('--p' + i + 'i', '0px');
+      bg.style.setProperty('--p' + i + 'o', '0px');
+      if (!rRunning) { rRunning = true; requestAnimationFrame(rippleTick); }
+    });
     document.documentElement.addEventListener('pointerleave', function () {
       inside = false;
       ring.classList.remove('on');
