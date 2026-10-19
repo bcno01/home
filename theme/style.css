@@ -130,6 +130,10 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 /* 料金表(折りたたみ) */
 .prices { margin: 6px 0 4px; font-size: 13px; }
 .prices summary { cursor: pointer; font: 600 13px/1.6 var(--head); }
+.gl-link { margin: 0 0 8px; }
+.gdate { margin: 16px 0 0; font-size: 10px; line-height: 1.6; opacity: .7; }
+.gl { margin: 4px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.8; }
+.gl li { margin: 3px 0; }
 .prices h4 { margin: 14px 0 4px; font: 700 12px/1.4 var(--head); opacity: .75; }
 .prices ul { margin: 4px 0 0; padding-left: 1.2em; }
 .prices li { margin: 2px 0; }

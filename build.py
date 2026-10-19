@@ -76,6 +76,10 @@ def parse_info(text):
             continue
         if not line or line.startswith("#"):
             continue
+        m = re.match(r"^(.+?)\s*[:：]\s*(#[a-z]+)$", line)  # メニューの「Guideline: #guideline」のような、サイト内のパネルへの項目
+        if m and list_key == "menu":
+            menu.append((m.group(1).strip(), m.group(2)))
+            continue
         m = URL_RE.search(line)
         if m and (list_key or m.start() == 0):
             label = line[:m.start()].strip(" :：-－・|｜\t　")
@@ -576,7 +580,7 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    panel = {"#works": "works", "#events": "events", "#contact": "contact"}.get(url)
+    panel = {"#works": "works", "#events": "events", "#contact": "contact", "#guideline": "guideline"}.get(url)
     attrs = ' target="_blank" rel="noopener"' if ext else (
         ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
@@ -622,11 +626,48 @@ def render_events(events):
     return '<section class="rpanel" id="events" aria-label="Events"><h2 class="ptitle">Events</h2>%s</section>' % body
 
 
+GUIDELINE_FILE = ROOT / "guideline.txt"
 PRICING_FILE = ROOT / "pricing.txt"
 
 
 def yen(n):
     return "¥{:,}".format(n)
+
+
+def load_guideline():
+    """guideline.txt を {link, updated, intro, sections:[(見出し, [項目])]} に読む。なければ None"""
+    if not GUIDELINE_FILE.exists():
+        return None
+    g = {"link": "", "updated": "", "intro": "", "sections": []}
+    for line in GUIDELINE_FILE.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") and not line.startswith("##"):
+            continue
+        if line.startswith("##"):
+            g["sections"].append((line.lstrip("#").strip(), []))
+            continue
+        m = re.match(r"^(link|updated|intro)\s*:\s*(.*)$", line)
+        if m and not g["sections"]:
+            g[m.group(1)] = m.group(2).strip()
+        elif g["sections"]:
+            g["sections"][-1][1].append(line)
+    return g if g["sections"] else None
+
+
+def render_guideline(g):
+    """Guideline パネル(二次利用ガイドラインの要点)。全文へのリンク付き"""
+    if not g:
+        return ""
+    body = ""
+    if g["link"]:  # 全文へのリンクは、いちばん上に置く
+        body += '<p class="more-link gl-link"><a href="%s" target="_blank" rel="noopener">ガイドライン全文を読む(note) ↗</a></p>' % esc(g["link"])
+    if g["intro"]:
+        body += '<p class="note">%s</p>' % esc(g["intro"])
+    for title, items in g["sections"]:
+        body += '<h3 class="sub">%s</h3><ul class="gl">%s</ul>' % (esc(title), "".join("<li>%s</li>" % esc(i) for i in items))
+    if g["updated"]:
+        body += '<p class="gdate">%s</p>' % esc(g["updated"])
+    return '<section class="rpanel" id="guideline" aria-label="Guideline"><h2 class="ptitle">Guideline</h2>%s</section>' % body
 
 
 def load_pricing():
@@ -757,7 +798,9 @@ def render_index(site, works):
 
     bgvideo = render_bgvideo(site)
 
-    items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + site["menu"]
+    guideline = load_guideline()
+    menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # guideline.txt がなければ「Guideline」の項目は出さない
+    items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + menu
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
     sns = "".join(nav_link(lab or platform_label(u), u) for lab, u in site["links"])
@@ -793,11 +836,12 @@ document.querySelectorAll('.chip').forEach(function (b) {
 </section>
 %s
 %s
+%s
 </div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
-         nav, sns, chips, rows, render_events(load_events()), render_contact(site), about, script)
+         nav, sns, chips, rows, render_events(load_events()), render_guideline(guideline), render_contact(site), about, script)
     og = None
     for w in works:
         if site.get("url") and w["cover"]:

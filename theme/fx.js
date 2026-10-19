@@ -629,8 +629,8 @@
     });
 
     // ---- クリックの波紋: クリックした場所から、レンズが水の波紋のように広がる(同時に3つまで) ----
-    var RIPPLE_MS = 1100; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
-    var RIPPLE_R = 560;    // 波が広がる半径(px)
+    var RIPPLE_MS = 1700; // 波が消えるまでの時間(確認用に、.bgvideo の data-ripple-ms で変えられる)
+    var RIPPLE_R = 720;    // 波が広がる半径(px)
     var ripples = [null, null, null], rIdx = 0, rRunning = false;
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
     function clearRipple(i) {

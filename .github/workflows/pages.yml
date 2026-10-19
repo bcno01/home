@@ -30,7 +30,8 @@ jobs:
           python-version: "3.12"
       # 大きい画像を縮小するために Pillow を使う
       - run: pip install pillow
-      # 定時・手動実行のときだけ、Apple Music / YouTube の新着の取り込みと Spotify のリンク付けをして、works/ にコミットする
+      # 定時・手動実行のときだけ、Apple Music / YouTube の新着の取り込みと Spotify のリンク付け、BOOTH の商品一覧の更新をして、works/ と booth-items.json にコミットする
+      # (booth-items.json もコミットしておかないと、ふだんの push でのビルドで、新しい BOOTH の商品が消えてしまう)
       - name: Import new releases
         if: github.event_name != 'push'
         env:
@@ -38,10 +39,10 @@ jobs:
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
           python import_works.py
-          if [ -n "$(git status --porcelain works)" ]; then
+          if [ -n "$(git status --porcelain works booth-items.json)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add works
+            git add works booth-items.json
             git commit -m "Import new releases"
             git pull --rebase origin main
             git push origin HEAD:main
