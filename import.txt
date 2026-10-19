@@ -6,6 +6,7 @@ apple: https://music.apple.com/jp/artist/bcno/1456770341
 apple-country: jp
 
 # YouTube のチャンネルURL(https://www.youtube.com/@名前 など)か、UC から始まるチャンネルID。空なら取り込みません
-youtube:
+# BCNO: https://www.youtube.com/c/BCNO01
+youtube: UCcWRWyaHi1_RTHYUk6KG4kg
 # YouTube ショート動画も取り込むか(yes / no)
 youtube-shorts: no
