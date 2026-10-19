@@ -123,6 +123,7 @@ def import_youtube(imp, cfg):
     root = ET.fromstring(fetch("https://www.youtube.com/feeds/videos.xml?channel_id=" + ch))
     ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
     shorts = cfg.get("youtube-shorts", "no").lower() in YES
+    exclude = [w.strip().lower() for w in re.split(r"[,、]", cfg.get("youtube-exclude", "")) if w.strip()]
     for e in root.findall("a:entry", ns):
         vid = e.find("yt:videoId", ns).text
         key = "youtube-" + vid
@@ -130,8 +131,11 @@ def import_youtube(imp, cfg):
         if imp.known(key, vid) or (not shorts and "/shorts/" in (link.get("href", "") if link is not None else "")):
             continue
         date = e.find("a:published", ns).text[:10]
+        title = e.find("a:title", ns).text or vid
+        if any(w in title.lower() for w in exclude):
+            continue  # 除外ワードを含む動画は取り込まない
         imp.create(key, "%s-yt-%s" % (date, vid),
-                   [("title", e.find("a:title", ns).text or vid), ("date", date), ("type", "video")],
+                   [("title", title), ("date", date), ("type", "video")],
                    ["YouTube: https://www.youtube.com/watch?v=" + vid])
 
 

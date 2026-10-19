@@ -1,7 +1,0 @@
-title: [Teaser] 毒と花弁 / マンチニール
-date: 2025-06-17
-type: video
-source: youtube-XPa1qwoqDZM
-auto: yes
-links:
-YouTube: https://www.youtube.com/watch?v=XPa1qwoqDZM

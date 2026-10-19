@@ -1,7 +1,0 @@
-title: Tribute Album - 経緯 - Trailer
-date: 2026-03-07
-type: video
-source: youtube-sf6TtEaz0CY
-auto: yes
-links:
-YouTube: https://www.youtube.com/watch?v=sf6TtEaz0CY

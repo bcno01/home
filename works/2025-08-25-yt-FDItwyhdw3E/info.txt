@@ -1,7 +1,0 @@
-title: BCNO 3rd EP - 姿 - Trailer
-date: 2025-08-25
-type: video
-source: youtube-FDItwyhdw3E
-auto: yes
-links:
-YouTube: https://www.youtube.com/watch?v=FDItwyhdw3E

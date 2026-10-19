@@ -97,7 +97,7 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 - **目印**: 取り込まれた作品の `info.txt` には `auto: yes` と `source:` が入ります。
 - **載せたくない作品**: その `info.txt` に `draft: yes` と書くか、フォルダごと消します。消しても、`works/.imported.txt` に記録が残るので、復活しません。
 - **手で直す**: 取り込まれた作品も普通の作品フォルダです。タイトルや説明を直したり、Spotify などのリンクを `links:` に足したりできます(自動で上書きはしません)。
-- **設定**: Apple Music は `apple:`(アーティストページのURL)、YouTube は `youtube:`(チャンネルのURLか UC から始まるID)。ショート動画は `youtube-shorts: yes` で取り込めます。
+- **設定**: Apple Music は `apple:`(アーティストページのURL)、YouTube は `youtube:`(チャンネルのURLか UC から始まるID)。ショート動画は `youtube-shorts: yes` で取り込めます。タイトルに特定の言葉を含む動画は、`youtube-exclude:` で除外できます(いまは Trailer と Teaser)。
 - **Mac で試す**: `python3 import_works.py --dry-run` で、何が取り込まれるかだけ確認できます。
 
 注意: Apple Music のアーティストページに載っている作品は、他のアーティスト名義のもの(フィーチャリング参加など)も取り込まれます。不要なものは上の方法で外してください。
