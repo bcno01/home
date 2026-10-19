@@ -704,7 +704,9 @@ def render_contact(site):
                         (' <small>%s</small>' % esc(e["note"])) if e["note"] else "") for e in opts)
             mixbox = ('<div class="mixbox" hidden>%s<label>ご依頼のプラン<select name="プラン" disabled required>%s</select></label>%s'
                       '<p class="est" aria-live="polite" hidden></p></div>') % (render_prices(plans, opts, notes), plan_opts, options)
-        inner = (note + required_note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain">'
+        direct = bool(site["form_key"])  # 送信用のキーがあれば、フォームから直接送る(なければ、メールの下書きを作る)
+        endpoint = ' data-endpoint="%s" data-key="%s"' % (esc(site["form_endpoint"]), esc(site["form_key"])) if direct else ""
+        inner = (note + required_note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain"' + endpoint + '>'
                  '<label>お名前<input name="お名前" required autocomplete="name"></label>'
                  '<label>返信先のメールアドレス<input name="返信先" type="email" required autocomplete="email"></label>'
                  '<label>ご依頼の内容<select name="種類" required>%s</select></label>'
@@ -712,9 +714,15 @@ def render_contact(site):
                  '<label>ご希望の納期<input type="date" name="納期" required></label>'
                  '<label class="chk"><input type="checkbox" name="納期未定"> 日付は未定・相談したい</label>'
                  '<label>詳細・ご要望(曲名・トラック数・参考URLなど)<textarea name="内容" rows="6" required></textarea></label>'
-                 '<button type="submit">メールの下書きを作る</button>'
-                 '<p class="fine">ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。</p>'
-                 '</form>') % (esc(to), esc(to), kind_opts, mixbox)
+                 + ('<input type="checkbox" name="botcheck" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' if direct else '') +
+                 '<div class="actions"><button type="submit" class="send">%s</button>%s</div>'
+                 '<p class="status" role="status" aria-live="polite" hidden></p>'
+                 '<p class="fine">%s</p>'
+                 '</form>') % (esc(to), esc(to), kind_opts, mixbox,
+                               "この内容で送信する" if direct else "メールの下書きを作る",
+                               '<button type="button" class="draft">メールアプリで下書きを作る</button>' if direct else "",
+                               "送信内容は、メール配信サービス(Web3Forms)を経由して、BCNO に届きます。メールアプリで送りたいときは、「メールアプリで下書きを作る」を押してください。" if direct
+                               else "ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。")
     elif site["contact"]:
         inner = note + '<p><a class="btn primary" href="%s" target="_blank" rel="noopener">依頼フォームを開く <span aria-hidden="true">↗</span></a></p>' % esc(site["contact"])
     else:
@@ -798,6 +806,8 @@ def load_site():
     return {
         "background": f.get("background", ""),
         "form": f.get("form", ""),
+        "form_key": f.get("form-key", "").strip(),
+        "form_endpoint": f.get("form-endpoint", "https://api.web3forms.com/submit").strip(),
         "mosaic_style": f.get("mosaic-style", "grid").strip().lower(),
         "mosaic": mosaic,
         "name": f.get("name") or "My Works",

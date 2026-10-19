@@ -319,7 +319,8 @@
     });
     syncMix();
 
-    var mailtoFor = function () {
+    // 入力内容から、件名・本文などを作る(直接送信にも、メールの下書きにも使う)
+    var compose = function () {
       var f = reqForm.elements;
       var q = quote();
       var lines = ['お名前: ' + f['お名前'].value, '返信先: ' + f['返信先'].value, 'ご依頼の内容: ' + kindSel.value];
@@ -334,8 +335,11 @@
       lines.push('ご希望の納期: ' + deadline);
       var body = lines.join('\n') + '\n\n【詳細・ご要望】\n' + f['内容'].value + '\n';
       var short = q ? 'MIX・Mastering(' + q.plan.split(' / ').pop() + ')' : kindSel.value;
-      return 'mailto:' + reqForm.dataset.to + '?subject=' +
-        encodeURIComponent('【依頼】' + short + ' / ' + f['お名前'].value) + '&body=' + encodeURIComponent(body);
+      return { name: f['お名前'].value, email: f['返信先'].value, subject: '【依頼】' + short + ' / ' + f['お名前'].value, body: body };
+    };
+    var mailtoFor = function () {
+      var c = compose();
+      return 'mailto:' + reqForm.dataset.to + '?subject=' + encodeURIComponent(c.subject) + '&body=' + encodeURIComponent(c.body);
     };
     reqForm.mailtoFor = mailtoFor; // (確認用に公開しておく)
 
@@ -350,9 +354,42 @@
         if (tbd.checked) dateEl.value = '';
       });
     }
+
+    // 送信: site.txt の form-key があれば、フォームから直接送る(Web3Forms)。なければ、メールの下書きを作る。
+    // 直接送れなかったときも、「メールアプリで下書きを作る」で送れる
+    var sendBtn = reqForm.querySelector('button.send'), draftBtn = reqForm.querySelector('button.draft');
+    var statusEl = reqForm.querySelector('.status');
+    var say = function (msg, kind) {
+      if (!statusEl) return;
+      statusEl.hidden = !msg;
+      statusEl.textContent = msg || '';
+      statusEl.className = 'status ' + (kind || '');
+    };
+    if (draftBtn) draftBtn.addEventListener('click', function () { location.href = mailtoFor(); });
     reqForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      location.href = mailtoFor();
+      var endpoint = reqForm.dataset.endpoint, key = reqForm.dataset.key;
+      if (!endpoint || !key) { location.href = mailtoFor(); return; }
+      var c = compose();
+      var hp = reqForm.elements['botcheck'];
+      sendBtn.disabled = true;
+      say('送信しています…', 'info');
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ access_key: key, subject: c.subject, from_name: c.name, name: c.name, email: c.email,
+                               message: c.body, botcheck: !!(hp && hp.checked) })
+      }).then(function (r) {
+        return r.json().then(function (j) { return { ok: r.ok && j.success, msg: j.message }; });
+      }).then(function (res) {
+        if (!res.ok) throw new Error(res.msg || 'send failed');
+        say('送信しました。内容を確認のうえ、ご返信します。', 'ok');
+        reqForm.reset();
+        if (tbd) tbd.dispatchEvent(new Event('change'));
+        syncMix();
+      }).catch(function () {
+        say('送信できませんでした。通信状況をご確認のうえ、もう一度お試しいただくか、「メールアプリで下書きを作る」からお送りください。', 'err');
+      }).then(function () { sendBtn.disabled = false; });
     });
   }
 
