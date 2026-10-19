@@ -1,6 +1,6 @@
 title: PuzzleProject 2nd コンピレーションアルバム『Puzzle Cross』XFD
 date: 2026-04-20
-type: video
+type: project
 source: youtube-CnH9wcJaP6Q
 auto: yes
 links:

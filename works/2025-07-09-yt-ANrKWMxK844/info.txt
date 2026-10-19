@@ -1,0 +1,7 @@
+title: 【XFD】ボドボカ - ボーカロイドコンピレーションアルバム
+date: 2025-07-09
+type: project
+source: youtube-ANrKWMxK844
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=ANrKWMxK844
