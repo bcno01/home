@@ -61,7 +61,7 @@ def main():
         print("タイトルが必要です。中止しました。")
         return 1
 
-    print("種類: 1=音楽 2=動画 3=通販・グッズ 4=その他 (Enterで自動判定)")
+    print("種類: 1=Streaming(音楽) 2=MV(動画) 3=通販・グッズ 4=その他 (Enterで自動判定)")
     t = {"1": "music", "2": "video", "3": "goods", "4": "other"}.get(ask("種類: "), "")
     desc = ask("一言説明: ")
     today = datetime.date.today().isoformat()

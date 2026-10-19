@@ -17,9 +17,9 @@ OUT = ROOT / "docs"
 THEME = ROOT / "theme"
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
 
-TYPES = {"music": "音楽", "video": "動画", "goods": "通販・グッズ", "other": "その他"}
+TYPES = {"music": "Streaming", "video": "MV", "goods": "通販・グッズ", "other": "その他"}
 TYPE_ALIAS = {
-    "音楽": "music", "曲": "music", "動画": "video", "映像": "video",
+    "音楽": "music", "曲": "music", "動画": "video", "映像": "video", "streaming": "music", "mv": "video",
     "グッズ": "goods", "通販": "goods", "商品": "goods", "shop": "goods",
     "その他": "other",
 }
@@ -266,7 +266,7 @@ def read_work(d):
     if truthy(f.get("draft")):
         return None
     t = f.get("type", "").strip()
-    t = TYPE_ALIAS.get(t, t.lower())
+    t = TYPE_ALIAS.get(t, TYPE_ALIAS.get(t.lower(), t.lower()))
     images = sorted(p for p in d.iterdir()
                     if p.suffix.lower() in IMG_EXT and not p.name.startswith((".", "_")))
     cover = None
@@ -506,7 +506,8 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    return '<a href="%s"%s>%s</a>' % (esc(url), ' target="_blank" rel="noopener"' if ext else "", esc(label))
+    attrs = ' target="_blank" rel="noopener"' if ext else (' class="ws" aria-controls="works"' if url == "#works" else "")
+    return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
 
 
 def cover_src(w):

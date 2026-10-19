@@ -41,7 +41,11 @@ img { max-width: 100%; display: block; }
 .sns a:hover { color: var(--fg); }
 
 /* Works: 日付・タイトル・種類の文字リスト。行にカーソルを乗せるとジャケットが出る(.peek は fx.js が生成) */
-.works-list { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+.works-list { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; transition: opacity .35s ease, visibility .35s; }
+/* メニューの「Works」で、右のリストの表示/非表示を切り替える(fx.js) */
+body.list-off .works-list { opacity: 0; visibility: hidden; pointer-events: none; }
+.nav a.ws.ws-on::after { content: "\2212"; margin-left: .4em; opacity: .55; }
+body.list-off .nav a.ws.ws-on::after { content: "+"; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .chip {
   font: 600 12px/1 var(--head); padding: 7px 12px; border-radius: 999px; cursor: pointer;
@@ -125,6 +129,7 @@ img { max-width: 100%; display: block; }
   .stage { grid-template-columns: 1fr; gap: 40px; }
   .nav a { font-size: 22px; }
   .works-list { max-height: none; overflow: visible; }
+  body.list-off .works-list { display: none; }
   .row { grid-template-columns: 74px 1fr auto; }
   .work-head { grid-template-columns: 1fr; gap: 20px; }
 }

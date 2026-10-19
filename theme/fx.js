@@ -173,6 +173,25 @@
     if (bg.dataset.clips) startClips(); else startYouTube();
   }
 
+  // ---- Works の開閉: メニューの「Works」で右のリストを隠して、映像だけを見られる(状態は記憶する) ----
+  var wsLink = document.querySelector('.nav a.ws');
+  if (wsLink && document.querySelector('.works-list')) {
+    var setWorks = function (show) {
+      document.body.classList.toggle('list-off', !show);
+      wsLink.classList.add('ws-on');
+      wsLink.setAttribute('aria-expanded', show);
+      wsLink.title = show ? 'Works を隠して、映像だけを見る' : 'Works を表示する';
+      try { localStorage.setItem('works', show ? 'shown' : 'hidden'); } catch (err) {}
+    };
+    var worksHidden = false;
+    try { worksHidden = localStorage.getItem('works') === 'hidden'; } catch (err) {}
+    setWorks(!worksHidden);
+    wsLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      setWorks(document.body.classList.contains('list-off'));
+    });
+  }
+
   // ---- ページ遷移のフェード ----
   if (!calm) {
     document.addEventListener('click', function (e) {
