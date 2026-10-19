@@ -1,8 +1,11 @@
-title: Missing town (feat. BCNO)
+title: きらいな街
 date: 2020-10-29
 type: music
 description: 水槽
 source: apple-1536550341
 auto: yes
+release: single
+tracks: ["きらいな街 (feat. BCNO)"]
+title-orig: Missing town (feat. BCNO)
 links:
 Apple Music: https://music.apple.com/jp/album/missing-town-feat-bcno-single/1536550341

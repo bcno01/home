@@ -4,5 +4,7 @@ type: music
 description: BCNO, 重音テト, 花隈千冬 & 足立レイ
 source: apple-1836335027
 auto: yes
+release: ep
+tracks: ["静物学", "毒と花弁", "レゴリス", "瞬息", "RITE"]
 links:
 Apple Music: https://music.apple.com/jp/album/gestalt-ep/1836335027

@@ -55,6 +55,7 @@ class Importer:
         self.ledger = read_ledger()
         self.texts = existing_texts()
         self.created = []
+        self.enriched = []
 
     def known(self, key, needle):
         return key in self.ledger or any(needle in t for t in self.texts)
@@ -76,6 +77,32 @@ class Importer:
         self.ledger.add(key)
 
 
+def apple_tracks(cid, country):
+    """アルバムの収録曲名(Apple Music に登録された日本語表記)"""
+    r = json.loads(fetch("https://itunes.apple.com/lookup?id=%s&entity=song&country=%s&lang=ja_jp" % (cid, country)))
+    return [x["trackName"] for x in r.get("results", []) if x.get("wrapperType") == "track"]
+
+
+def apple_naming(r, tracks):
+    """(作品名, Appleの登録名, 種別)。シングルは、曲名(日本語表記)を作品名にする"""
+    name = r["collectionName"]
+    m = re.search(r"\s+-\s+(Single|EP)$", name)
+    release = {"Single": "single", "EP": "ep"}[m.group(1)] if m else "album"
+    album_title = re.sub(r"\s+-\s+(Single|EP)$", "", name).strip()
+    title = album_title
+    if release == "single":
+        names = []
+        for t in tracks:
+            if re.search(r"instrumental|inst\.|off ?vocal|カラオケ", t, re.I):
+                continue
+            c = build.clean_track(t)
+            if c and c not in names:
+                names.append(c)
+        if len(names) == 1:
+            title = names[0]
+    return title, album_title, release
+
+
 def import_apple(imp, cfg):
     ids = re.findall(r"\d{6,}", cfg["apple"])
     if not ids:
@@ -83,15 +110,14 @@ def import_apple(imp, cfg):
         return
     country = cfg.get("apple-country", "jp")
     url = "https://itunes.apple.com/lookup?id=%s&entity=album&country=%s&limit=200" % (ids[-1], country)
-    data = json.loads(fetch(url))
-    for r in data.get("results", []):
-        if r.get("wrapperType") != "collection":
-            continue
+    albums = [r for r in json.loads(fetch(url)).get("results", []) if r.get("wrapperType") == "collection"]
+    for r in albums:
         cid = str(r["collectionId"])
         key = "apple-" + cid
         if imp.known(key, cid):
             continue
-        title = re.sub(r"\s+-\s+(Single|EP)$", "", r["collectionName"]).strip()
+        tracks = apple_tracks(cid, country)
+        title, album_title, release = apple_naming(r, tracks)
         date = r["releaseDate"][:10]
         art = r.get("artworkUrl100", "").replace("100x100bb", "800x800bb")
         cover = None
@@ -100,9 +126,49 @@ def import_apple(imp, cfg):
                 cover = fetch(art)
             except Exception:
                 print("  ! %s のジャケット画像を取得できませんでした" % title)
-        imp.create(key, "%s-apple-%s" % (date, cid),
-                   [("title", title), ("date", date), ("type", "music"), ("description", r.get("artistName", ""))],
+        fields = [("title", title), ("date", date), ("type", "music"), ("description", r.get("artistName", ""))]
+        if album_title != title:
+            fields.append(("title-orig", album_title))
+        fields += [("release", release), ("tracks", json.dumps(tracks, ensure_ascii=False))]
+        imp.create(key, "%s-apple-%s" % (date, cid), fields,
                    ["Apple Music: " + r["collectionViewUrl"].split("?")[0]], cover)
+    enrich_apple(imp, albums, country)
+
+
+def rewrite_info(path, updates):
+    """info.txt の項目を更新する(links や本文、ほかの項目はそのまま残す)"""
+    f, links, body = build.parse_info(path.read_text(encoding="utf-8"))
+    for k, v in updates.items():
+        f[k] = " ".join(str(v).split())
+    lines = ["%s: %s" % (k, v) for k, v in f.items() if not k.startswith("_")]
+    lines.append("links:")
+    lines += [("%s: %s" % (lab, u)) if lab else u for lab, u in links]
+    if body:
+        lines += ["---", body]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def enrich_apple(imp, albums, country):
+    """以前の取り込み(収録曲の情報がない作品)に、日本語の作品名・種別・収録曲を補う"""
+    by_id = {str(r["collectionId"]): r for r in albums}
+    for d in sorted(WORKS.glob("*-apple-*")):
+        info = d / "info.txt"
+        f = build.parse_info(info.read_text(encoding="utf-8"))[0]
+        cid = f.get("source", "").replace("apple-", "")
+        if f.get("tracks") or cid not in by_id or f.get("auto") != "yes":
+            continue
+        r = by_id[cid]
+        tracks = apple_tracks(cid, country)
+        title, album_title, release = apple_naming(r, tracks)
+        updates = {"release": release, "tracks": json.dumps(tracks, ensure_ascii=False)}
+        if f.get("title") == album_title:  # 手で直していない場合だけ、作品名を日本語表記に
+            updates["title"] = title
+            if title != album_title:
+                updates["title-orig"] = album_title
+        imp.enriched.append("%s → %s" % (f.get("title"), updates.get("title", f.get("title"))))
+        if not imp.dry:
+            rewrite_info(info, updates)
+        time.sleep(0.3)
 
 
 def youtube_channel_id(v):
@@ -155,7 +221,11 @@ def main():
         print("%s %d 件:" % ("取り込み予定" if dry else "取り込みました", len(imp.created)))
         for line in imp.created:
             print("  " + line)
-    else:
+    if imp.enriched:
+        print("%s %d 件(日本語の作品名・種別・収録曲を補う):" % ("補完予定" if dry else "補完しました", len(imp.enriched)))
+        for line in imp.enriched:
+            print("  " + line)
+    if not imp.created and not imp.enriched:
         print("新しい作品はありませんでした")
 
 

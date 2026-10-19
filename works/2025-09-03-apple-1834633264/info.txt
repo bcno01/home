@@ -1,8 +1,11 @@
-title: Regolith
+title: レゴリス
 date: 2025-09-03
 type: music
 description: BCNO & 重音テト
 source: apple-1834633264
 auto: yes
+release: single
+tracks: ["レゴリス", "レゴリス (Instrumental)"]
+title-orig: Regolith
 links:
 Apple Music: https://music.apple.com/jp/album/regolith-single/1834633264

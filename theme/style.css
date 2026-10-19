@@ -92,6 +92,12 @@ img { max-width: 100%; display: block; }
 .meta { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--head); color: var(--muted); }
 .badge { padding: 5px 11px; border-radius: 999px; background: var(--main); color: var(--white); }
 .lead { margin: 12px 0 0; color: var(--muted); }
+.orig { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.orig span { opacity: .8; }
+.tracks, .related { max-width: 720px; margin-top: 36px; }
+.tracks h2, .related h2 { margin: 0 0 8px; font: 700 13px/1 var(--head); letter-spacing: .12em; color: var(--muted); }
+.tracks ol { margin: 0; padding-left: 1.6em; }
+.tracks li { padding: 3px 0; }
 .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .btn {
   display: inline-block; text-decoration: none; font: 600 15px/1 var(--head);
@@ -133,7 +139,8 @@ img { max-width: 100%; display: block; }
 
 /* 背景の動画(ぼかし + タイルの格子 + 背景色のかぶせで、文字を読みやすいモザイク風に) */
 .bgvideo {
-  --dim: .72;
+  --dim: .66;  /* かぶせの濃さ(小さいほど動画がはっきり見える) */
+  --tone: color-mix(in srgb, var(--bg) 80%, #14183a);  /* かぶせと格子の色(背景色を少し暗くしたもの) */
   position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
   opacity: 0; transition: opacity 1.6s ease;
 }
@@ -141,8 +148,9 @@ img { max-width: 100%; display: block; }
 .bgvideo iframe {
   position: absolute; top: 50%; left: 50%; border: 0;
   width: max(100vw, 177.78vh); height: max(56.25vw, 100vh);
-  transform: translate(-50%, -50%) scale(1.06);
-  filter: saturate(1.25);
+  /* 少し拡大して上にずらし、動画の下端(自動字幕やロゴの出る位置)を画面の外に出す */
+  transform: translate(-50%, -55%) scale(1.2);
+  filter: saturate(1.25) brightness(.78);  /* 動画そのものを少し暗く */
 }
 /* タイルとかぶせは、カーソルのレンズ(--mx / --my / --lr を fx.js が更新)の内側だけ抜ける */
 .bgvideo::before, .bgvideo::after {
@@ -152,10 +160,10 @@ img { max-width: 100%; display: block; }
 }
 .bgvideo::before {
   z-index: 1;
-  background-image: linear-gradient(var(--bg) 0 2px, transparent 2px), linear-gradient(90deg, var(--bg) 0 2px, transparent 2px);
+  background-image: linear-gradient(var(--tone) 0 2px, transparent 2px), linear-gradient(90deg, var(--tone) 0 2px, transparent 2px);
   background-size: var(--cell) var(--cell);
 }
-.bgvideo::after { z-index: 2; background: var(--bg); opacity: var(--dim); }
+.bgvideo::after { z-index: 2; background: var(--tone); opacity: var(--dim); }
 
 /* 紙のようなざらつき(静止したノイズを全体に薄く重ねる) */
 body::after {
@@ -200,7 +208,7 @@ body.leaving { opacity: 0; }
    うまくいかなければ、この1ブロックを消すと元の固定色に戻る。 */
 body.bg-on .menu, body.bg-on .works-list { color: #fff; mix-blend-mode: difference; text-shadow: none; }
 body.bg-on .tagline, body.bg-on .sns a, body.bg-on .row time, body.bg-on .row .k { color: inherit; opacity: .8; }
-body.bg-on .chip { color: inherit; }
+body.bg-on .chip { color: inherit; opacity: .85; }
 body.bg-on .chip[aria-pressed="true"] { background: #fff; color: #000; }
 body.bg-on .row { border-bottom-color: rgba(255, 255, 255, .4); }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }

@@ -4,5 +4,7 @@ type: music
 description: BCNO, v4 flower & 初音ミク
 source: apple-1789262799
 auto: yes
+release: ep
+tracks: ["あなたへ", "Bottle of Words", "Hzとカンフル", "ヤラズ", "速度ある理由"]
 links:
 Apple Music: https://music.apple.com/jp/album/nightfall-ep/1789262799

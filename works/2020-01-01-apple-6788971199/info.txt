@@ -4,5 +4,7 @@ type: music
 description: BCNO
 source: apple-6788971199
 auto: yes
+release: album
+tracks: ["Believe", "Dear my life", "シャドーミスト", "嘘と告白", "Imaginary Line", "冪", "情もわかない", "不規則な一秒", "エマ", "Das Gemeine", "Long Good Bye", "COLLAGE"]
 links:
 Apple Music: https://music.apple.com/jp/album/collage/6788971199

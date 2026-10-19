@@ -2,10 +2,12 @@
 # works/ の作品フォルダ群から公開用サイト docs/ を生成する(標準ライブラリのみ)
 import datetime
 import html
+import json
 import re
 import shutil
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
@@ -202,6 +204,59 @@ def save_image(src, dst, max_px, written):
         shutil.copy2(src, dst)
 
 
+# ---- 見出し文・曲名・関連作品 ----
+KINDS = {"single": "シングル", "ep": "EP", "album": "アルバム"}
+_NOISE = re.compile(r"\s*[\(（\[]\s*(?:feat\.?|featuring|ft\.?|instrumental|inst\.?|off\s*vocal)[^\)）\]]*[\)）\]]\s*", re.I)
+_BRACKETS = re.compile(r"[\(（\[［【〈《].*?[\)）\]］】〉》]")
+_PUNCT = re.compile(r"[\s\-_.,!?'\"~・:;/\\|]+")
+_MV = re.compile(r"^\s*[\[【\(]?\s*(?:MV|M/V|Music\s*Video)\s*[\]】\)]?\s*[「『](.+?)[」』]", re.I)
+
+
+def clean_track(name):
+    """曲名から (feat. ○○) や (Instrumental) を取り除く"""
+    return _NOISE.sub(" ", name).strip()
+
+
+def norm_song(s):
+    """曲名の比較用: 全角半角・大文字小文字・括弧書き・記号をそろえる"""
+    s = unicodedata.normalize("NFKC", s)
+    return _PUNCT.sub("", _BRACKETS.sub("", s).casefold())
+
+
+def video_song(title):
+    """動画タイトルから曲名を取り出す(MV「曲名」…、アーティスト - 曲名 など)"""
+    m = _MV.match(title) or re.search(r"[「『](.+?)[」』]", title)
+    if m:
+        return m.group(1).strip()
+    return title.split(" - ", 1)[1].strip() if " - " in title else title.strip()
+
+
+def make_headline(w, f):
+    """作品の見出し文。info.txt の headline: があればそれを使う"""
+    if f.get("headline"):
+        return f["headline"]
+    if w["type"] == "music":
+        return "%s「%s」を配信開始しました" % (KINDS.get(f.get("release", ""), ""), w["title"])
+    if w["type"] == "video":
+        if _MV.match(w["title"]):
+            return "「%s」のMVを公開しました" % video_song(w["title"])
+        return "「%s」を公開しました" % video_song(w["title"])
+    return ""
+
+
+def link_related(works):
+    """同じ曲を含む作品どうし(と info.txt の related: で指定したもの)を相互に関連づける"""
+    def explicit(a, b):
+        return any(b["slug"].startswith(t) or b["title"] == t for t in a["related_raw"])
+    for w in works:
+        w["related"] = []
+    for i, a in enumerate(works):
+        for b in works[i + 1:]:
+            if a["songs"] & b["songs"] or explicit(a, b) or explicit(b, a):
+                a["related"].append(b)
+                b["related"].append(a)
+
+
 def read_work(d):
     info = d / "info.txt"
     if not info.exists():
@@ -231,12 +286,20 @@ def read_work(d):
     if not date:
         print("  ! %s: 日付がありません(info.txt に date: を書くか、フォルダ名の頭に 2026-10-01- を付けてください)。今日の日付になります" % d.name)
         date = datetime.date.today()
-    return {
+    try:
+        tracks = json.loads(f["tracks"]) if f.get("tracks") else []
+    except ValueError:
+        tracks = []
+    w = {
         "slug": d.name,
         "dir": d,
         "title": f.get("title") or d.name,
+        "title_orig": f.get("title-orig", ""),
         "date": date,
         "type": t if t in TYPES else infer_type(links),
+        "tracks": tracks,
+        "related_raw": [x.strip() for x in f.get("related", "").split(",") if x.strip()],
+        "related": [],
         "desc": f.get("description", ""),
         "body": body,
         "links": [(lab or platform_label(u), u) for lab, u in links],
@@ -245,6 +308,11 @@ def read_work(d):
         "cover_url": cover_url,
         "gallery": [p for p in images if p != cover],
     }
+    w["headline"] = make_headline(w, f)
+    songs = {norm_song(clean_track(x)) for x in tracks}
+    songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else w["title"]))
+    w["songs"] = {x for x in songs if x}
+    return w
 
 
 def hue(title):
@@ -322,6 +390,31 @@ def render_embed(e, title):
         esc(src), esc(title), h)
 
 
+def orig_line(w):
+    """見出しを出したときに、作品名(と Apple 上の原題)を添える"""
+    if not w["headline"]:
+        return ""
+    name = esc(w["title"]) + (" <span>(%s)</span>" % esc(w["title_orig"]) if w["title_orig"] else "")
+    return '<p class="orig">作品名: %s</p>' % name
+
+
+def render_tracks(w):
+    if len(w["tracks"]) < 2:
+        return ""
+    return '<section class="tracks"><h2>収録曲</h2><ol>%s</ol></section>' % "".join(
+        "<li>%s</li>" % esc(t) for t in w["tracks"])
+
+
+def render_related(w):
+    if not w["related"]:
+        return ""
+    rows = "\n".join(
+        '<a class="row" href="../%s/"><time>%s</time><span class="t">%s</span><span class="k">%s</span></a>'
+        % (quote(r["slug"]), fmt_date(r["date"]), esc(r["headline"] or r["title"]), TYPES[r["type"]])
+        for r in w["related"])
+    return '<section class="related"><h2>関連作品</h2><div class="rows">%s</div></section>' % rows
+
+
 def render_work(site, w):
     meta = '<p class="meta"><span class="badge">%s</span><time>%s</time></p>' % (TYPES[w["type"]], fmt_date(w["date"]))
     gallery = ""
@@ -337,24 +430,28 @@ def render_work(site, w):
 %s
 <h1>%s</h1>
 %s
+%s
 <div class="links">%s</div>
 </div>
 </div>
 %s
 <div class="body">%s</div>
 %s
+%s
+%s
 </main>""" % (
         esc(site["name"]), cover_html(w, ""),
-        meta, esc(w["title"]),
+        meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
+        orig_line(w),
         link_buttons(w["links"]),
         "".join(render_embed(e, w["title"]) for e in w["embeds"]),
-        paragraphs(w["body"]), gallery)
+        paragraphs(w["body"]), render_tracks(w), render_related(w), gallery)
     og = None
     if site.get("url") and w["cover"]:
         og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
     canon = site["url"].rstrip("/") + "/w/%s/" % quote(w["slug"]) if site.get("url") else None
-    return page(site, "%s | %s" % (w["title"], site["name"]), w["desc"] or site["tagline"], body, "../../", og, canon,
+    return page(site, "%s | %s" % (w["title"], site["name"]), w["headline"] or w["desc"] or site["tagline"], body, "../../", og, canon,
                 "work-page")
 
 
@@ -406,7 +503,7 @@ def render_index(site, works):
     rows = "\n".join(
         '<a class="row" data-type="%s" data-cover="%s" href="w/%s/"><time>%s</time><span class="t">%s</span>'
         '<span class="k">%s</span></a>'
-        % (w["type"], esc(cover_src(w)), quote(w["slug"]), fmt_date(w["date"]), esc(w["title"]), TYPES[w["type"]])
+        % (w["type"], esc(cover_src(w)), quote(w["slug"]), fmt_date(w["date"]), esc(w["headline"] or w["title"]), TYPES[w["type"]])
         for w in works)
     if not rows:
         rows = '<p class="empty">まだ作品がありません。works フォルダに作品フォルダを追加してください。</p>'
@@ -489,6 +586,7 @@ def main():
             if w:
                 works.append(w)
     works.sort(key=lambda w: (w["date"], w["slug"]), reverse=True)
+    link_related(works)
     site["work_videos"] = list(dict.fromkeys(
         v for w in works for _, u in w["links"] for v in [youtube_id(u)] if v))
 
