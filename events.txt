@@ -4,3 +4,4 @@
 # 「#」で始まる行は無視されます。下の例の「#」を外して、書き換えて使ってください。
 #
 # 2026-12-24 | ○○ライブ 2026 | 渋谷 ○○ | https://example.com/event
+2027-02-23 | 文脈と殺意 | IV AKIHABARA | https://livepocket.jp/e/bunmyak-satsui-1
