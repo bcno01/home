@@ -1,0 +1,8 @@
+title: Marble!!
+date: 2025-11-29
+type: music
+description: LonePi & BCNO
+source: apple-1851925372
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/marble-ep/1851925372

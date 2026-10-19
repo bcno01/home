@@ -18,9 +18,12 @@ mosaic: 16
 
 # 左のメニューに「Works」に続いて並ぶ項目(配信ページ・通販ページなど)
 menu:
+Niconico: https://www.nicovideo.jp/user/56254919/mylist/55190914
+bilibili:https://space.bilibili.com/1656380156
 Spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b
 Apple Music: https://music.apple.com/jp/artist/bcno/1456770341
 Shop: https://myship.booth.pm/
+Guideline: https://note.com/bcno_guideline/n/n703a4426bbe8
 
 # メニューの下に小さく並ぶSNSなどのリンク(名前は省略するとURLから自動で付きます)
 links:

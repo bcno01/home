@@ -1,0 +1,8 @@
+title: COLLAGE
+date: 2020-01-01
+type: music
+description: BCNO
+source: apple-6788971199
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/collage/6788971199

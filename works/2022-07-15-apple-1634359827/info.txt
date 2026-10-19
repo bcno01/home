@@ -1,0 +1,8 @@
+title: なくてななくせ
+date: 2022-07-15
+type: music
+description: BCNO
+source: apple-1634359827
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/%E3%81%AA%E3%81%8F%E3%81%A6%E3%81%AA%E3%81%AA%E3%81%8F%E3%81%9B-single/1634359827

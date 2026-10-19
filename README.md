@@ -88,9 +88,24 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 
 背景に使う動画は、埋め込みが許可されているもの(自分で公開した動画など)にしてください。
 
+## 新着の自動取り込み(Apple Music / YouTube)
+
+`import.txt` に Apple Music のアーティスト、YouTube のチャンネルを書いておくと、新しいリリースや動画が `works/` に自動で追加されます。APIキーは不要です。
+
+- **いつ動くか**: GitHub が毎日(日本時間の朝6時台)自動で確認し、新着があれば追加して公開します。`サイトを更新.command` を押したときや、GitHub の「Actions」タブから手動で実行したときにも確認します。
+- **取り込まれるもの**: Apple Music はタイトル・発売日・ジャケット・リンク、YouTube はタイトル・公開日・リンク(サムネイルは自動)。YouTube に動画が入ると、背景動画の候補にもなります。
+- **目印**: 取り込まれた作品の `info.txt` には `auto: yes` と `source:` が入ります。
+- **載せたくない作品**: その `info.txt` に `draft: yes` と書くか、フォルダごと消します。消しても、`works/.imported.txt` に記録が残るので、復活しません。
+- **手で直す**: 取り込まれた作品も普通の作品フォルダです。タイトルや説明を直したり、Spotify などのリンクを `links:` に足したりできます(自動で上書きはしません)。
+- **設定**: Apple Music は `apple:`(アーティストページのURL)、YouTube は `youtube:`(チャンネルのURLか UC から始まるID)。ショート動画は `youtube-shorts: yes` で取り込めます。
+- **Mac で試す**: `python3 import_works.py --dry-run` で、何が取り込まれるかだけ確認できます。
+
+注意: Apple Music のアーティストページに載っている作品は、他のアーティスト名義のもの(フィーチャリング参加など)も取り込まれます。不要なものは上の方法で外してください。
+GitHub の定時実行は、リポジトリに60日以上動きがないと止まることがあります(Actions タブから再開できます)。
+
 ## 公開のしくみ(GitHub Pages + 自動ビルド)
 
-`works/` や `site.txt` を変えて GitHub に push すると、GitHub 側が自動でサイトを作り直して公開します(`.github/workflows/pages.yml`)。
+`works/` や `site.txt` を変えて GitHub に push すると(定時の自動取り込みでも)、GitHub 側が自動でサイトを作り直して公開します(`.github/workflows/pages.yml`)。
 `docs/` は自分のMacでの確認用で、GitHub には載せません(`.gitignore` で除外)。
 
 - いつもの更新: `作品を追加.command` で作品を足し、`サイトを更新.command` をダブルクリック(確認用ビルド → push)。反映まで1〜2分。

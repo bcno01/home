@@ -1,0 +1,8 @@
+title: Still-Life Studies
+date: 2024-07-08
+type: music
+description: BCNO
+source: apple-1755980463
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/still-life-studies-single/1755980463

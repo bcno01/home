@@ -1,0 +1,8 @@
+title: Poison and Petals
+date: 2025-07-18
+type: music
+description: BCNO, 重音テト & 花隈千冬
+source: apple-1825065845
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/poison-and-petals-single/1825065845

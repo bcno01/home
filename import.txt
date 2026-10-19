@@ -1,0 +1,11 @@
+# 新着の自動取り込みの設定(import_works.py が読みます)
+# 取り込まれた作品には「auto: yes」が付きます。載せたくないものは、その作品の info.txt に「draft: yes」と書くか、フォルダごと消してください(消しても復活しません)。
+
+# Apple Music のアーティストID、またはアーティストページのURL。空なら取り込みません
+apple: https://music.apple.com/jp/artist/bcno/1456770341
+apple-country: jp
+
+# YouTube のチャンネルURL(https://www.youtube.com/@名前 など)か、UC から始まるチャンネルID。空なら取り込みません
+youtube:
+# YouTube ショート動画も取り込むか(yes / no)
+youtube-shorts: no

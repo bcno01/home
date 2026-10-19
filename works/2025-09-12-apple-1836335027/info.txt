@@ -1,0 +1,8 @@
+title: Gestalt
+date: 2025-09-12
+type: music
+description: BCNO, 重音テト, 花隈千冬 & 足立レイ
+source: apple-1836335027
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/gestalt-ep/1836335027

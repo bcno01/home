@@ -1,0 +1,8 @@
+title: Nightfall
+date: 2022-01-01
+type: music
+description: BCNO, v4 flower & 初音ミク
+source: apple-1789262799
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/nightfall-ep/1789262799

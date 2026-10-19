@@ -1,13 +1,15 @@
-# main に push されると、サイトをビルドして GitHub Pages に公開する
+# main に push されたとき、毎日の定時(新着の取り込み → ビルド)、手動実行のときに、サイトをビルドして GitHub Pages に公開する
 name: Deploy site
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 21 * * *" # 毎日 日本時間 6:17
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -28,6 +30,19 @@ jobs:
           python-version: "3.12"
       # 大きい画像を縮小するために Pillow を使う
       - run: pip install pillow
+      # 定時・手動実行のときだけ、Apple Music / YouTube の新着を works/ に取り込んでコミットする
+      - name: Import new releases
+        if: github.event_name != 'push'
+        run: |
+          python import_works.py
+          if [ -n "$(git status --porcelain works)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add works
+            git commit -m "Import new releases"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
       - run: python build.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

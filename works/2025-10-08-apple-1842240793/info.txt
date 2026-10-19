@@ -1,0 +1,8 @@
+title: Envy Cat Walk (Remix)
+date: 2025-10-08
+type: music
+description: BCNO
+source: apple-1842240793
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/envy-cat-walk-remix-single/1842240793
