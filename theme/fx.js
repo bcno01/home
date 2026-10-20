@@ -204,7 +204,11 @@
     var saved = null;
     try { saved = localStorage.getItem('panel'); } catch (err) {}
     var hashName = location.hash.replace('#', '');
-    var start = panelEls[hashName] ? hashName : (saved === 'none' ? '' : (panelEls[saved] ? saved : 'works'));
+    // 新しくページを開いたとき(URL を開く・リンクを押す)は、Works を開く。再読み込みと「戻る」だけは、前に開いていたパネルを引き継ぐ。#contact のようなURLなら、そのパネル
+    var navType = '';
+    try { navType = performance.getEntriesByType('navigation')[0].type; } catch (err) {}
+    var fresh = navType === 'navigate';
+    var start = panelEls[hashName] ? hashName : (fresh ? 'works' : (saved === 'none' ? '' : (panelEls[saved] ? saved : 'works')));
     openPanel(start);
     pLinks.forEach(function (a) {
       a.addEventListener('click', function (e) {
