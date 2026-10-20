@@ -39,6 +39,7 @@ img { max-width: 100%; display: block; }
 .sns { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 20px 0 0; }
 .sns a { font: 600 13px/1.6 var(--head); color: var(--muted); text-decoration: none; }
 .sns a:hover { color: var(--fg); }
+.sns + .sns { margin-top: 8px; }
 
 /* Works: 日付・タイトル・種類の文字リスト。行にカーソルを乗せるとジャケットが出る(.peek は fx.js が生成) */
 /* 右側のパネル(Works / Events / Contact)。メニューの項目で開閉し、1つ開くとほかは閉じる(fx.js)。
