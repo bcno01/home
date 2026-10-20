@@ -13,8 +13,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT))  # python3 -I で動かしても、同じフォルダの i18n.py を読めるように
-from i18n import EN as _EN, KINDS_EN, TYPES_EN  # noqa: E402
 
 WORKS = ROOT / "works"
 OUT = ROOT / "docs"
@@ -22,21 +20,6 @@ THEME = ROOT / "theme"
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
 
 TYPES = {"music": "Streaming", "video": "MV", "project": "案件", "goods": "通販・グッズ", "other": "その他"}
-TYPES_JA = dict(TYPES)
-LANG = "ja"   # いま作っているページの言語("ja" / "en")。set_lang() で切り替える
-ASSET = ""    # いま作っているページから、サイトのいちばん上(docs/)までの相対パス(画像・動画・CSS を指すときに付ける)
-
-
-def tr(ja):
-    """英語版を作っているときは、i18n.py の対応表で英語にする(日本語版は、そのまま)"""
-    return _EN.get(ja, ja) if LANG == "en" else ja
-
-
-def set_lang(lang, asset=""):
-    global LANG, ASSET
-    LANG, ASSET = lang, asset
-    TYPES.clear()
-    TYPES.update(TYPES_EN if lang == "en" else TYPES_JA)
 TYPE_ALIAS = {
     "音楽": "music", "曲": "music", "動画": "video", "映像": "video", "streaming": "music", "mv": "video",
     "グッズ": "goods", "通販": "goods", "商品": "goods", "shop": "goods",
@@ -314,44 +297,6 @@ def link_related(works):
                 b["related"].append(a)
 
 
-def english_names(works):
-    """英語版の作品名と見出しを決める。title-en: があればそれ、なければ Apple 上の原題(title-orig)。
-    MV は、同じ曲名の配信の作品の英語名を借りる。見出しは「Single "X" is out now」のように作る(headline-en: で上書きできる)"""
-    for w in works:
-        if w["type"] == "video":
-            song = video_song(w["title"])
-            m = next((r for r in w["related"] if r["type"] == "music" and norm_song(r["title"]) == norm_song(song)), None)
-            w["song_en"] = w["title_en_raw"] or ((m["title_en_raw"] or m["title_orig"] or m["title"]) if m else song)
-            w["name_en"] = w["title_en_raw"] or w["title"]  # 動画の題名は、YouTube の題名のまま
-            if _MV.match(w["title"]):
-                gen = 'MV "%s" is out now' % w["song_en"]
-            else:
-                gen = '"%s" is out now' % w["song_en"]
-        else:
-            w["name_en"] = w["title_en_raw"] or w["title_orig"] or w["title"]
-            kind = KINDS_EN.get(w["release"], "")
-            gen = ('%s"%s" is out now' % (kind + " " if kind else "", w["name_en"])) if w["type"] == "music" else ""
-        w["headline_en"] = w["headline_en_raw"] or gen
-
-
-def english_views(works):
-    """英語版のページ用に、作品の「名前・見出し・説明」を英語にした写しを作る(関連作品の中身も英語にする)。本文は日本語のままなので出さない"""
-    by = {}
-    for w in works:
-        v = dict(w)
-        v["title"] = w["name_en"]
-        v["title_orig"] = ""
-        v["headline"] = w["headline_en"]
-        v["desc"] = w["desc_en"]
-        v["body"] = ""
-        by[w["slug"]] = v
-    for w in works:
-        v = by[w["slug"]]
-        v["related"] = [by[r["slug"]] for r in w["related"]]
-        v["booth_rel"] = [(by[r["slug"]], i) for r, i in w["booth_rel"]]
-    return [by[w["slug"]] for w in works]
-
-
 def read_work(d):
     info = d / "info.txt"
     if not info.exists():
@@ -400,13 +345,10 @@ def read_work(d):
         "type": t if t in TYPES else infer_type(links),
         "tracks": tracks,
         "release": f.get("release", "").strip().lower(),
-        "title_en_raw": f.get("title-en", "").strip(),
-        "headline_en_raw": f.get("headline-en", "").strip(),
         "related_raw": [x.strip() for x in f.get("related", "").split(",") if x.strip()],
         "booth_ids": [x.strip() for x in re.split(r"[,、]", f.get("booth", "")) if x.strip()],
         "related": [],
         "desc": f.get("description", ""),
-        "desc_en": f.get("description-en", "").strip() or f.get("description", ""),
         "body": body,
         "links": [(lab or platform_label(u), u) for lab, u in links],
         "embeds": embeds,
@@ -463,11 +405,11 @@ def work_jsonld(site, w):
     base = site_base(site)
     if not base:
         return None
-    url = base + ("/en" if LANG == "en" else "") + "/w/%s/" % quote(w["slug"])
+    url = base + "/w/%s/" % quote(w["slug"])
     image = base + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name)) if w["cover"] else w["cover_url"]
     same = [u for _, u in w["links"] if u.startswith("http")]
     d = {"@context": "https://schema.org", "name": w["title"], "url": url, "datePublished": w["date"].isoformat(),
-         "inLanguage": LANG}
+         "inLanguage": "ja"}
     if image:
         d["image"] = image
     if same:
@@ -504,10 +446,8 @@ def home_jsonld(site):
     group = {"@type": "MusicGroup", "name": site["name"], "url": base + "/"}
     if same:
         group["sameAs"] = same
-    home = base + ("/en/" if LANG == "en" else "/")
-    group["url"] = home
     return {"@context": "https://schema.org", "@graph": [
-        {"@type": "WebSite", "name": site["name"], "url": home, "inLanguage": LANG}, group]}
+        {"@type": "WebSite", "name": site["name"], "url": base + "/", "inLanguage": "ja"}, group]}
 
 
 def render_sitemap(site, works):
@@ -516,22 +456,17 @@ def render_sitemap(site, works):
     if not base:
         return None
     latest = max((w["date"] for w in works), default=datetime.date.today())
-    rows = [(base + "/", latest), (base + "/en/", latest)]
-    for w in works:
-        rows += [(base + "/w/%s/" % quote(w["slug"]), w["date"]), (base + "/en/w/%s/" % quote(w["slug"]), w["date"])]
+    rows = [(base + "/", latest)] + [(base + "/w/%s/" % quote(w["slug"]), w["date"]) for w in works]
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n%s\n</urlset>\n'
             % "\n".join("<url><loc>%s</loc><lastmod>%s</lastmod></url>" % (esc(u), d.isoformat()) for u, d in rows))
 
 
-def page(site, title, desc, body, root, og_image=None, canonical=None, body_class="", jsonld=None, alt=None):
+def page(site, title, desc, body, root, og_image=None, canonical=None, body_class="", jsonld=None):
     meta = ['<meta name="description" content="%s">' % esc(desc)] if desc else []
     meta += ['<meta property="og:title" content="%s">' % esc(title),
              '<meta property="og:type" content="website">',
              '<meta property="og:site_name" content="%s">' % esc(site["name"]),
-             '<meta property="og:locale" content="%s">' % ("en_US" if LANG == "en" else "ja_JP")]
-    if alt:  # もう一方の言語のページ(検索エンジンに知らせる)
-        meta += ['<link rel="alternate" hreflang="%s" href="%s">' % (k, esc(v)) for k, v in alt.items()]
-        meta.append('<link rel="alternate" hreflang="x-default" href="%s">' % esc(alt["ja"]))
+             '<meta property="og:locale" content="ja_JP">']
     if canonical:
         meta.append('<link rel="canonical" href="%s">' % esc(canonical))
     if jsonld:
@@ -544,7 +479,7 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
         meta += ['<meta property="og:image" content="%s">' % esc(og_image),
                  '<meta name="twitter:card" content="summary_large_image">']
     return """<!doctype html>
-<html lang="%s">
+<html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -562,7 +497,7 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
 <footer class="foot"><div class="wrap"><p>© %d %s</p></div></footer>
 </body>
 </html>
-""" % (LANG, esc(title), "\n".join(meta), root, root, body_class, body,
+""" % (esc(title), "\n".join(meta), root, root, body_class, body,
        datetime.date.today().year, esc(site["name"]))
 
 
@@ -578,7 +513,7 @@ def link_buttons(links):
     for i, (lab, u) in enumerate(links):
         svc = svc_of(u)
         out.append('<a class="btn%s"%s href="%s" target="_blank" rel="noopener">%s<span aria-hidden="true"> ↗</span></a>'
-                   % (" primary" if (i == 0 and not svc) else "", ' data-svc="%s"' % svc if svc else "", esc(u), esc(tr(lab))))
+                   % (" primary" if (i == 0 and not svc) else "", ' data-svc="%s"' % svc if svc else "", esc(u), esc(lab)))
     return "\n".join(out)
 
 
@@ -600,9 +535,9 @@ def render_booth(w):
                                                       esc(r["title"]) if r else "BOOTH ↗") for i, r in rows)
     more = ""
     if rel_only and len(w["booth_rel"]) > 4:
-        more = '<p class="more-link"><a href="https://myship.booth.pm/" target="_blank" rel="noopener">%s</a></p>' % tr("ほかの商品は BOOTH で ↗")
+        more = '<p class="more-link"><a href="https://myship.booth.pm/" target="_blank" rel="noopener">%s</a></p>' % "ほかの商品は BOOTH で ↗"
     return '<section class="booth"><h2>%s</h2><div class="rows">%s</div>%s</section>' % (
-        "BOOTH" if w["booth"] else tr("関連する商品(BOOTH)"), body, more)
+        "BOOTH" if w["booth"] else "関連する商品(BOOTH)", body, more)
 
 
 def render_embed(e, title):
@@ -619,16 +554,16 @@ def orig_line(w):
     """見出しを出したときに、作品名(と Apple 上の原題)を添える"""
     if not w["headline"]:
         return ""
-    parts = [tr("作品名: ") + esc(w["title"]) + (" <span>(%s)</span>" % esc(w["title_orig"]) if w["title_orig"] else "")]
+    parts = ["作品名: " + esc(w["title"]) + (" <span>(%s)</span>" % esc(w["title_orig"]) if w["title_orig"] else "")]
     if w["aliases"]:
-        parts.append(tr("別名: ") + esc(tr("、").join(w["aliases"])))
+        parts.append("別名: " + esc("、".join(w["aliases"])))
     return '<p class="orig">%s</p>' % "　".join(parts)
 
 
 def render_tracks(w):
     if len(w["tracks"]) < 2:
         return ""
-    return '<section class="tracks"><h2>%s</h2><ol>%s</ol></section>' % (tr("収録曲"), "".join(
+    return '<section class="tracks"><h2>%s</h2><ol>%s</ol></section>' % ("収録曲", "".join(
         "<li>%s</li>" % esc(t) for t in w["tracks"]))
 
 
@@ -639,18 +574,17 @@ def render_related(w):
         '<a class="row" href="../%s/"><time>%s</time><span class="t">%s</span><span class="k">%s</span></a>'
         % (quote(r["slug"]), fmt_date(r["date"]), esc(r["headline"] or r["title"]), TYPES[r["type"]])
         for r in w["related"])
-    return '<section class="related"><h2>%s</h2><div class="rows">%s</div></section>' % (tr("関連作品"), rows)
+    return '<section class="related"><h2>%s</h2><div class="rows">%s</div></section>' % ("関連作品", rows)
 
 
 def render_work(site, w):
-    own = "" if LANG == "ja" else ASSET + "w/%s/" % quote(w["slug"])  # この作品の画像のあるフォルダ(英語版のページからは、日本語版のフォルダを指す)
     meta = '<p class="meta"><span class="badge">%s</span><time>%s</time></p>' % (TYPES[w["type"]], fmt_date(w["date"]))
     gallery = ""
     if w["gallery"]:
         gallery = '<div class="gallery">%s</div>' % "".join(
-            '<a href="%s" target="_blank"><img src="%s" alt="" loading="lazy"></a>' % ((own + quote(p.name),) * 2)
+            '<a href="%s" target="_blank"><img src="%s" alt="" loading="lazy"></a>' % ((quote(p.name),) * 2)
             for p in w["gallery"])
-    body = """<header class="top"><div class="wrap"><a href="../../">← %s</a>%s</div></header>
+    body = """<header class="top"><div class="wrap"><a href="../../">← %s</a></div></header>
 <main class="wrap work">
 <div class="work-head">
 <div class="work-cover">%s</div>
@@ -668,9 +602,7 @@ def render_work(site, w):
 %s
 %s
 </main>""" % (
-        esc(site["name"]),
-        lang_switch("../../../w/%s/" % quote(w["slug"]), "./") if LANG == "en" else lang_switch("./", "../../en/w/%s/" % quote(w["slug"])),
-        cover_html(w, own),
+        esc(site["name"]), cover_html(w, ""),
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
@@ -680,9 +612,9 @@ def render_work(site, w):
     og = None
     if site.get("url") and w["cover"]:
         og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
-    alt = alt_urls(site, "w/%s/" % quote(w["slug"]))
-    return page(site, "%s | %s" % (w["title"], site["name"]), w["headline"] or w["desc"] or site["tagline"], body, ASSET, og,
-                alt[LANG] if alt else None, "work-page", work_jsonld(site, w), alt)
+    canon = site["url"].rstrip("/") + "/w/%s/" % quote(w["slug"]) if site.get("url") else None
+    return page(site, "%s | %s" % (w["title"], site["name"]), w["headline"] or w["desc"] or site["tagline"], body, "../../", og,
+                canon, "work-page", work_jsonld(site, w))
 
 
 def background_ids(site):
@@ -711,7 +643,7 @@ def render_bgvideo(site):
         pixel = ' data-mosaic="pixel"' if site["mosaic_style"] == "pixel" and site["mosaic"] > 0 else ""
         return ('<div class="bgvideo" aria-hidden="true" style="--cell:%dpx" data-clips="%s"%s>'
                 '<video muted playsinline preload="auto" tabindex="-1"></video></div>\n') % (
-            site["mosaic"], esc(",".join(ASSET + c for c in clips)), pixel)
+            site["mosaic"], esc(",".join(clips)), pixel)
     ids = background_ids(site)
     if not ids:
         return ""
@@ -737,21 +669,8 @@ def nav_link(label, url):
 def cover_src(w):
     """トップのリストでホバー時に出すジャケット画像(なければ空)"""
     if w["cover"]:
-        return ASSET + "w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
+        return "w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
     return w["cover_url"] or ""
-
-
-def lang_switch(ja_href, en_href):
-    """JA / EN の切り替え(いまの言語には aria-current が付く)"""
-    def a(code, label, href):
-        return '<a href="%s" hreflang="%s" lang="%s"%s>%s</a>' % (esc(href), code, code, ' aria-current="true"' if LANG == code else "", label)
-    return '<p class="lang" aria-label="Language">%s<span aria-hidden="true"> / </span>%s</p>' % (a("ja", "JA", ja_href), a("en", "EN", en_href))
-
-
-def alt_urls(site, path=""):
-    """もう一方の言語のページのURL(site.txt の url: があるときだけ)。path は「w/作品/」など"""
-    base = site_base(site)
-    return {"ja": base + "/" + path, "en": base + "/en/" + path} if base else None
 
 
 EVENTS_FILE = ROOT / "events.txt"
@@ -782,17 +701,15 @@ def render_events(events):
             fmt_date(e["date"]), esc(e["title"]), ('<span class="v">%s</span>' % esc(e["venue"])) if e["venue"] else "")
         if e["url"]:  # URL があれば、日付・名前・場所の上も含めて、行全体がリンク
             return '<a class="ev%s" href="%s" target="_blank" rel="noopener">%s<span class="k">%s</span></a>' % (
-                cls, esc(e["url"]), inner, tr("詳細 ↗"))
+                cls, esc(e["url"]), inner, "詳細 ↗")
         return '<div class="ev%s">%s<span></span></div>' % (cls, inner)
-    body = "".join(row(e) for e in up) or '<p class="empty">%s</p>' % tr("現在、出演予定はありません。")
+    body = "".join(row(e) for e in up) or '<p class="empty">%s</p>' % "現在、出演予定はありません。"
     if past:
-        body += '<h3 class="sub">%s</h3>' % tr("過去の出演") + "".join(row(e, " past") for e in past)
+        body += '<h3 class="sub">%s</h3>' % "過去の出演" + "".join(row(e, " past") for e in past)
     return '<section class="rpanel" id="events" aria-label="Events"><h2 class="ptitle">Events</h2>%s</section>' % body
 
 
 GUIDELINE_FILE = ROOT / "guideline.txt"
-GUIDELINE_EN_FILE = ROOT / "guideline-en.txt"
-PRICING_EN_FILE = ROOT / "pricing-en.txt"
 PRICING_FILE = ROOT / "pricing.txt"
 
 
@@ -802,7 +719,7 @@ def yen(n):
 
 def load_guideline():
     """guideline.txt を {link, updated, intro, sections:[(見出し, [項目])]} に読む。なければ None"""
-    path = GUIDELINE_EN_FILE if LANG == "en" and GUIDELINE_EN_FILE.exists() else GUIDELINE_FILE  # 英語版は guideline-en.txt(なければ日本語のまま)
+    path = GUIDELINE_FILE
     if not path.exists():
         return None
     g = {"link": "", "updated": "", "intro": "", "sections": []}
@@ -827,7 +744,7 @@ def render_guideline(g):
         return ""
     body = ""
     if g["link"]:  # 全文へのリンクは、いちばん上に置く
-        body += '<p class="more-link gl-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>' % (esc(g["link"]), tr("ガイドライン全文を読む(note) ↗"))
+        body += '<p class="more-link gl-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>' % (esc(g["link"]), "ガイドライン全文を読む(note) ↗")
     if g["intro"]:
         body += '<p class="note">%s</p>' % esc(g["intro"])
     for title, items in g["sections"]:
@@ -857,23 +774,12 @@ def _read_pricing(path):
 
 
 def load_pricing():
-    """pricing.txt を (プラン, オプション, 注意事項) に読む。プラン/オプションは {group, item, price(整数 or None), note}。
-    英語版は pricing-en.txt(日本語版と同じ順番・同じ件数で書く)。メールに届く値は、日本語のまま(ja_group / ja_item)"""
-    plans, opts, notes = _read_pricing(PRICING_FILE)
-    for e in plans + opts:
-        e["ja_group"], e["ja_item"] = e["group"], e["item"]
-    if LANG == "en" and PRICING_EN_FILE.exists():
-        p2, o2, n2 = _read_pricing(PRICING_EN_FILE)
-        if len(p2) == len(plans) and len(o2) == len(opts):
-            for en, ja in zip(p2 + o2, plans + opts):
-                en["ja_group"], en["ja_item"] = ja["group"], ja["item"]
-            return p2, o2, n2
-        print("  ! pricing-en.txt の件数が pricing.txt と合わないので、英語版の料金表は日本語のままです")
-    return plans, opts, notes
+    """pricing.txt を (プラン, オプション, 注意事項) に読む。プラン/オプションは {group, item, price(整数 or None), note}"""
+    return _read_pricing(PRICING_FILE)
 
 
 def price_text(e):
-    return yen(e["price"]) if e["price"] is not None else (e["label"] or tr("要相談"))
+    return yen(e["price"]) if e["price"] is not None else (e["label"] or "要相談")
 
 
 def render_prices(plans, opts, notes):
@@ -887,24 +793,24 @@ def render_prices(plans, opts, notes):
             out.append('<div class="pr"><span>%s</span><span>%s%s</span></div>' % (
                 esc(e["item"]), esc(price_text(e)), (' <small>%s</small>' % esc(e["note"])) if e["note"] else ""))
         return "".join(out)
-    notes_html = ('<h4>%s</h4><ul>%s</ul>' % (tr("ご依頼にあたって"), "".join("<li>%s</li>" % esc(n) for n in notes))) if notes else ""
-    return '<details class="prices"><summary>%s</summary>%s%s%s</details>' % (tr("料金表を見る(税込)"), table(plans), table(opts), notes_html)
+    notes_html = ('<h4>%s</h4><ul>%s</ul>' % ("ご依頼にあたって", "".join("<li>%s</li>" % esc(n) for n in notes))) if notes else ""
+    return '<details class="prices"><summary>%s</summary>%s%s%s</details>' % ("料金表を見る(税込)", table(plans), table(opts), notes_html)
 
 
 def render_contact(site):
     """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければ pricing.txt の料金表をもとにした、メールの下書きを作るフォーム"""
     to = site["contact"] if "@" in site["contact"] and "://" not in site["contact"] else ""
-    note = '<p class="note">%s</p>' % tr("お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。")
-    required_note = '<p class="note">%s</p>' % tr("※ オプション以外の項目は、すべて入力が必要です。")
+    note = '<p class="note">%s</p>' % "お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。"
+    required_note = '<p class="note">%s</p>' % "※ オプション以外の項目は、すべて入力が必要です。"
     if site["form"]:
         u = esc(site["form"])
         inner = ('%s<iframe class="form-embed" src="%s" title="%s" loading="lazy"></iframe>'
-                 '<p class="more-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>') % (note, u, tr("依頼受付フォーム"), u, tr("表示されないときは別のタブで開く ↗"))
+                 '<p class="more-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>') % (note, u, "依頼受付フォーム", u, "表示されないときは別のタブで開く ↗")
     elif to:
         plans, opts, notes = load_pricing()
         kinds = [("楽曲制作", ""), ("編曲", ""), ("MIX・Mastering", "1"), ("イベント出演", ""), ("その他", "")]
-        kind_opts = '<option value="" disabled selected>%s</option>' % tr("選んでください") + "".join(
-            '<option value="%s"%s>%s</option>' % (k, ' data-mix="1"' if mix else "", tr(k)) for k, mix in kinds)
+        kind_opts = '<option value="" disabled selected>%s</option>' % "選んでください" + "".join(
+            '<option value="%s"%s>%s</option>' % (k, ' data-mix="1"' if mix else "", k) for k, mix in kinds)
         mixbox = ""
         if plans:  # 「MIX・Mastering」を選んだときだけ表示する、プラン・オプション・料金表・見積りの目安
             groups, order = {}, []
@@ -913,62 +819,62 @@ def render_contact(site):
                     groups[e["group"]] = []
                     order.append(e["group"])
                 groups[e["group"]].append(e)
-            plan_opts = '<option value="" disabled selected>%s</option>' % tr("選んでください") + "".join(
+            plan_opts = '<option value="" disabled selected>%s</option>' % "選んでください" + "".join(
                 '<optgroup label="%s">%s</optgroup>' % (esc(g), "".join(
                     '<option value="%s" data-price="%s" data-group="%s" data-item="%s" data-pt="%s">%s(%s)</option>' % (
-                        esc("%s / %s" % (e["ja_group"], e["ja_item"])), "" if e["price"] is None else e["price"], esc(g), esc(e["item"]), esc(price_text(e)),
+                        esc("%s / %s" % (e["group"], e["item"])), "" if e["price"] is None else e["price"], esc(g), esc(e["item"]), esc(price_text(e)),
                         esc(e["item"]), esc(price_text(e)))
                     for e in groups[g])) for g in order)
             options = ""
             if opts:
-                options = '<fieldset class="opts" hidden><legend>%s</legend>%s</fieldset>' % (tr("オプション(任意・複数選べます)"), "".join(
-                    '<label class="chk" data-for="%s"><input type="checkbox" name="オプション" value="%s" data-label="%s" data-price="%s"> %s <span class="pc">%s%s</span></label>' % (
-                        esc(e["target"]), esc(e["ja_item"]), esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]),
+                options = '<fieldset class="opts" hidden><legend>%s</legend>%s</fieldset>' % ("オプション(任意・複数選べます)", "".join(
+                    '<label class="chk" data-for="%s"><input type="checkbox" name="オプション" value="%s" data-price="%s"> %s <span class="pc">%s%s</span></label>' % (
+                        esc(e["target"]), esc(e["item"]), "" if e["price"] is None else e["price"], esc(e["item"]),
                         ("+" if e["price"] is not None else "") + esc(price_text(e)),
                         (' <small>%s</small>' % esc(e["note"])) if e["note"] else "") for e in opts))
             mixbox = ('<div class="mixbox" hidden>%s<label>%s<select name="プラン" disabled required>%s</select></label>%s'
-                      '<p class="est" aria-live="polite" hidden></p></div>') % (render_prices(plans, opts, notes), tr("ご依頼のプラン"), plan_opts, options)
+                      '<p class="est" aria-live="polite" hidden></p></div>') % (render_prices(plans, opts, notes), "ご依頼のプラン", plan_opts, options)
         direct = bool(site["form_key"])  # 送信用のキーがあれば、フォームから直接送る(なければ、メールの下書きを作る)
         endpoint = ' data-endpoint="%s" data-key="%s"' % (esc(site["form_endpoint"]), esc(site["form_key"])) if direct else ""
         inner = (note + required_note + '<form class="req" data-to="%s" action="mailto:%s" method="post" enctype="text/plain"' + endpoint + '>'
                  '<div class="fields">'
-                 '<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="' + tr("入力の進み具合") + '">'
+                 '<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="' + "入力の進み具合" + '">'
                  '<div class="bar"><i></i></div><p class="pt"></p></div>'
-                 '<label>' + tr("お名前") + '<input name="お名前" required autocomplete="name"></label>'
-                 '<label>' + tr("返信先のメールアドレス") + '<input name="返信先" type="email" required autocomplete="email"></label>'
-                 '<label>' + tr("ご依頼の内容") + '<select name="種類" required>%s</select></label>'
+                 '<label>' + "お名前" + '<input name="お名前" required autocomplete="name"></label>'
+                 '<label>' + "返信先のメールアドレス" + '<input name="返信先" type="email" required autocomplete="email"></label>'
+                 '<label>' + "ご依頼の内容" + '<select name="種類" required>%s</select></label>'
                  '%s'
-                 '<label>' + tr("ご希望の納期") + '<input type="date" name="納期" required></label>'
-                 '<label class="chk"><input type="checkbox" name="納期未定"> ' + tr("日付は未定・相談したい") + '</label>'
-                 '<label>' + tr("詳細・ご要望(曲名・トラック数・参考URLなど)") + '<textarea name="内容" rows="6" required></textarea></label>'
+                 '<label>' + "ご希望の納期" + '<input type="date" name="納期" required></label>'
+                 '<label class="chk"><input type="checkbox" name="納期未定"> ' + "日付は未定・相談したい" + '</label>'
+                 '<label>' + "詳細・ご要望(曲名・トラック数・参考URLなど)" + '<textarea name="内容" rows="6" required></textarea></label>'
                  + ('<input type="checkbox" name="botcheck" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' if direct else '') +
                  '<div class="actions"><button type="submit" class="send">%s</button>%s</div>'
                  '<p class="status" role="status" aria-live="polite" hidden></p>'
                  '<p class="fine">%s</p>'
                  '</div>'
                  '<div class="thanks" hidden><p class="big">Thank you</p>'
-                 '<p class="done">' + tr("送信完了") + '</p>'
-                 '<div class="recap"><p class="rl">' + tr("送信した内容") + '</p><pre></pre></div>'
-                 '<p class="cp"><a class="copy" href="#">' + tr("控えをメールで受け取る") + '</a></p>'
-                 '<p class="cn">' + tr("ご入力のメールアドレス宛の下書きが、メールアプリで開きます。送信すると、控えとして手元に残ります。") + '</p>'
-                 '<button type="button" class="again">' + tr("もう一度入力する") + '</button></div>'
+                 '<p class="done">' + "送信完了" + '</p>'
+                 '<div class="recap"><p class="rl">' + "送信した内容" + '</p><pre></pre></div>'
+                 '<p class="cp"><a class="copy" href="#">' + "控えをメールで受け取る" + '</a></p>'
+                 '<p class="cn">' + "ご入力のメールアドレス宛の下書きが、メールアプリで開きます。送信すると、控えとして手元に残ります。" + '</p>'
+                 '<button type="button" class="again">' + "もう一度入力する" + '</button></div>'
                  '</form>') % (esc(to), esc(to), kind_opts, mixbox,
-                               tr("この内容で送信する") if direct else tr("メールの下書きを作る"),
-                               '<button type="button" class="draft">%s</button>' % tr("メールアプリで下書きを作る") if direct else "",
-                               tr("送信内容は、メール配信サービス(Web3Forms)を経由して、BCNO に届きます。メールアプリで送りたいときは、「メールアプリで下書きを作る」を押してください。") if direct
-                               else tr("ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。"))
+                               "この内容で送信する" if direct else "メールの下書きを作る",
+                               '<button type="button" class="draft">%s</button>' % "メールアプリで下書きを作る" if direct else "",
+                               "送信内容は、メール配信サービス(Web3Forms)を経由して、BCNO に届きます。メールアプリで送りたいときは、「メールアプリで下書きを作る」を押してください。" if direct
+                               else "ボタンを押すと、メールアプリが開いて、入力内容が下書きされます。送信はメールアプリで行ってください。")
     elif site["contact"]:
-        inner = note + '<p><a class="btn primary" href="%s" target="_blank" rel="noopener">%s <span aria-hidden="true">↗</span></a></p>' % (esc(site["contact"]), tr("依頼フォームを開く"))
+        inner = note + '<p><a class="btn primary" href="%s" target="_blank" rel="noopener">%s <span aria-hidden="true">↗</span></a></p>' % (esc(site["contact"]), "依頼フォームを開く")
     else:
         inner = note
-    return '<section class="rpanel" id="contact" aria-label="%s"><h2 class="ptitle">%s</h2>%s</section>' % (tr("依頼受付フォーム"), tr("依頼受付フォーム"), inner)
+    return '<section class="rpanel" id="contact" aria-label="%s"><h2 class="ptitle">%s</h2>%s</section>' % ("依頼受付フォーム", "依頼受付フォーム", inner)
 
 
 def render_index(site, works):
     types_present = [t for t in TYPES if any(w["type"] == t for w in works)]
     chips = ""
     if len(types_present) > 1:
-        chips = '<nav class="chips" aria-label="%s"><button class="chip" data-type="all" aria-pressed="true">All</button>%s</nav>' % (tr("絞り込み"), "".join(
+        chips = '<nav class="chips" aria-label="%s"><button class="chip" data-type="all" aria-pressed="true">All</button>%s</nav>' % ("絞り込み", "".join(
             '<button class="chip" data-type="%s" aria-pressed="false">%s</button>' % (t, TYPES[t]) for t in types_present))
     def row_html(w):
         return ('<a class="row" data-type="%s" data-cover="%s" href="w/%s/"><time>%s</time><span class="t">%s</span>'
@@ -980,7 +886,7 @@ def render_index(site, works):
         % (year, " open" if i == 0 else "", year, len(ws), "\n".join(row_html(w) for w in ws))
         for i, (year, ws) in enumerate((y, list(g)) for y, g in itertools.groupby(works, key=lambda w: w["date"].year)))
     if not rows:
-        rows = '<p class="empty">%s</p>' % tr("まだ作品がありません。works フォルダに作品フォルダを追加してください。")
+        rows = '<p class="empty">%s</p>' % "まだ作品がありません。works フォルダに作品フォルダを追加してください。"
 
     bgvideo = render_bgvideo(site)
 
@@ -990,7 +896,7 @@ def render_index(site, works):
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
     sns = "".join(nav_link(lab or platform_label(u), u) for lab, u in site["links"])
-    logo = ('<h1 class="logo"><img src="%s" alt="%s"></h1>' % (ASSET + quote(site["logo"]), esc(site["name"]))
+    logo = ('<h1 class="logo"><img src="%s" alt="%s"></h1>' % (quote(site["logo"]), esc(site["name"]))
             if site["logo"] else '<h1 class="logo">%s</h1>' % esc(site["name"]))
     about = ('<section class="about wrap" id="about"><h2>About</h2>%s</section>' % paragraphs(site["about"])
              if site["about"] else "")
@@ -1018,11 +924,11 @@ document.querySelectorAll('.chip').forEach(function (b) {
 <section class="menu">
 %s
 %s
-<nav class="nav">
+<button type="button" class="menu-toggle" aria-expanded="false" aria-controls="site-nav">MENU<span class="mt-mark" aria-hidden="true"></span></button>
+<nav class="nav" id="site-nav">
 %s
 </nav>
 <p class="sns">%s</p>
-%s
 </section>
 <div class="rpanels">
 <section class="rpanel works-list" id="works" aria-label="Works">
@@ -1038,7 +944,7 @@ document.querySelectorAll('.chip').forEach(function (b) {
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
-         nav, sns, lang_switch("../", "./") if LANG == "en" else lang_switch("./", "en/"),
+         nav, sns,
          chips, rows, render_events(load_events()), render_guideline(guideline), render_contact(site), about, script)
     og = None
     if site.get("url") and site["og_image"] and (ROOT / site["og_image"]).is_file():  # site.txt の og-image: で指定した画像
@@ -1049,8 +955,8 @@ document.querySelectorAll('.chip').forEach(function (b) {
         if site.get("url") and w["cover"]:  # 指定がなければ、いちばん新しい作品の表紙
             og = site["url"].rstrip("/") + "/w/%s/%s" % (quote(w["slug"]), quote(w["cover"].name))
             break
-    alt = alt_urls(site)
-    return page(site, site["name"], site["tagline"], body, ASSET, og, alt[LANG] if alt else None, "home", home_jsonld(site), alt)
+    canon = site["url"].rstrip("/") + "/" if site.get("url") else None
+    return page(site, site["name"], site["tagline"], body, "", og, canon, "home", home_jsonld(site))
 
 
 def load_site():
@@ -1091,7 +997,6 @@ def main():
     works.sort(key=lambda w: (w["date"], w["slug"]), reverse=True)
     link_related(works)
     attach_booth(works, load_booth())
-    english_names(works)
     site["work_clips"] = ["w/%s/%s" % (quote(w["slug"]), quote(p.name)) for w in works for p in w["clips"]]
     site["work_videos"] = list(dict.fromkeys(
         v for w in works for _, u in w["links"] for v in [youtube_id(u)] if v))
@@ -1110,34 +1015,20 @@ def main():
             written.add(dst)
             if not (dst.exists() and dst.stat().st_mtime >= clip.stat().st_mtime):
                 shutil.copy2(clip, dst)
-        set_lang("ja", "../../")
         (wdir / "index.html").write_text(render_work(site, w), encoding="utf-8")
         written.add(wdir / "index.html")
         if not w["links"] and not w["embeds"]:
             print("  ! %s: リンクが書かれていません" % w["slug"])
 
-    # 英語版(/en/)。画像・動画・CSS・JS は、日本語版のものをそのまま使う(ページだけを英語で作る)
-    en_works = english_views(works)
-    for w in en_works:
-        edir = OUT / "en" / "w" / w["slug"]
-        edir.mkdir(parents=True, exist_ok=True)
-        set_lang("en", "../../../")
-        (edir / "index.html").write_text(render_work(site, w), encoding="utf-8")
-        written.add(edir / "index.html")
-
     # 削除・改名した作品の残骸を消す
-    for root_dir in (OUT / "w", OUT / "en" / "w"):
-        for p in sorted(root_dir.rglob("*"), reverse=True) if root_dir.exists() else []:
-            if p.is_file() and p not in written:
-                p.unlink()
-            elif p.is_dir() and not any(p.iterdir()):
-                p.rmdir()
+    for p in sorted((OUT / "w").rglob("*"), reverse=True) if (OUT / "w").exists() else []:
+        if p.is_file() and p not in written:
+            p.unlink()
+        elif p.is_dir() and not any(p.iterdir()):
+            p.rmdir()
+    shutil.rmtree(OUT / "en", ignore_errors=True)  # 以前の英語版(/en/)の残りを消す
 
-    set_lang("ja", "")
     (OUT / "index.html").write_text(render_index(site, works), encoding="utf-8")
-    set_lang("en", "../")
-    (OUT / "en" / "index.html").write_text(render_index(site, en_works), encoding="utf-8")
-    set_lang("ja", "")
     shutil.copy2(THEME / "style.css", OUT / "style.css")
     shutil.copy2(THEME / "fx.js", OUT / "fx.js")
     if site["logo"]:
@@ -1150,7 +1041,7 @@ def main():
     elif (OUT / "sitemap.xml").exists():
         (OUT / "sitemap.xml").unlink()
     (OUT / ".nojekyll").touch()
-    print("%d 件の作品から docs/ を生成しました(日本語版と英語版 /en/)" % len(works))
+    print("%d 件の作品から docs/ を生成しました" % len(works))
 
 
 if __name__ == "__main__":

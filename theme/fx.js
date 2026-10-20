@@ -210,10 +210,24 @@
     var fresh = navType === 'navigate';
     var start = panelEls[hashName] ? hashName : (fresh ? 'works' : (saved === 'none' ? '' : (panelEls[saved] ? saved : 'works')));
     openPanel(start);
+    // スマホ(「MENU」ボタンが出ている幅)では、メニューを開閉式にする。パネルを選んだら、メニューを閉じて、そのパネルまでスクロールする
+    var menuEl = document.querySelector('.menu'), toggleBtn = document.querySelector('.menu-toggle');
+    var isMobileMenu = function () { return toggleBtn && getComputedStyle(toggleBtn).display !== 'none'; };
+    var setMenu = function (open) {
+      if (!menuEl || !toggleBtn) return;
+      menuEl.classList.toggle('open', open);
+      toggleBtn.setAttribute('aria-expanded', open);
+    };
+    if (toggleBtn) toggleBtn.addEventListener('click', function () { setMenu(!menuEl.classList.contains('open')); });
     pLinks.forEach(function (a) {
       a.addEventListener('click', function (e) {
         e.preventDefault();
-        openPanel(document.body.dataset.panel === a.dataset.panel ? '' : a.dataset.panel);
+        var name = document.body.dataset.panel === a.dataset.panel ? '' : a.dataset.panel;
+        openPanel(name);
+        if (isMobileMenu()) {
+          setMenu(false);
+          if (name) setTimeout(function () { panelEls[name].scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }, 60);
+        }
       });
     });
   }
@@ -221,8 +235,6 @@
   // ---- 依頼受付フォーム: 入力内容をメールの下書きにする(送信はメールアプリで) ----
   var reqForm = document.querySelector('form.req');
   if (reqForm) {
-    var EN = document.documentElement.lang === 'en'; // 英語版のページ(/en/)かどうか
-    var T = function (ja, en) { return EN ? en : ja; };
     var kindSel = reqForm.elements['種類'];
     var tbd = reqForm.elements['納期未定'];
     var mixbox = reqForm.querySelector('.mixbox');
@@ -272,11 +284,9 @@
       var planOpt = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
       if (!planOpt || !planOpt.value) return null;
       var opts = [].slice.call(reqForm.querySelectorAll('input[name="オプション"]:checked'));
-      var names = opts.map(function (o) { return o.value; }); // メールに届く名前(日本語)
-      var labels = opts.map(function (o) { return o.dataset.label || o.value; }); // 画面の言語での名前
+      var names = opts.map(function (o) { return o.value; });
       var base = planOpt.dataset.price;
-      var pl = { plan: planOpt.value, planLabel: planOpt.dataset.group + ' / ' + planOpt.dataset.item, planItem: planOpt.dataset.item,
-                 options: names, optionLabels: labels };
+      var pl = { plan: planOpt.value, options: names };
       if (base === '') { pl.total = null; pl.text = 'プランの料金は、内容を確認のうえ、ご相談になります。'; return pl; }
       var total = Number(base);
       opts.forEach(function (o) { if (o.dataset.price !== '') total += Number(o.dataset.price); });
@@ -287,11 +297,11 @@
     // お見積りの目安: 大きな金額で見せて、プランを変えると数字がカウントするように切り替わる
     var estAmt = null, estShown = null, estRaf = 0;
     if (est) {
-      est.innerHTML = '<span class="lbl">' + T('お見積りの目安(税込): ', 'Estimated price (tax included): ') + '</span><span class="amt"></span><span class="sub"></span>';
+      est.innerHTML = '<span class="lbl">' + 'お見積りの目安(税込): ' + '</span><span class="amt"></span><span class="sub"></span>';
       estAmt = est.querySelector('.amt');
     }
     var showAmount = function (total) {
-      if (total === null) { cancelAnimationFrame(estRaf); estAmt.textContent = T('要相談', 'Please inquire'); estShown = null; return; }
+      if (total === null) { cancelAnimationFrame(estRaf); estAmt.textContent = '要相談'; estShown = null; return; }
       cancelAnimationFrame(estRaf);
       var from = estShown === null ? total : estShown, t0 = null;
       if (calm || from === total) { estAmt.textContent = yen(total); estShown = total; return; }
@@ -319,8 +329,8 @@
       progEl.querySelector('i').style.width = pct + '%';
       progEl.setAttribute('aria-valuenow', pct);
       progEl.classList.toggle('done', total > 0 && done === total);
-      progEl.querySelector('.pt').textContent = done === total ? T('入力がそろいました。送信できます', 'All set. You can send it now') :
-        T('入力 ' + done + ' / ' + total + '(あと ' + (total - done) + ' 項目)', 'Filled ' + done + ' / ' + total + ' (' + (total - done) + ' to go)');
+      progEl.querySelector('.pt').textContent = done === total ? '入力がそろいました。送信できます' :
+        '入力 ' + done + ' / ' + total + '(あと ' + (total - done) + ' 項目)';
     };
     var refresh = function () {
       syncOptions();
@@ -330,8 +340,8 @@
         if (q) {
           showAmount(q.total);
           est.querySelector('.sub').textContent = q.total === null ?
-            T('プランの料金は、内容を確認のうえ、ご相談になります。', 'The price for this plan will be discussed after we review your request.') :
-            T('※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。', '* May vary (e.g. by the number of people). We will send a formal quote after reviewing your request.');
+            'プランの料金は、内容を確認のうえ、ご相談になります。' :
+            '※人数などで変わることがあります。正式なお見積りは、内容を確認してご連絡します。';
         }
       }
       progress();
@@ -360,22 +370,7 @@
       lines.push('ご希望の納期: ' + deadline);
       var body = lines.join('\n') + '\n\n【詳細・ご要望】\n' + f['内容'].value + '\n';
       var short = q ? 'MIX・Mastering(' + q.plan.split(' / ').pop() + ')' : kindSel.value;
-      var out = { name: f['お名前'].value, email: f['返信先'].value, subject: '【依頼】' + short + ' / ' + f['お名前'].value, body: body };
-      out.userSubject = out.subject; out.userBody = body;
-      if (EN) { // BCNO に届くのは日本語(読みやすいように)。送った人が見る控えは、英語
-        var kindText = kindSel.selectedIndex >= 0 ? kindSel.options[kindSel.selectedIndex].text : '';
-        var el = ['Name: ' + f['お名前'].value, 'Email: ' + f['返信先'].value, 'Type of request: ' + kindText];
-        if (mixOn()) {
-          el.push('Plan: ' + (q ? q.planLabel : '(not selected)'));
-          el.push('Options: ' + (q && q.optionLabels.length ? q.optionLabels.join(', ') : 'None'));
-          el.push('Estimated price: ' + (q ? (q.total === null ? 'Please inquire' : yen(q.total) + ' (tax included, estimate)') : '-'));
-        }
-        el.push('Preferred deadline: ' + ((f['納期未定'] && f['納期未定'].checked) ? 'To be decided / let\'s discuss' : (dv || '(not filled in)')));
-        out.userBody = el.join('\n') + '\n\nDetails:\n' + f['内容'].value + '\n';
-        out.userSubject = '[Request] ' + (q ? 'MIX & Mastering (' + q.planItem + ')' : kindText) + ' / ' + f['お名前'].value;
-        out.body = '【英語版のページからのご依頼です / Sent from the English page】\n' + body;
-      }
-      return out;
+      return { name: f['お名前'].value, email: f['返信先'].value, subject: '【依頼】' + short + ' / ' + f['お名前'].value, body: body };
     };
     var mailtoFor = function () {
       var c = compose();
@@ -408,7 +403,7 @@
     // 送信完了: 入力欄がふわっと消えて、「Thank you」を見せる。内容は、消えたあとにリセットする
     var fieldsEl = reqForm.querySelector('.fields'), thanksEl = reqForm.querySelector('.thanks');
     var thanks = function (c) {
-      var summary = c.userBody;
+      var summary = c.body;
       if (!fieldsEl || !thanksEl) { reqForm.reset(); return; }
       fieldsEl.classList.add('out');
       setTimeout(function () {
@@ -418,7 +413,7 @@
         var pre = thanksEl.querySelector('pre');
         if (pre) pre.textContent = summary || '';
         var cp = thanksEl.querySelector('.copy');
-        if (cp) cp.href = 'mailto:' + encodeURIComponent(c.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent(T('【控え】', '[Copy] ') + c.userSubject) + '&body=' + encodeURIComponent(T('BCNO への依頼内容の控えです。\n\n', 'This is a copy of your request to BCNO.\n\n') + c.userBody);
+        if (cp) cp.href = 'mailto:' + encodeURIComponent(c.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('【控え】' + c.subject) + '&body=' + encodeURIComponent('BCNO への依頼内容の控えです。\n\n' + c.body);
         thanksEl.hidden = false;
         thanksEl.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
       }, calm ? 0 : 450);
@@ -438,7 +433,7 @@
       var c = compose();
       var hp = reqForm.elements['botcheck'];
       sendBtn.disabled = true;
-      say(T('送信しています…', 'Sending…'), 'info');
+      say('送信しています…', 'info');
       fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -451,8 +446,7 @@
         say('');
         thanks(c);
       }).catch(function () {
-        say(T('送信できませんでした。通信状況をご確認のうえ、もう一度お試しいただくか、「メールアプリで下書きを作る」からお送りください。',
-          'Could not send. Please check your connection and try again, or use "Create a draft in your mail app".'), 'err');
+        say('送信できませんでした。通信状況をご確認のうえ、もう一度お試しいただくか、「メールアプリで下書きを作る」からお送りください。', 'err');
       }).then(function () { sendBtn.disabled = false; });
     });
   }
