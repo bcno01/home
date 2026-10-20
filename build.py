@@ -899,11 +899,11 @@ def render_index(site, works):
     items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + menu
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
-    # メニューの下の小さなリンクは、音楽サービス(Spotify・Apple Music など)の行と、SNS などの行に分けて並べる
+    # メニューの下の小さなリンクは、SNS などの行(上)と、音楽サービス(Spotify・Apple Music など)の行(下)に分けて並べる
     music = [(lab, u) for lab, u in site["links"] if host_of(u) in MUSIC_HOSTS or host_of(u).endswith(".bandcamp.com")]
     others = [(lab, u) for lab, u in site["links"] if (lab, u) not in music]
     sns = "".join('<p class="sns">%s</p>' % "".join(nav_link(lab or platform_label(u), u) for lab, u in row)
-                  for row in (music, others) if row)
+                  for row in (others, music) if row)
     logo = ('<h1 class="logo"><img src="%s" alt="%s"></h1>' % (quote(site["logo"]), esc(site["name"]))
             if site["logo"] else '<h1 class="logo">%s</h1>' % esc(site["name"]))
     about = ('<section class="about wrap" id="about"><h2>About</h2>%s</section>' % paragraphs(site["about"])
