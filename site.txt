@@ -39,6 +39,7 @@ Niconico: https://www.nicovideo.jp/user/56254919/mylist/55190914
 bilibili: https://space.bilibili.com/1656380156
 X: https://x.com/bcno01
 Instagram: https://www.instagram.com/bcno01/
+note: https://note.com/bcno_guideline
 
 # 自己紹介を入れる場合は、下に「---」だけの行を書き、その次の行から文章を書きます(空行で段落が分かれます)。
 # 書くとメニューに「About」が現れます。
