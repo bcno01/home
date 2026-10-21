@@ -180,8 +180,8 @@ body.bg-on .yr summary:hover .y { text-decoration-color: #fff; }
 }
 .ytab small { font: 600 11px/1 var(--head); opacity: .7; }
 .ytab[aria-selected="true"] { opacity: 1; border-bottom-color: var(--main); }
-.ytab:disabled { opacity: .25; cursor: default; }
-.ytab:not(:disabled):hover { opacity: 1; }
+.ytab[hidden] { display: none; }
+.ytab:hover { opacity: 1; }
 body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 .yrs.tabbed .yr { display: none; margin: 0; }
 .yrs.tabbed .yr.cur:not([hidden]) { display: block; }

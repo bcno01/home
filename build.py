@@ -19,7 +19,7 @@ OUT = ROOT / "docs"
 THEME = ROOT / "theme"
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
 
-TYPES = {"music": "Streaming", "video": "MV", "project": "案件", "goods": "通販・グッズ", "other": "その他"}
+TYPES = {"video": "MV", "music": "Streaming", "project": "Projects", "goods": "通販・グッズ", "other": "その他"}
 TYPE_ALIAS = {
     "音楽": "music", "曲": "music", "動画": "video", "映像": "video", "streaming": "music", "mv": "video",
     "グッズ": "goods", "通販": "goods", "商品": "goods", "shop": "goods",
@@ -870,8 +870,7 @@ def render_contact(site):
     return '<section class="rpanel" id="contact" aria-label="%s"><h2 class="ptitle">%s</h2>%s</section>' % ("依頼受付フォーム", "依頼受付フォーム", inner)
 
 
-MUSIC_HOSTS = {"open.spotify.com", "music.apple.com", "itunes.apple.com", "nicovideo.jp", "bilibili.com", "space.bilibili.com",
-               "soundcloud.com", "music.youtube.com", "music.amazon.co.jp", "linkco.re"}
+MUSIC_HOSTS = {"open.spotify.com", "music.apple.com", "itunes.apple.com", "soundcloud.com", "music.youtube.com", "music.amazon.co.jp", "linkco.re"}
 
 
 def render_index(site, works):
@@ -933,12 +932,17 @@ def render_index(site, works):
     wrap.classList.add('tabbed');
     yrs.forEach(function (y) { y.open = true; });
   }
-  function show(y) {
+  function show(y, auto) {
     yrs.forEach(function (o, i) {
       var on = o === y;
       o.classList.toggle('cur', on);
       tabs[i].setAttribute('aria-selected', on);
-      if (on) bar.scrollTo({ left: tabs[i].offsetLeft - (bar.clientWidth - tabs[i].offsetWidth) / 2, behavior: 'smooth' });
+      // 自分でタブを押したときは動かさない。絞り込みで年が自動で切り替わったときだけ、そのタブが見える位置まで最小限に動かす
+      if (on && auto) {
+        var tr = tabs[i].getBoundingClientRect(), br = bar.getBoundingClientRect();
+        if (tr.left < br.left) bar.scrollLeft += tr.left - br.left;
+        else if (tr.right > br.right) bar.scrollLeft += tr.right - br.right;
+      }
     });
   }
   if (bar) show(yrs[0]);
@@ -947,18 +951,17 @@ def render_index(site, works):
       var t = b.dataset.type;
       document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
       document.querySelectorAll('.row').forEach(function (c) { c.hidden = t !== 'all' && c.dataset.type !== t; });
-      // 年ごとのまとまり: 件数を数え直す。タブのときは、該当のない年を薄くして、選んでいる年に該当がなければ、該当のある最新の年に移る
+      // 年ごとのまとまり: 件数を数え直す。タブのときは、該当のない年のタブを隠して、該当のある最新の年を選び直す
       // 折りたたみのときは、空の年を隠し、種類で絞ったときは該当のある年をすべて開き、「All」に戻したら、いちばん新しい年だけ開く
-      var first = true, pick = null, keep = null;
+      var first = true, pick = null;
       yrs.forEach(function (y, i) {
         var n = y.querySelectorAll('.row:not([hidden])').length;
         y.querySelector('summary small').textContent = n;
         if (bar) {
           tabs[i].querySelector('small').textContent = n;
-          tabs[i].disabled = !n;
+          tabs[i].hidden = !n;
           y.hidden = !n;
           if (n && !pick) pick = y;
-          if (n && y.classList.contains('cur')) keep = y;
           return;
         }
         y.hidden = !n;
@@ -966,7 +969,7 @@ def render_index(site, works):
         y.open = t !== 'all' || first;
         first = false;
       });
-      if (bar && (keep || pick)) show(keep || pick);
+      if (bar && pick) show(pick, true);
     });
   });
 })();

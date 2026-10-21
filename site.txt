@@ -36,11 +36,11 @@ links:
 Spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b
 Apple Music: https://music.apple.com/jp/artist/bcno/1456770341
 YouTube Music: https://music.youtube.com/@BCNO01
-Niconico: https://www.nicovideo.jp/user/56254919/mylist/55190914
-bilibili: https://space.bilibili.com/1656380156
 X: https://x.com/bcno01
 Instagram: https://www.instagram.com/bcno01/
 note: https://note.com/bcno_guideline
+Niconico: https://www.nicovideo.jp/user/56254919/mylist/55190914
+bilibili: https://space.bilibili.com/1656380156
 
 # 自己紹介を入れる場合は、下に「---」だけの行を書き、その次の行から文章を書きます(空行で段落が分かれます)。
 # 書くとメニューに「About」が現れます。
