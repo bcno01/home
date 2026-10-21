@@ -171,6 +171,21 @@ body.bg-on .mixbox { border-left-color: rgba(255, 255, 255, .5); }
 .yr summary small { font: 600 11px/1 var(--head); opacity: .7; }
 .yr summary:hover .y { text-decoration: underline; text-decoration-color: var(--main); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 body.bg-on .yr summary:hover .y { text-decoration-color: #fff; }
+/* JavaScript が使えるときは、年のタブ(横に並べ、はみ出す分は横スワイプ)。選んだ年の作品だけを出す */
+.ytabs { display: flex; gap: 4px; margin: 0 0 10px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.ytab {
+  flex: none; display: inline-flex; align-items: baseline; gap: 6px; min-height: 40px; padding: 8px 10px; cursor: pointer;
+  border: 0; border-bottom: 2px solid transparent; background: transparent; color: inherit; opacity: .55;
+  font: 700 13px/1.4 var(--head); letter-spacing: .1em; text-shadow: inherit;
+}
+.ytab small { font: 600 11px/1 var(--head); opacity: .7; }
+.ytab[aria-selected="true"] { opacity: 1; border-bottom-color: var(--main); }
+.ytab:disabled { opacity: .25; cursor: default; }
+.ytab:not(:disabled):hover { opacity: 1; }
+body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
+.yrs.tabbed .yr { display: none; margin: 0; }
+.yrs.tabbed .yr.cur:not([hidden]) { display: block; }
+.yrs.tabbed .yr summary { display: none; }
 .row:hover { transform: translateX(6px); }
 .row time { font: 600 12px/1.5 var(--head); color: var(--muted); }
 .row .t { font-size: 15px; line-height: 1.5; font-weight: 600; }
@@ -256,7 +271,7 @@ body.bg-on .yr summary:hover .y { text-decoration-color: #fff; }
 .foot p { margin: 0; }
 
 @media (max-width: 760px) {
-  .stage { grid-template-columns: 1fr; gap: 40px; }
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .nav a { font-size: 22px; }
   .rpanel { max-height: none; overflow: visible; }
   .js .rpanels { display: block; }

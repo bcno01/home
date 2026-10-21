@@ -909,23 +909,67 @@ def render_index(site, works):
     about = ('<section class="about wrap" id="about"><h2>About</h2>%s</section>' % paragraphs(site["about"])
              if site["about"] else "")
     script = """<script>
-document.querySelectorAll('.chip').forEach(function (b) {
-  b.addEventListener('click', function () {
-    var t = b.dataset.type;
-    document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
-    document.querySelectorAll('.row').forEach(function (c) { c.hidden = t !== 'all' && c.dataset.type !== t; });
-    // 年ごとのまとまり: 件数を数え直し、空の年は隠す。種類で絞ったときは、該当のある年をすべて開き、「All」に戻したら、いちばん新しい年だけ開く
-    var first = true;
-    document.querySelectorAll('.yr').forEach(function (y) {
-      var n = y.querySelectorAll('.row:not([hidden])').length;
-      y.hidden = !n;
-      y.querySelector('summary small').textContent = n;
-      if (!n) return;
-      y.open = t !== 'all' || first;
-      first = false;
+(function () {
+  var wrap = document.querySelector('.yrs');
+  var yrs = wrap ? Array.prototype.slice.call(wrap.querySelectorAll('.yr')) : [];
+  var tabs = [], bar = null;
+  // JavaScript が使えるときは、年ごとの折りたたみを、横並びのタブ(スマホでは横スワイプ)に切り替える。使えないときは、折りたたみのまま
+  if (yrs.length > 1) {
+    bar = document.createElement('div');
+    bar.className = 'ytabs';
+    bar.setAttribute('role', 'tablist');
+    bar.setAttribute('aria-label', '年');
+    yrs.forEach(function (y) {
+      var t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'ytab';
+      t.setAttribute('role', 'tab');
+      t.innerHTML = '<span class="y">' + y.dataset.year + '</span><small>' + y.querySelector('summary small').textContent + '</small>';
+      t.addEventListener('click', function () { show(y); });
+      bar.appendChild(t);
+      tabs.push(t);
+    });
+    wrap.insertBefore(bar, wrap.firstChild);
+    wrap.classList.add('tabbed');
+    yrs.forEach(function (y) { y.open = true; });
+  }
+  function show(y) {
+    yrs.forEach(function (o, i) {
+      var on = o === y;
+      o.classList.toggle('cur', on);
+      tabs[i].setAttribute('aria-selected', on);
+      if (on) bar.scrollTo({ left: tabs[i].offsetLeft - (bar.clientWidth - tabs[i].offsetWidth) / 2, behavior: 'smooth' });
+    });
+  }
+  if (bar) show(yrs[0]);
+  document.querySelectorAll('.chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.dataset.type;
+      document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
+      document.querySelectorAll('.row').forEach(function (c) { c.hidden = t !== 'all' && c.dataset.type !== t; });
+      // 年ごとのまとまり: 件数を数え直す。タブのときは、該当のない年を薄くして、選んでいる年に該当がなければ、該当のある最新の年に移る
+      // 折りたたみのときは、空の年を隠し、種類で絞ったときは該当のある年をすべて開き、「All」に戻したら、いちばん新しい年だけ開く
+      var first = true, pick = null, keep = null;
+      yrs.forEach(function (y, i) {
+        var n = y.querySelectorAll('.row:not([hidden])').length;
+        y.querySelector('summary small').textContent = n;
+        if (bar) {
+          tabs[i].querySelector('small').textContent = n;
+          tabs[i].disabled = !n;
+          y.hidden = !n;
+          if (n && !pick) pick = y;
+          if (n && y.classList.contains('cur')) keep = y;
+          return;
+        }
+        y.hidden = !n;
+        if (!n) return;
+        y.open = t !== 'all' || first;
+        first = false;
+      });
+      if (bar && (keep || pick)) show(keep || pick);
     });
   });
-});
+})();
 </script>"""
     body = """%s
 <main class="stage">
