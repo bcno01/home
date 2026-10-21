@@ -277,7 +277,7 @@ body.bg-on .yr summary:hover .y { text-decoration-color: #fff; }
   .js .menu.open .menu-toggle .mt-mark::after { content: "\2212"; }
   .js .menu .nav, .js .menu .sns { display: none; }
   .js .menu.open .nav { display: flex; margin-top: 18px; }
-  .js .menu.open .sns { display: block; }
+  .js .menu.open .sns { display: flex; }
   .nav a { padding: 4px 0; }
 
   /* スマホ: 依頼フォームを、指で入力しやすく(文字は16px以上にして、入力時の自動拡大も防ぐ) */
