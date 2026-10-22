@@ -344,18 +344,25 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
    ・レンズ: カーソルの周り(--mx / --my / --lr)
    ・クリックの波紋: クリックした場所から広がる円(--p0x〜 --p2x / --pNy / --pNo(半径)/ --pNs(穴の濃さ。終わり際に 1→0 にして、円全体をいっせいに元のモザイクへ戻す))、同時に3つまで
    穴どうしは intersect(マスクどうしの共通部分)で重ねるので、どれか1つでも穴ならそこは抜ける */
+.bgvideo {
+  --holes: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
+    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), rgba(0, 0, 0, calc(1 - var(--p0s, 1))) calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
+    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), rgba(0, 0, 0, calc(1 - var(--p1s, 1))) calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
+    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), rgba(0, 0, 0, calc(1 - var(--p2s, 1))) calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+}
 .bgvideo::before, .bgvideo::after, .bgvideo canvas.mosaic {
   content: ""; position: absolute; inset: 0;
-  -webkit-mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
-    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), rgba(0, 0, 0, calc(1 - var(--p0s, 1))) calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
-    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), rgba(0, 0, 0, calc(1 - var(--p1s, 1))) calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
-    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), rgba(0, 0, 0, calc(1 - var(--p2s, 1))) calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
-  mask-image: radial-gradient(circle at var(--mx, -999px) var(--my, -999px), transparent calc(var(--lr, 0px) - 28px), #000 var(--lr, 0px)),
-    radial-gradient(circle at var(--p0x, -9999px) var(--p0y, -9999px), rgba(0, 0, 0, calc(1 - var(--p0s, 1))) calc(var(--p0o, 0px) - 30px), #000 var(--p0o, 0px)),
-    radial-gradient(circle at var(--p1x, -9999px) var(--p1y, -9999px), rgba(0, 0, 0, calc(1 - var(--p1s, 1))) calc(var(--p1o, 0px) - 30px), #000 var(--p1o, 0px)),
-    radial-gradient(circle at var(--p2x, -9999px) var(--p2y, -9999px), rgba(0, 0, 0, calc(1 - var(--p2s, 1))) calc(var(--p2o, 0px) - 30px), #000 var(--p2o, 0px));
+  -webkit-mask-image: var(--holes);
+  mask-image: var(--holes);
   -webkit-mask-composite: source-in, source-in, source-in, source-in;
   mask-composite: intersect, intersect, intersect, intersect;
+}
+/* カーソルの近くだけ、モザイクが細かくなる(細かいモザイクの層を、カーソルの周りだけ重ねる。--fr はその半径で、fx.js が更新する。文字の上では 0) */
+.bgvideo canvas.mosaic.fine {
+  -webkit-mask-image: var(--holes), radial-gradient(circle at var(--mx, -999px) var(--my, -999px), #000 calc(var(--fr, 0px) * .5), transparent var(--fr, 0px));
+  mask-image: var(--holes), radial-gradient(circle at var(--mx, -999px) var(--my, -999px), #000 calc(var(--fr, 0px) * .5), transparent var(--fr, 0px));
+  -webkit-mask-composite: source-in, source-in, source-in, source-in, source-in;
+  mask-composite: intersect, intersect, intersect, intersect, intersect;
 }
 /* クリックの波紋の先端の光の輪(fx.js が作る) */
 .bgvideo .ripple {
@@ -401,6 +408,19 @@ body::after {
 .gallery { animation-delay: .5s; }
 body { transition: opacity .25s ease; }
 body.leaving { opacity: 0; }
+/* 作品ページなどへ移るときの波紋(クリックした場所から、次のページの背景色の円が広がる。fx.js が作る) */
+.wipe {
+  position: fixed; z-index: 200; border-radius: 50%; pointer-events: none; background: var(--bg);
+  box-shadow: 0 0 44px rgba(150, 185, 255, .7), inset 0 0 34px rgba(255, 255, 255, .8);
+  transform: scale(0); will-change: transform;
+}
+/* 隠しコマンドで出る小さな表示(fx.js) */
+.toast {
+  position: fixed; left: 50%; bottom: 36px; z-index: 120; pointer-events: none; transform: translate(-50%, 10px);
+  padding: 9px 18px; border-radius: 999px; background: rgba(15, 19, 48, .72); color: #fff;
+  font: 700 12px/1 var(--head); letter-spacing: .24em; opacity: 0; transition: opacity .4s ease, transform .4s ease;
+}
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 
 /* 背景動画が出ているときだけ、暗いかぶせの上に白い文字を置く。
