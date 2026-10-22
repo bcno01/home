@@ -5,6 +5,7 @@
 #         python3 add_youtube.py URL [URL ...]          URL をいくつでも指定(動画のURLも、プレイリストのURLも使えます)
 #         python3 add_youtube.py --dry-run URL          何が追加されるかだけ表示
 #         python3 add_youtube.py --force URL            以前に消した・除外した動画も、もう一度追加する
+#         python3 add_youtube.py --bpm 128 --key Am URL  MV に BPM・Key を付けて追加(MV にだけ入ります。質問に答える形のときは、1本ごとに聞きます)
 #         python3 add_youtube.py --type 案件 URL        「案件」(関わらせて頂いた作品)として追加する(すでにサイトにある動画は、そのまま)
 #         python3 add_youtube.py --type 案件 --reclassify URL   すでにサイトにある動画も、分類を「案件」に変える
 #         python3 add_youtube.py --refresh-links            自動で取り込んだ「案件」すべての概要欄から、配信リンクを足す(--dry-run で一覧だけ)
@@ -116,7 +117,23 @@ def reclassify(vid, wtype, dry):
     return False
 
 
-def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False):
+def ask_song_info(title):
+    """MV を追加するときに、BPM とキーを聞く(わからなければ空Enter)。(bpm の文字, key の文字)"""
+    bpm = key = ""
+    while True:
+        raw = input("  「%s」の BPM(わからなければ空Enter): " % title[:30]).strip()
+        if not raw:
+            break
+        x = build.parse_bpm(raw)
+        if x:
+            bpm = build.fmt_bpm(x)
+            break
+        print("    ! 30〜300 の数字で入力してください(例: 128)")
+    key = input("  「%s」の Key(例: Am・F#m・C。わからなければ空Enter): " % title[:30]).strip()
+    return bpm, key
+
+
+def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False, song=None):
     key = "youtube-" + vid
     if any(vid in t for t in imp.texts):
         if reclass and reclassify(vid, wtype, imp.dry):
@@ -150,6 +167,11 @@ def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False):
         if short != title:
             fields = [("title", short), ("date", date), ("type", wtype), ("yt-title", title)]
             title = short
+    if wtype == "video":  # BPM・Key は MV にだけ入れる(--bpm / --key で指定、なければ、対話のときだけ聞く)
+        bpm, skey = song if song else ("", "")
+        if not song and not bulk and not imp.dry and sys.stdin.isatty():
+            bpm, skey = ask_song_info(title)
+        fields += [(k, v) for k, v in (("bpm", bpm), ("key", skey)) if v]
     imp.create(key, "%s-yt-%s" % (date, vid),
                fields,
                ["YouTube: https://www.youtube.com/watch?v=" + vid] + ["%s: %s" % m for m in mats])
@@ -210,6 +232,19 @@ def main():
         if wtype not in build.TYPES_JA:
             print("--type は、MV(video)・案件(project)などのように指定してください: %s" % raw)
             return 1
+    song = None  # --bpm 128 --key Am(MV にだけ入る。1本ずつ追加するとき用)
+    given = {}
+    for opt in ("--bpm", "--key"):
+        if opt in argv:
+            i = argv.index(opt)
+            given[opt] = argv[i + 1] if i + 1 < len(argv) else ""
+            del argv[i:i + 2]
+    if given:
+        x = build.parse_bpm(given.get("--bpm", ""))
+        if "--bpm" in given and not x:
+            print("--bpm は 30〜300 の数字で指定してください: %s" % given["--bpm"])
+            return 1
+        song = (build.fmt_bpm(x) if x else "", given.get("--key", "").strip())
     args = [a for a in argv if not a.startswith("--")]
     dry = "--dry-run" in argv
     force = "--force" in argv
@@ -262,7 +297,7 @@ def main():
     imp = iw.Importer(dry)
     added = 0
     for n, (vid, bulk) in enumerate(ids):
-        added += 1 if add(imp, vid, force, bulk, wtype, reclass) else 0
+        added += 1 if add(imp, vid, force, bulk, wtype, reclass, song) else 0
         if bulk and n + 1 < len(ids):
             time.sleep(0.5)  # 続けて読み込みすぎないように、少し間をあける
     if not added:

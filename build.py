@@ -297,6 +297,27 @@ def link_related(works):
                 b["related"].append(a)
 
 
+def parse_bpm(v):
+    """info.txt の bpm: 128 や bpm: 128.5 や bpm: 128 BPM。30〜300 の範囲だけ受け付ける(それ以外・書いていないときは None)"""
+    m = re.search(r"\d+(?:\.\d+)?", v or "")
+    if not m:
+        return None
+    x = float(m.group())
+    return x if 30 <= x <= 300 else None
+
+
+def fmt_bpm(x):
+    return str(int(x)) if x == int(x) else ("%.1f" % x)
+
+
+def beat_seconds(bpm):
+    """1拍の長さ(秒)。速い曲(200BPMより上)は、点滅のように見えないよう、2拍ぶんにそろえる"""
+    sec = 60.0 / bpm
+    while sec < 0.3:
+        sec *= 2
+    return sec
+
+
 def read_work(d):
     info = d / "info.txt"
     if not info.exists():
@@ -336,6 +357,8 @@ def read_work(d):
     except ValueError:
         tracks = []
     w = {
+        "bpm": parse_bpm(f.get("bpm", "")),
+        "key": f.get("key", "").strip(),
         "slug": d.name,
         "dir": d,
         "title": f.get("title") or d.name,
@@ -357,6 +380,9 @@ def read_work(d):
         "clips": sorted(p for p in d.glob("bg*.mp4") if p.name != "bg.part.mp4"),  # 背景用のクリップ(add_bgclip.py が作る)
         "gallery": [p for p in images if p != cover],
     }
+    if w["type"] != "video" and (w["bpm"] or w["key"]):  # BPM・Key は MV にだけ出す
+        print("  ! %s: bpm: / key: は MV(type: video)にだけ表示します(この作品では表示しません)" % d.name)
+        w["bpm"], w["key"] = None, ""
     w["headline"] = make_headline(w, f)
     songs = {norm_song(clean_track(x)) for x in tracks}
     songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else w["title"]))
@@ -578,7 +604,12 @@ def render_related(w):
 
 
 def render_work(site, w):
-    meta = '<p class="meta"><span class="badge">%s</span><time>%s</time></p>' % (TYPES[w["type"]], fmt_date(w["date"]))
+    song = ""
+    if w["bpm"]:
+        song += '<span class="sd">BPM <b>%s</b><i class="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></i></span>' % fmt_bpm(w["bpm"])
+    if w["key"]:
+        song += '<span class="sd">Key <b>%s</b></span>' % esc(w["key"])
+    meta = '<p class="meta"><span class="badge">%s</span><time>%s</time>%s</p>' % (TYPES[w["type"]], fmt_date(w["date"]), song)
     gallery = ""
     if w["gallery"]:
         gallery = '<div class="gallery">%s</div>' % "".join(
@@ -586,7 +617,7 @@ def render_work(site, w):
             for p in w["gallery"])
     body = """<header class="top"><div class="wrap"><a href="../../">← %s</a></div></header>
 <main class="wrap work">
-<div class="work-head">
+<div class="work-head%s"%s>
 <div class="work-cover">%s</div>
 <div class="work-info">
 %s
@@ -602,7 +633,9 @@ def render_work(site, w):
 %s
 %s
 </main>""" % (
-        esc(site["name"]), cover_html(w, ""),
+        esc(site["name"]),
+        " pulse" if w["bpm"] else "", ' style="--beat:%.3fs"' % beat_seconds(w["bpm"]) if w["bpm"] else "",
+        cover_html(w, ""),
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),

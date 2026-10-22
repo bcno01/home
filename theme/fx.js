@@ -1,6 +1,6 @@
 // サイト全体の演出。
 //  - ページ遷移のフェード(「視差効果を減らす」設定では無効)
-//  - 背景動画のレンズ・クリックの波紋・カーソル近くの細かいモザイク・ロゴで背景切り替え・隠しコマンド・ジャケットの傾き(マウスのある端末だけ。スマホでは無効)
+//  - 背景動画のレンズ・クリックの波紋・カーソル近くの細かいモザイク・ジャケットの傾き(マウスのある端末だけ。スマホでは無効)
 //  - ページを移るときの波紋(マウスのある端末だけ)
 (function () {
   var fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -12,7 +12,6 @@
   var frame = null; // YouTube の iframe
   var vids = null;  // 自前クリップの <video> 2本(交互に使ってクロスフェードする)
   var curVid = 0;
-  var clipSkip = null; // 背景のクリップを、いますぐ次へ切り替える(startClips が用意する。ロゴを押したときに使う)
   var fineOn = false;  // カーソルの近くの細かいモザイクを描くか(レンズが開いているとき)
 
   function shuffle(a) {
@@ -79,14 +78,6 @@
       out.classList.remove('front');
       setTimeout(function () { out.pause(); load(out); }, FADE * 1000 + 300); // 古い方に、次のクリップを先読みしておく
     }
-
-    clipSkip = function () {
-      var cur = vids[curVid];
-      if (all.length < 2 || cur._swapping || vids[1 - curVid].readyState < 2) return; // 切り替え中・次のクリップが未読み込みのときは、何もしない
-      if (xf && performance.now() - xf.t0 < FADE * 1000 + 200) return;
-      cur._swapping = true;
-      swap();
-    };
 
     vids.forEach(function (v) {
       v.addEventListener('timeupdate', function () {
@@ -204,13 +195,6 @@
 
   if (bg && fine && !calm) {
     if (bg.dataset.clips) startClips(); else startYouTube();
-    // ロゴを押すと、背景のクリップが次のものに切り替わる
-    var logoEl = document.querySelector('.logo');
-    if (logoEl && clipSkip) {
-      logoEl.style.cursor = 'pointer';
-      logoEl.title = '背景を切り替える';
-      logoEl.addEventListener('click', function () { clipSkip(); });
-    }
   }
 
   // ---- 右側のパネル(Works / Events / Contact): メニューの項目で開閉。1つ開くとほかは閉じ、開いているものをもう一度押すと全部閉じる ----
@@ -632,28 +616,6 @@
       startRipple(e.clientX, e.clientY, parseInt(bg.dataset.rippleMs, 10) || RIPPLE_MS, RIPPLE_R);
     });
 
-    // ---- 隠しコマンド: ↑↑↓↓←→←→ B A で、画面いっぱいの波紋。しばらくモザイクが全部外れて、元の映像が見える ----
-    var KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-    var kPos = 0, toast = null, toastTimer = 0;
-    document.addEventListener('keydown', function (e) {
-      if (e.target.closest && e.target.closest('input, textarea, select')) { kPos = 0; return; }
-      var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      kPos = k === KONAMI[kPos] ? kPos + 1 : (k === KONAMI[0] ? 1 : 0);
-      if (kPos < KONAMI.length) return;
-      kPos = 0;
-      if (!lensActive()) return;
-      startRipple(innerWidth / 2, innerHeight / 2, 9000, Math.hypot(innerWidth, innerHeight) / 2 + 80);
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = 'MOSAIC OFF';
-        document.body.appendChild(toast);
-      }
-      toast.classList.add('on');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3200);
-    });
-    if (window.console && console.info) console.info('\u2191\u2191\u2193\u2193\u2190\u2192\u2190\u2192 B A');
     document.documentElement.addEventListener('pointerleave', function () {
       inside = false;
       ring.classList.remove('on');

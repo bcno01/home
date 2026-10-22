@@ -223,6 +223,22 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 .work-info h1 { margin: 10px 0 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.4; }
 .meta { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 12px/1 var(--head); color: var(--muted); }
 .badge { padding: 5px 11px; border-radius: 999px; background: var(--main); color: var(--white); }
+/* 曲の情報(info.txt の bpm: / key:)。BPM があるページでは、BPM の横の小さな点が、そのテンポで脈打つ */
+.meta { flex-wrap: wrap; }
+.sd { display: inline-flex; align-items: center; gap: 6px; }
+.sd b { font-weight: 700; color: var(--fg); letter-spacing: .04em; }
+.beats { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; }
+.beats i { width: 7px; height: 7px; border-radius: 2px; background: var(--main); opacity: .25; }
+/* 4つの四角が、1拍ごとに順に光る(1拍目は少し大きく)。1小節 = 4拍 = --beat の4倍 */
+@keyframes beat-step { 0% { opacity: 1; transform: scale(1.15); } 20% { opacity: .25; transform: scale(1); } 100% { opacity: .25; transform: scale(1); } }
+@keyframes beat-step-1 { 0% { opacity: 1; transform: scale(1.6); } 20% { opacity: .25; transform: scale(1); } 100% { opacity: .25; transform: scale(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .pulse .beats i { animation: beat-step calc(var(--beat, .5s) * 4) ease-out infinite; }
+  .pulse .beats i:nth-child(1) { animation-name: beat-step-1; }
+  .pulse .beats i:nth-child(2) { animation-delay: calc(var(--beat, .5s) * 1); }
+  .pulse .beats i:nth-child(3) { animation-delay: calc(var(--beat, .5s) * 2); }
+  .pulse .beats i:nth-child(4) { animation-delay: calc(var(--beat, .5s) * 3); }
+}
 .lead { margin: 12px 0 0; color: var(--muted); }
 .orig { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .orig span { opacity: .8; }
@@ -414,13 +430,6 @@ body.leaving { opacity: 0; }
   box-shadow: 0 0 44px rgba(150, 185, 255, .7), inset 0 0 34px rgba(255, 255, 255, .8);
   transform: scale(0); will-change: transform;
 }
-/* 隠しコマンドで出る小さな表示(fx.js) */
-.toast {
-  position: fixed; left: 50%; bottom: 36px; z-index: 120; pointer-events: none; transform: translate(-50%, 10px);
-  padding: 9px 18px; border-radius: 999px; background: rgba(15, 19, 48, .72); color: #fff;
-  font: 700 12px/1 var(--head); letter-spacing: .24em; opacity: 0; transition: opacity .4s ease, transform .4s ease;
-}
-.toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 
 /* 背景動画が出ているときだけ、暗いかぶせの上に白い文字を置く。
