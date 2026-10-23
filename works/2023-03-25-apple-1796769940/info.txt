@@ -6,7 +6,7 @@ source: apple-1796769940
 auto: yes
 release: single
 tracks: ["エトス (feat. 夢ノ結唱 ROSE)", "エトス (instrumental)"]
-genre: J-Pop
+genre: Alternative
 duration: 415
 copyright: ℗ 2023 BUSHIROAD MUSIC INC.
 links:

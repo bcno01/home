@@ -7,7 +7,7 @@ auto: yes
 release: single
 tracks: ["エンヴィキャットウォーク(REMIX)"]
 title-orig: Envy Cat Walk (Remix)
-genre: オルタナティブ
+genre: Alternative
 duration: 219
 copyright: ℗ 2025 BCNO
 links:

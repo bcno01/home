@@ -6,7 +6,7 @@ source: apple-1634359827
 auto: yes
 release: single
 tracks: ["なくてななくせ", "なくてななくせ (feat. ひる)"]
-genre: アニメ
+genre: Alternative
 duration: 461
 copyright: ℗ 2022 My Ship
 links:

@@ -89,16 +89,17 @@ class Importer:
         self.ledger.add(key)
 
 
-def apple_lookup(cid, country):
+def apple_lookup(cid, country, genre=None):
     """(収録曲名のリスト, 追加の情報)。収録曲名は Apple Music に登録された日本語表記。
-    追加の情報は info.txt の項目の [(名前, 値)]: genre(ジャンル)・duration(全曲の合計の秒数)・copyright(℗ の表記)"""
+    追加の情報は info.txt の項目の [(名前, 値)]: genre(ジャンル)・duration(全曲の合計の秒数)・copyright(℗ の表記)
+    genre を指定すると(import.txt の genre:)、Apple Music の表記の代わりに、すべての作品に、その表記を使う"""
     r = json.loads(fetch("https://itunes.apple.com/lookup?id=%s&entity=song&country=%s&lang=ja_jp" % (cid, country)))
     res = r.get("results", [])
     coll = next((x for x in res if x.get("wrapperType") == "collection"), {})
     songs = [x for x in res if x.get("wrapperType") == "track"]
     extra = []
-    if coll.get("primaryGenreName"):
-        extra.append(("genre", coll["primaryGenreName"]))
+    if genre or coll.get("primaryGenreName"):
+        extra.append(("genre", genre or coll["primaryGenreName"]))
     secs = round(sum(x.get("trackTimeMillis", 0) for x in songs) / 1000)
     if secs:
         extra.append(("duration", str(secs)))
@@ -145,7 +146,7 @@ def import_apple(imp, cfg):
         key = "apple-" + cid
         if imp.known(key, cid):
             continue
-        tracks, extra = apple_lookup(cid, country)
+        tracks, extra = apple_lookup(cid, country, cfg.get("genre", "").strip() or None)
         title, album_title, release = apple_naming(r, tracks)
         date = r["releaseDate"][:10]
         art = r.get("artworkUrl100", "").replace("100x100bb", "800x800bb")
@@ -162,10 +163,10 @@ def import_apple(imp, cfg):
         imp.create(key, "%s-apple-%s" % (date, cid), fields,
                    ["Apple Music: " + r["collectionViewUrl"].split("?")[0]], cover)
     enrich_apple(imp, albums, country)
-    backfill_apple_meta(imp, country)
+    backfill_apple_meta(imp, country, cfg.get("genre", "").strip() or None)
 
 
-def backfill_apple_meta(imp, country):
+def backfill_apple_meta(imp, country, genre=None):
     """すでにある Apple Music の作品のうち、ジャンル・再生時間・℗ の情報がまだないものに、足す(手で直した項目は、書き換えない)。
     ケース(CDケースの3D表示)の内側に出る。情報が1つでも入ったら、その作品はもう調べない"""
     for d in sorted(WORKS.glob("*-apple-*")):
@@ -175,7 +176,7 @@ def backfill_apple_meta(imp, country):
         if not cid.isdigit() or any(k in f for k in ("genre", "duration", "copyright")):
             continue
         try:
-            extra = apple_lookup(cid, country)[1]
+            extra = apple_lookup(cid, country, genre)[1]
         except Exception as e:
             print("  ! %s: Apple Music の情報を読み込めませんでした(%s)" % (f.get("title", d.name), e))
             continue

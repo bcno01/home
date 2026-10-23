@@ -7,7 +7,7 @@ auto: yes
 release: single
 tracks: ["レゴリス", "レゴリス (Instrumental)"]
 title-orig: Regolith
-genre: オルタナティブ
+genre: Alternative
 duration: 359
 copyright: ℗ 2025 My Ship
 links:

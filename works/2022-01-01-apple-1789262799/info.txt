@@ -6,7 +6,7 @@ source: apple-1789262799
 auto: yes
 release: ep
 tracks: ["あなたへ", "Bottle of Words", "Hzとカンフル", "ヤラズ", "速度ある理由"]
-genre: ロック
+genre: Alternative
 duration: 1112
 copyright: ℗ 2022 Myship
 links:

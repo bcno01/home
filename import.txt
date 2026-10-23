@@ -4,6 +4,8 @@
 # Apple Music のアーティストID、またはアーティストページのURL。空なら取り込みません
 apple: https://music.apple.com/jp/artist/bcno/1456770341
 apple-country: jp
+# 作品のジャンル(CD ケースの内側に出ます)。書くと、すべての作品に、この表記を使います。空なら、Apple Music の登録のままです
+genre: Alternative
 
 # YouTube のチャンネルURL(https://www.youtube.com/@名前 など)か、UC から始まるチャンネルID。空なら取り込みません
 # BCNO: https://www.youtube.com/c/BCNO01

@@ -7,7 +7,7 @@ auto: yes
 release: single
 tracks: ["静物学 (feat. 花世)", "静物学 (feat. 重音テト)"]
 title-orig: Still-Life Studies
-genre: アニメ
+genre: Alternative
 duration: 449
 copyright: ℗ 2024 My Ship
 links:

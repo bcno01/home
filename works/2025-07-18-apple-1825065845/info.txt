@@ -7,7 +7,7 @@ auto: yes
 release: single
 tracks: ["毒と花弁"]
 title-orig: Poison and Petals
-genre: オルタナティブ
+genre: Alternative
 duration: 204
 copyright: ℗ 2025 BCNO
 links:

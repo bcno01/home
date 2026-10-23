@@ -6,7 +6,7 @@ source: apple-1649531291
 auto: yes
 release: album
 tracks: ["背景を断つ", "信じえぬ証言", "象牙の塔", "UnderStand", "モノリス", "ルナ・エクリプス", "Good (bye) home", "逆説と浮遊", "カポタスト", "なくてななくせ", "桜桃が咲き、", "微笑んだ羊", "All in Good Time", "背景を断つ (エイハブ Remix)", "信じえぬ証言 (メドミア Remix)", "象牙の塔 (youまん Remix)", "UnderStand (Mikade Remix)", "モノリス (是 Remix)", "ルナ・エクリプス (Fushi Remix)", "That’s (my) life [ueil Remix]", "逆説と浮遊 (r-906 Remix)", "カポタスト (いよわ Remix)", "なくてななくせ (去女 Remix)", "桜桃が咲き、 (椎乃味醂 Remix)", "微笑んだ羊 (yuigot Remix)", "All in Good Time (Noz. Remix)"]
-genre: オルタナティブ
+genre: Alternative
 duration: 5457
 copyright: ℗ 2022 My Ship
 links:

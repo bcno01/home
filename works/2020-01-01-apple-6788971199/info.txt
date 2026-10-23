@@ -6,7 +6,7 @@ source: apple-6788971199
 auto: yes
 release: album
 tracks: ["Believe", "Dear my life", "シャドーミスト", "嘘と告白", "Imaginary Line", "冪", "情もわかない", "不規則な一秒", "エマ", "Das Gemeine", "Long Good Bye", "COLLAGE"]
-genre: オルタナティブ
+genre: Alternative
 duration: 3254
 copyright: ℗ 2020 BCNO
 links:

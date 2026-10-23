@@ -6,7 +6,7 @@ source: apple-1851925372
 auto: yes
 release: ep
 tracks: ["メタフィクション☆ショー", "メメント", "∅", "ニンゲンでよかった", "最終下校"]
-genre: アニメ
+genre: Alternative
 duration: 978
 copyright: ℗ 2025 LonePi & BCNO
 links:

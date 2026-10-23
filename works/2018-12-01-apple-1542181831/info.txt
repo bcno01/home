@@ -6,7 +6,7 @@ source: apple-1542181831
 auto: yes
 release: album
 tracks: ["D.C. (feat. IA)", "透明感 (feat. IA)", "PANDORA (feat. 初音ミク)", "108 (feat. 初音ミク)", "証 (feat. 闇音レンリ)", "サイダー (feat. 闇音レンリ)", "魚が死んだ (feat. IA)", "SUNRISE (feat. IA)", "三日月 (feat. IA)", "風 (feat. 闇音レンリ)", "とある夏 (feat. IA)", "ひとなみ (feat. IA)", "1/365歩 (feat. IA)", "fine. (feat. 初音ミク)"]
-genre: アニメ
+genre: Alternative
 duration: 4068
 copyright: ℗ 2018 My Ship
 links:
