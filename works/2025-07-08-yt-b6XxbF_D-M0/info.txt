@@ -3,6 +3,7 @@ date: 2025-07-08
 type: video
 source: youtube-b6XxbF_D-M0
 auto: yes
+bpm: 202
 links:
 YouTube: https://www.youtube.com/watch?v=b6XxbF_D-M0
 OffVocal / 歌詞: http://bit.ly/40pX8Bw

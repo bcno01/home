@@ -358,7 +358,6 @@ def read_work(d):
         tracks = []
     w = {
         "bpm": parse_bpm(f.get("bpm", "")),
-        "key": f.get("key", "").strip(),
         "slug": d.name,
         "dir": d,
         "title": f.get("title") or d.name,
@@ -380,9 +379,9 @@ def read_work(d):
         "clips": sorted(p for p in d.glob("bg*.mp4") if p.name != "bg.part.mp4"),  # 背景用のクリップ(add_bgclip.py が作る)
         "gallery": [p for p in images if p != cover],
     }
-    if w["type"] != "video" and (w["bpm"] or w["key"]):  # BPM・Key は MV にだけ出す
-        print("  ! %s: bpm: / key: は MV(type: video)にだけ表示します(この作品では表示しません)" % d.name)
-        w["bpm"], w["key"] = None, ""
+    if w["type"] != "video" and w["bpm"]:  # BPM は MV にだけ出す
+        print("  ! %s: bpm: は MV(type: video)にだけ表示します(この作品では表示しません)" % d.name)
+        w["bpm"] = None
     w["headline"] = make_headline(w, f)
     songs = {norm_song(clean_track(x)) for x in tracks}
     songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else w["title"]))
@@ -607,8 +606,6 @@ def render_work(site, w):
     song = ""
     if w["bpm"]:
         song += '<span class="sd">BPM <b>%s</b><i class="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></i></span>' % fmt_bpm(w["bpm"])
-    if w["key"]:
-        song += '<span class="sd">Key <b>%s</b></span>' % esc(w["key"])
     meta = '<p class="meta"><span class="badge">%s</span><time>%s</time>%s</p>' % (TYPES[w["type"]], fmt_date(w["date"]), song)
     gallery = ""
     if w["gallery"]:

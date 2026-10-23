@@ -3,6 +3,7 @@ date: 2022-11-02
 type: video
 source: youtube-fFGX32poMJI
 auto: yes
+bpm: 80
 links:
 YouTube: https://www.youtube.com/watch?v=fFGX32poMJI
 OffVocal / 歌詞: http://bit.ly/40pX8Bw

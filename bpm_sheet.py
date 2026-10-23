@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-# MV の BPM と Key を、スプレッドシート(Numbers・Excel など)でまとめて入力する(標準ライブラリのみ)
+# MV の BPM を、スプレッドシート(Numbers・Excel など)でまとめて入力する(標準ライブラリのみ)
 # 使い方: python3 bpm_sheet.py                 一覧を書き出す → 開く → 保存したら取り込む、までを順に行う(ふつうはこれ)
 #         python3 bpm_sheet.py export           一覧(bpm-key.csv)を書き出すだけ
-#         python3 bpm_sheet.py import           bpm-key.csv の BPM・Key を、作品の info.txt に取り込むだけ
+#         python3 bpm_sheet.py import           bpm-key.csv の BPM を、作品の info.txt に取り込むだけ
 #         python3 bpm_sheet.py --from 2022      対象にする最初の年(初めからの設定は 2022。それ以降の MV がすべて対象)
 #         python3 bpm_sheet.py --from 2018 --to 2021   年の範囲を指定
-# 一覧の列: フォルダ名(変えないでください)・日付・曲名・BPM・Key。BPM と Key の列だけ、入力します。
+# 一覧の列: フォルダ名(変えないでください)・日付・曲名・BPM。BPM の列だけ、入力します。
 # 取り込むのは、入力した行だけです(空の行は何もしません。入力済みの値を消したいときは、その作品の info.txt を直接直してください)。
+# 以前の一覧にあった Key の列は、読み飛ばします(Key は、サイトに表示しません)。
 # BPM は 30〜300 の数字だけ有効です。何度でも書き出し・取り込みを繰り返せます(書き出しは、入力済みの値も入れ直します)。
 import csv
 import subprocess
@@ -17,7 +18,7 @@ import import_works as iw
 
 CSV_PATH = iw.ROOT / "bpm-key.csv"
 BACKUP = iw.ROOT / "bpm-key.前回.csv"
-HEAD = ["フォルダ名", "日付", "曲名", "BPM", "Key"]
+HEAD = ["フォルダ名", "日付", "曲名", "BPM"]
 
 
 def mv_rows(y_from, y_to):
@@ -32,7 +33,7 @@ def mv_rows(y_from, y_to):
         d = build.parse_date(f.get("date")) or build.parse_date(info.parent.name)
         if t != "video" or not d or not (y_from <= d.year <= y_to):
             continue
-        rows.append((d, info.parent.name, f.get("title", info.parent.name), f.get("bpm", ""), f.get("key", "")))
+        rows.append((d, info.parent.name, f.get("title", info.parent.name), f.get("bpm", "")))
     rows.sort(key=lambda r: (r[0], r[1]), reverse=True)
     return rows
 
@@ -46,9 +47,9 @@ def export(y_from, y_to):
     with open(CSV_PATH, "w", encoding="utf-8-sig", newline="") as fp:
         w = csv.writer(fp)
         w.writerow(HEAD)
-        for d, slug, title, bpm, key in rows:
-            w.writerow([slug, d.strftime("%Y-%m-%d"), title, bpm, key])
-    filled = sum(1 for r in rows if r[3] or r[4])
+        for d, slug, title, bpm in rows:
+            w.writerow([slug, d.strftime("%Y-%m-%d"), title, bpm])
+    filled = sum(1 for r in rows if r[3])
     print("%d 本の MV(%d〜%d 年)を %s に書き出しました(入力済み %d 本)。" % (len(rows), y_from, y_to, CSV_PATH.name, filled))
     return len(rows)
 
@@ -73,16 +74,16 @@ def import_csv():
         return 0
     head = [h.strip().lower() for h in table[0]]
     try:
-        i_slug, i_bpm, i_key = head.index("フォルダ名"), head.index("bpm"), head.index("key")
+        i_slug, i_bpm = head.index("フォルダ名"), head.index("bpm")
     except ValueError:
-        print("見出し行(フォルダ名・日付・曲名・BPM・Key)が見つかりません。1行目は、書き出したままにしてください。")
+        print("見出し行(フォルダ名・日付・曲名・BPM)が見つかりません。1行目は、書き出したままにしてください。")
         return 0
     changed, bad, missing = 0, [], []
     for row in table[1:]:
-        if len(row) <= max(i_slug, i_bpm, i_key):
-            row = row + [""] * (max(i_slug, i_bpm, i_key) + 1 - len(row))
-        slug, bpm_raw, key = row[i_slug].strip(), row[i_bpm].strip(), row[i_key].strip()
-        if not slug or not (bpm_raw or key):
+        if len(row) <= max(i_slug, i_bpm):
+            row = row + [""] * (max(i_slug, i_bpm) + 1 - len(row))
+        slug, bpm_raw = row[i_slug].strip(), row[i_bpm].strip()
+        if not slug or not bpm_raw:
             continue
         info = iw.WORKS / slug / "info.txt"
         if not info.exists():
@@ -91,19 +92,16 @@ def import_csv():
         f = build.parse_info(info.read_text(encoding="utf-8"))[0]
         title = f.get("title", slug)
         updates = {}
-        if bpm_raw:
-            x = build.parse_bpm(bpm_raw)
-            if not x:
-                bad.append((title, bpm_raw))
-            elif build.fmt_bpm(x) != f.get("bpm", ""):
-                updates["bpm"] = build.fmt_bpm(x)
-        if key and key != f.get("key", ""):
-            updates["key"] = key
+        x = build.parse_bpm(bpm_raw)
+        if not x:
+            bad.append((title, bpm_raw))
+        elif build.fmt_bpm(x) != f.get("bpm", ""):
+            updates["bpm"] = build.fmt_bpm(x)
         if updates:
             iw.rewrite_info(info, updates)
             changed += 1
-            print("  + %s  %s" % (title[:30], "  ".join("%s %s" % (k.upper() if k == "bpm" else "Key", v) for k, v in updates.items())))
-    print("\n%d 本に、BPM・Key を書き込みました。" % changed)
+            print("  + %s  BPM %s" % (title[:30], updates["bpm"]))
+    print("\n%d 本に、BPM を書き込みました。" % changed)
     if bad:
         print("BPM を読み取れなかったものがあります(30〜300 の数字で入力してください):")
         for title, raw in bad:
@@ -143,7 +141,7 @@ def main():
         print("対象の MV がありませんでした。")
         return 1
     subprocess.run(["open", str(CSV_PATH)], check=False)  # 標準のアプリ(Numbers・Excel など)で開く
-    print("\nBPM と Key の列に入力して、保存してください(形式は CSV のままで構いません)。")
+    print("\nBPM の列に入力して、保存してください(形式は CSV のままで構いません)。")
     print("入力しない行は、何もしません。途中までの入力でも、取り込めます。")
     input("保存できたら、Enter を押してください(取り込みます): ")
     changed = import_csv()

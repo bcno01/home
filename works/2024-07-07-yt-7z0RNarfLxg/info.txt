@@ -3,6 +3,7 @@ date: 2024-07-07
 type: video
 source: youtube-7z0RNarfLxg
 auto: yes
+bpm: 136
 links:
 YouTube: https://www.youtube.com/watch?v=7z0RNarfLxg
 OffVocal / 歌詞: http://bit.ly/40pX8Bw
