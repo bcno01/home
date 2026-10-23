@@ -7,6 +7,9 @@ auto: yes
 release: ep
 tracks: ["静物学", "毒と花弁", "レゴリス", "瞬息", "RITE"]
 aliases: 姿
+genre: オルタナティブ
+duration: 982
+copyright: ℗ 2025 BCNO
 links:
 Apple Music: https://music.apple.com/jp/album/gestalt-ep/1836335027
 Spotify: https://open.spotify.com/album/4MdghitAUJ9a4oPUDn5zvQ

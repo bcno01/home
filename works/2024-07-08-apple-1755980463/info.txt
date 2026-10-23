@@ -7,6 +7,9 @@ auto: yes
 release: single
 tracks: ["静物学 (feat. 花世)", "静物学 (feat. 重音テト)"]
 title-orig: Still-Life Studies
+genre: アニメ
+duration: 449
+copyright: ℗ 2024 My Ship
 links:
 Apple Music: https://music.apple.com/jp/album/still-life-studies-single/1755980463
 Spotify: https://open.spotify.com/album/1cAY8ibPTpucyTXCHkqU0y

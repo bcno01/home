@@ -516,6 +516,212 @@
     document.documentElement.addEventListener('pointerleave', function () { peek.classList.remove('on'); });
   }
 
+  // ---- Streaming のジャケットを押すと、CD ケースの3D表示(ドラッグで回転・「ケースを開く」で表紙が開いてディスクが見える・「裏返す」で表裏。ESC・外側・×で閉じる) ----
+  (function () {
+    var cover = document.querySelector('.work-cover[data-cd]');
+    var img = cover && cover.querySelector('img');
+    if (!cover || !img) return;
+    var data;
+    try { data = JSON.parse(cover.dataset.cd); } catch (e) { return; }
+    var overlay = null;
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+    function open() {
+      if (overlay) return;
+      var tracks = data.tracks || [];
+      var shortNames = (data.short && data.short.length === tracks.length) ? data.short : tracks; // 裏面は、(feat. ○○)などを除いた短い曲名(一覧には、そのままの曲名)
+      overlay = el('div', 'cd-overlay');
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-label', 'CDケース: ' + data.title);
+      var close = el('button', 'cd-close', '\u00d7');
+      close.type = 'button';
+      close.setAttribute('aria-label', '閉じる');
+      var stage = el('div', 'cd-stage');
+      var cd = el('div', 'cd');
+      var src = img.currentSrc || img.src;
+      // 表紙(ドア): 外側 = ジャケット、内側 = ブックレットの表紙の裏
+      var door = el('div', 'cd-door');
+      var front = el('div', 'cd-f cd-front');
+      var fi = el('img');
+      fi.src = src;
+      fi.alt = '';
+      front.appendChild(fi);
+      var din = el('div', 'cd-f cd-doorin');
+      din.appendChild(el('h3', '', data.title));
+      if (data.artist) din.appendChild(el('p', '', data.artist));
+      // Apple Music の情報(あるものだけ): ジャンル・曲数と合計の再生時間・℗ の表記
+      var facts = [];
+      if (data.genre) facts.push(['GENRE', data.genre]);
+      if (tracks.length || data.time) facts.push(['TRACKS', (tracks.length ? tracks.length + '曲' : '') + (tracks.length && data.time ? ' \u00b7 ' : '') + (data.time || '')]);
+      if (facts.length) {
+        var dl = el('dl', 'cd-facts');
+        facts.forEach(function (kv) { dl.appendChild(el('dt', '', kv[0])); dl.appendChild(el('dd', '', kv[1])); });
+        din.appendChild(dl);
+      }
+      if (data.copyright) din.appendChild(el('small', '', data.copyright));
+      door.appendChild(front); door.appendChild(din);
+      // トレイとディスク(ジャケットを丸く切り抜いたレーベル面)
+      var tray = el('div', 'cd-f cd-tray');
+      var disc = el('div', 'disc');
+      var label = el('div', 'disc-label');
+      label.style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
+      disc.appendChild(label);
+      tray.appendChild(disc);
+      // 裏面: 作品名・名義・収録曲・発売日
+      var back = el('div', 'cd-f cd-back');
+      back.appendChild(el('h3', '', data.title));
+      if (data.artist) back.appendChild(el('p', '', data.artist));
+      var ol = el('ol');
+      tracks.slice(0, 36).forEach(function (t, i) {
+        var li = el('li');
+        var sp = el('span', '', shortNames[i]);
+        sp.title = t;
+        li.appendChild(sp);
+        ol.appendChild(li);
+      });
+      back.appendChild(ol);
+      back.appendChild(el('small', '', 'RELEASE ' + data.date));
+      var spine = el('div', 'cd-f cd-spine');
+      spine.appendChild(el('span', '', data.title));
+      cd.appendChild(tray); cd.appendChild(back); cd.appendChild(spine); cd.appendChild(door);
+      ['cd-right', 'cd-top', 'cd-bottom'].forEach(function (c) { cd.appendChild(el('div', 'cd-f ' + c)); });
+      stage.appendChild(cd);
+
+      var bar = el('div', 'cd-bar');
+      var openBtn = el('button', 'cd-btn', 'ケースを開く');
+      var flip = el('button', 'cd-btn', '裏返す');
+      var listBtn = el('button', 'cd-btn', '収録曲を見る');
+      [openBtn, flip, listBtn].forEach(function (b) { b.type = 'button'; bar.appendChild(b); });
+      listBtn.hidden = true;
+      var hint = el('p', 'cd-hint', 'ドラッグで回転');
+      // 収録曲の一覧(ふつうの文字。裏面で見切れるときに使う)
+      var panel = el('div', 'cd-list');
+      panel.hidden = true;
+      var head = el('div', 'cd-list-head');
+      var ht = el('div');
+      ht.appendChild(el('h3', '', data.title));
+      ht.appendChild(el('p', '', (data.artist ? data.artist + ' \u00b7 ' : '') + tracks.length + '曲'));
+      var listX = el('button', 'cd-btn', '閉じる');
+      listX.type = 'button';
+      head.appendChild(ht); head.appendChild(listX);
+      panel.appendChild(head);
+      var pol = el('ol');
+      tracks.forEach(function (t) { pol.appendChild(el('li', '', t)); });
+      panel.appendChild(pol);
+      [close, stage, bar, hint, panel].forEach(function (n) { overlay.appendChild(n); });
+      document.body.appendChild(overlay);
+      document.documentElement.style.overflow = 'hidden';
+      requestAnimationFrame(function () { overlay.classList.add('on'); });
+      close.focus();
+
+      // 曲が多いときの裏面: 1列・2列・3列を、それぞれ「はみ出さなくなるまで文字を小さく」して試し、曲名が切れる数がいちばん少ない並びを選ぶ。
+      // (切れる数が同じなら、文字が大きい並びを選ぶ)それでも切れる曲名があるとき(や、曲が多いとき)は、「収録曲を見る」(ふつうの文字の一覧)を出す
+      function fit() {
+        var over = function () { return ol.scrollHeight > ol.clientHeight + 1 || ol.scrollWidth > ol.clientWidth + 1; };
+        var cuts = function () { return [].filter.call(ol.querySelectorAll('span'), function (sp) { return sp.scrollWidth > sp.clientWidth + 1; }).length; };
+        function trial(cls) {
+          ol.className = cls;
+          ol.style.removeProperty('--tf');
+          var size = parseFloat(getComputedStyle(ol.firstChild || ol).fontSize) || 10, n = 0;
+          while (over() && size > 6.5 && n++ < 40) { size -= 0.3; ol.style.setProperty('--tf', size.toFixed(1) + 'px'); }
+          return { cls: cls, size: size, over: over(), cut: cuts() };
+        }
+        var cands = tracks.length <= 8 ? [''] : ['', 'two', 'three'];
+        var best = null;
+        cands.forEach(function (c) { var t = trial(c); if (!t.over && (!best || t.cut < best.cut || (t.cut === best.cut && t.size > best.size + 0.05))) best = t; });
+        if (!best) best = trial(cands[cands.length - 1]);
+        ol.className = best.cls;
+        ol.style.setProperty('--tf', best.size.toFixed(1) + 'px');
+        listBtn.hidden = !(best.over || best.cut || tracks.length > 12);
+      }
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (overlay) fit(); });
+
+      // 回転: ドラッグで ry(左右)・rx(上下)が変わる。離したあとは、勢いが少し残る。何もしないでいると、ゆっくり回る
+      var rx = -10, ry = calm ? -24 : -70, vx = 0, vy = 0, drag = false, lx = 0, ly = 0, idle = !calm, target = null, raf = 0, opened = false;
+      function apply() { cd.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)'; }
+      function toward(angle) { target = Math.round(ry / 360) * 360 + angle; } // いまの向きにいちばん近い、目標の向き
+      function tick() {
+        if (!overlay) return;
+        if (target !== null) { // 目標の角度へ、なめらかに近づく
+          ry += (target - ry) * 0.12;
+          rx += (-10 - rx) * 0.12;
+          if (Math.abs(target - ry) < 0.3) { ry = target; target = null; }
+        } else if (!drag) {
+          ry += vy; rx += vx;
+          vy *= 0.94; vx *= 0.94;
+          if (idle && !opened && Math.abs(vy) < 0.05) ry += 0.22; // ゆっくり回る(ケースを開いているときは、回らない)
+        }
+        rx = Math.max(-55, Math.min(55, rx));
+        if (opened && target === null) { var base = Math.round(ry / 360) * 360; ry = Math.max(base - 80, Math.min(base + 80, ry)); } // 開いているあいだは、表側から±80度までしか回らない(裏側からは見せない)
+        apply();
+        raf = requestAnimationFrame(tick);
+      }
+      if (!calm) toward(-24); // 開くときに、少し回りながら現れる
+      apply();
+      raf = requestAnimationFrame(tick);
+      stage.addEventListener('pointerdown', function (e) {
+        drag = true; idle = false; target = null; lx = e.clientX; ly = e.clientY; vx = vy = 0;
+        stage.setPointerCapture(e.pointerId);
+      });
+      stage.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var dx = e.clientX - lx, dy = e.clientY - ly;
+        lx = e.clientX; ly = e.clientY;
+        ry += dx * 0.6; rx -= dy * 0.4;
+        vy = dx * 0.25; vx = -dy * 0.15;
+      });
+      function up() { drag = false; }
+      stage.addEventListener('pointerup', up);
+      stage.addEventListener('pointercancel', up);
+      function turn() { if (opened) return; idle = false; vy = vx = 0; target = Math.round(ry / 180) * 180 + 180; } // 裏返すのは、ケースを閉じているときだけ
+      flip.addEventListener('click', turn);
+      stage.addEventListener('dblclick', turn);
+      openBtn.addEventListener('click', function () { // 表紙を開く(中のディスクが見える向きに、ケースを少し回す)/ 閉じる
+        opened = !opened;
+        idle = false; vy = vx = 0;
+        flip.disabled = opened;
+        overlay.classList.toggle('open', opened);
+        openBtn.textContent = opened ? 'ケースを閉じる' : 'ケースを開く';
+        toward(opened ? -14 : -24);
+      });
+      listBtn.addEventListener('click', function () { panel.hidden = !panel.hidden; listBtn.textContent = panel.hidden ? '収録曲を見る' : '収録曲を閉じる'; if (!panel.hidden) listX.focus(); });
+      listX.addEventListener('click', function () { listBtn.click(); listBtn.focus(); });
+      var buttons = [close, openBtn, flip, listBtn, listX];
+      function shut() {
+        if (!overlay) return;
+        var o = overlay;
+        overlay = null;
+        cancelAnimationFrame(raf);
+        o.classList.remove('on');
+        document.removeEventListener('keydown', onKey);
+        document.documentElement.style.overflow = '';
+        setTimeout(function () { o.remove(); }, 320);
+        cover.focus();
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { if (!panel.hidden) { listBtn.click(); } else { shut(); } }
+        else if (e.key === 'Tab') { // フォーカスを、表示の中に閉じ込める
+          e.preventDefault();
+          var vis = buttons.filter(function (b) { return !b.hidden && !b.disabled && b.offsetParent !== null; });
+          var i = vis.indexOf(document.activeElement);
+          vis[(i + (e.shiftKey ? vis.length - 1 : 1)) % vis.length].focus();
+        }
+        else if (e.key === 'ArrowLeft') { idle = false; ry -= 12; } else if (e.key === 'ArrowRight') { idle = false; ry += 12; }
+      }
+      document.addEventListener('keydown', onKey);
+      close.addEventListener('click', shut);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) shut(); });
+    }
+    cover.addEventListener('click', open);
+    cover.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  })();
+
   // ---- 背景動画のレンズ(マウスのある端末だけ) ----
   if (!fine || calm) return;
 

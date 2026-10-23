@@ -7,6 +7,9 @@ auto: yes
 release: single
 tracks: ["レゴリス", "レゴリス (Instrumental)"]
 title-orig: Regolith
+genre: オルタナティブ
+duration: 359
+copyright: ℗ 2025 My Ship
 links:
 Apple Music: https://music.apple.com/jp/album/regolith-single/1834633264
 Spotify: https://open.spotify.com/album/0F2TA1H7O1poxO6OBwPxdY

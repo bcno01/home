@@ -358,6 +358,9 @@ def read_work(d):
         tracks = []
     w = {
         "bpm": parse_bpm(f.get("bpm", "")),
+        "genre": f.get("genre", "").strip(),
+        "duration": int(f["duration"]) if f.get("duration", "").strip().isdigit() else 0,  # 全曲の合計の秒数(Apple Music から取り込む)
+        "copyright": f.get("copyright", "").strip(),
         "slug": d.name,
         "dir": d,
         "title": f.get("title") or d.name,
@@ -602,6 +605,30 @@ def render_related(w):
     return '<section class="related"><h2>%s</h2><div class="rows">%s</div></section>' % ("関連作品", rows)
 
 
+def fmt_duration(sec):
+    """秒数を、m:ss(1時間以上は h:mm:ss)にする"""
+    h, rest = divmod(int(sec), 3600)
+    m, s = divmod(rest, 60)
+    return "%d:%02d:%02d" % (h, m, s) if h else "%d:%02d" % (m, s)
+
+
+def cd_attrs(w):
+    """Streaming(音楽)の作品のジャケットを、押すと CD ケースの3D表示になるようにする属性(表示は fx.js と style.css)。表紙の画像があるときだけ"""
+    if w["type"] != "music" or not w["cover"]:
+        return ""
+    data = {"title": w["title"], "artist": w["desc"], "date": fmt_date(w["date"]), "tracks": list(w["tracks"]),
+            "short": [clean_track(t) or t for t in w["tracks"]]}  # short: 裏面用に、(feat. ○○)などを除いた曲名
+    # ケースの内側に出す、Apple Music の情報(ジャンル・曲数と合計の再生時間・℗ の表記)。あるものだけ
+    if w["genre"]:
+        data["genre"] = w["genre"]
+    if w["duration"]:
+        data["time"] = fmt_duration(w["duration"])
+    if w["copyright"]:
+        data["copyright"] = w["copyright"]
+    return (' data-cd="%s" role="button" tabindex="0" aria-label="CDケースの3D表示で見る"'
+            % esc(json.dumps(data, ensure_ascii=False)))
+
+
 def render_work(site, w):
     song = ""
     if w["bpm"]:
@@ -615,7 +642,7 @@ def render_work(site, w):
     body = """<header class="top"><div class="wrap"><a href="../../">← %s</a></div></header>
 <main class="wrap work">
 <div class="work-head%s"%s>
-<div class="work-cover">%s</div>
+<div class="work-cover"%s>%s</div>
 <div class="work-info">
 %s
 <h1>%s</h1>
@@ -632,7 +659,7 @@ def render_work(site, w):
 </main>""" % (
         esc(site["name"]),
         " pulse" if w["bpm"] else "", ' style="--beat:%.3fs"' % beat_seconds(w["bpm"]) if w["bpm"] else "",
-        cover_html(w, ""),
+        cd_attrs(w), cover_html(w, ""),
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),

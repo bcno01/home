@@ -7,6 +7,9 @@ auto: yes
 release: single
 tracks: ["あかぬけたよね (feat. BCNO & 星界)"]
 title-orig: あかぬけたよね (feat. BCNO & 星界)
+genre: J-Pop
+duration: 179
+copyright: ℗ 2023 ESHIKARA
 links:
 Apple Music: https://music.apple.com/jp/album/%E3%81%82%E3%81%8B%E3%81%AC%E3%81%91%E3%81%9F%E3%82%88%E3%81%AD-feat-bcno-%E6%98%9F%E7%95%8C-single/1666450005
 Spotify: https://open.spotify.com/album/02BLduh69c5XsM7uvuT70F

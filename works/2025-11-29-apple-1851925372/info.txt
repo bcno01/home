@@ -6,6 +6,9 @@ source: apple-1851925372
 auto: yes
 release: ep
 tracks: ["メタフィクション☆ショー", "メメント", "∅", "ニンゲンでよかった", "最終下校"]
+genre: アニメ
+duration: 978
+copyright: ℗ 2025 LonePi & BCNO
 links:
 Apple Music: https://music.apple.com/jp/album/marble-ep/1851925372
 Spotify: https://open.spotify.com/album/5qcdvffCcwv8ZoECo8fFo4
