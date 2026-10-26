@@ -367,9 +367,14 @@ def read_work(d):
                 break
     embeds = [e for e in (embed_for(u) for _, u in links) if e]
     audio = [e for e in embeds if e[0] == "audio"]
-    if len(audio) > 1:  # 音楽プレーヤーは1つだけ(Spotify があれば優先)
-        keep = next((e for e in audio if "open.spotify.com" in e[1]), audio[0])
-        embeds = [e for e in embeds if e[0] != "audio" or e is keep]
+    if len(audio) > 1:
+        spotify = next((e for e in audio if "open.spotify.com" in e[1]), None)
+        apple = next((e for e in audio if "music.apple.com" in e[1]), None)
+        if (t if t in TYPES else infer_type(links)) == "music" and spotify and apple:  # Streaming は、Spotify と Apple Music の両方を出す
+            keep = [spotify, apple]
+        else:  # ほかは、音楽プレーヤーは1つだけ(Spotify があれば優先)
+            keep = [spotify or audio[0]]
+        embeds = [e for e in embeds if e[0] != "audio" or any(e is k for k in keep)]
     embeds = embeds[:3]
     date = parse_date(f.get("date")) or parse_date(d.name)
     if not date:
@@ -771,6 +776,13 @@ def render_rel_tags(w):
     return '<div class="rel-tags"><span class="rel-label">関連</span>%s</div>' % tags
 
 
+def render_embeds(w):
+    """埋め込みプレーヤー。音楽のプレーヤーが2つ(Spotify と Apple Music)のときは、PC では横に2つ並べる(CSS の .embeds.two)"""
+    html_ = "".join(render_embed(e, w["title"]) for e in w["embeds"])
+    two = sum(1 for e in w["embeds"] if e[0] == "audio") >= 2 and all(e[0] == "audio" for e in w["embeds"])
+    return '<div class="embeds two">%s</div>' % html_ if two else html_
+
+
 def render_related(w):
     if not w["related"]:
         return ""
@@ -842,7 +854,7 @@ def render_work(site, w):
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
         link_buttons(list(w["links"]) + booth_buttons(w)), download_buttons(w), render_rel_tags(w), render_tracks(w),
-        "".join(render_embed(e, w["title"]) for e in w["embeds"]),
+        render_embeds(w),
         paragraphs(w["body"]), render_booth(w) + render_related(w), gallery)
     og = None
     if site.get("url") and w["cover"]:
