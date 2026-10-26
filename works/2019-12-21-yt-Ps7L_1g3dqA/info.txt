@@ -5,4 +5,3 @@ source: youtube-Ps7L_1g3dqA
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=Ps7L_1g3dqA
-Off Vocal: https://ux.nu/gOYDA

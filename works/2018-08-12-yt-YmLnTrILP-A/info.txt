@@ -5,4 +5,3 @@ source: youtube-YmLnTrILP-A
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=YmLnTrILP-A
-Off Vocal: https://goo.gl/uEAk1C

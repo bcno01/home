@@ -5,4 +5,3 @@ source: youtube-KAhchqRQZwg
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=KAhchqRQZwg
-Off vocal: https://ux.nu/jhw5d

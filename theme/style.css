@@ -375,6 +375,14 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 }
 .btn:hover { transform: translateY(-2px); border-color: var(--dark); }
 .btn.primary { background: var(--main); border-color: var(--main); color: var(--white); }
+/* オフボーカル・歌詞のダウンロード(作品のフォルダに offvocal.mp3 / lyrics.txt を置くと出る) */
+.downloads { margin-top: 14px; }
+.downloads .links { margin-top: 0; }
+.btn.dl { background: transparent; border: 2px solid currentColor; color: var(--fg); display: inline-flex; align-items: baseline; gap: 2px; }
+.btn.dl small { margin-left: 10px; font: 600 11px/1 var(--head); opacity: .6; letter-spacing: .04em; }
+.btn.dl:hover { background: var(--fg); color: var(--white); border-color: var(--fg); }
+.dl-note { margin: 8px 0 0; font: 600 12px/1.6 var(--head); color: var(--muted); }
+.dl-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .btn.primary:hover { border-color: var(--dark); }
 /* サービスごとのイメージカラー */
 .btn[data-svc] { color: #fff; border-color: transparent; }

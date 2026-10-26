@@ -6,4 +6,3 @@ auto: yes
 bpm: 129
 links:
 YouTube: https://www.youtube.com/watch?v=X5U_hrcv4VY
-OffVocal / 歌詞: http://bit.ly/40pX8Bw

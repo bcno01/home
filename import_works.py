@@ -350,9 +350,18 @@ def youtube_channel_id(v):
 _MATERIAL = re.compile(r"off\s*vocal|オフボーカル|オフヴォーカル|素材|ダウンロード|download|配布|\bDL\b", re.I)
 
 
+def materials_on():
+    """import.txt の materials: が no なら、概要欄からの素材リンクの自動取り込みをしない"""
+    path = ROOT / "import.txt"
+    cfg = build.parse_info(path.read_text(encoding="utf-8"))[0] if path.exists() else {}
+    return cfg.get("materials", "yes").strip().lower() not in ("no", "off", "false", "0", "いいえ")
+
+
 def material_links(desc):
     """動画の概要欄から、オフボーカル・素材などの配布リンクを拾う。「OffVocal / 歌詞 - https://…」のような行が対象。[(名前, URL)]"""
     out = []
+    if not materials_on():
+        return out
     for line in desc.splitlines():
         m = re.search(r"https?://\S+", line)
         if not m or not _MATERIAL.search(line[:m.start()]):

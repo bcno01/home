@@ -6,4 +6,3 @@ auto: yes
 yt-title: 主の祈り feat.BCNO/鏡音リン MV
 links:
 YouTube: https://www.youtube.com/watch?v=_00rPzoyj4A
-offvocal+4~-4: https://drive.google.com/open?id=1u_yFU-z1PHrjQRzgY_DmZbpKEWvNi71W

@@ -18,6 +18,9 @@ WORKS = ROOT / "works"
 OUT = ROOT / "docs"
 THEME = ROOT / "theme"
 IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
+# 作品のフォルダに置くと、作品ページに「ダウンロード」ボタンが出るファイル(ファイル名の頭が、offvocal / lyrics)
+DL_KINDS = (("offvocal", "オフボーカル", {".mp3", ".wav", ".m4a", ".flac", ".zip"}),
+            ("lyrics", "歌詞", {".txt", ".pdf"}))
 
 TYPES = {"video": "MV", "music": "Streaming", "project": "Projects", "goods": "通販・グッズ", "other": "その他"}
 TYPE_ALIAS = {
@@ -356,7 +359,20 @@ def read_work(d):
         tracks = json.loads(f["tracks"]) if f.get("tracks") else []
     except ValueError:
         tracks = []
+    downloads = []  # ダウンロードのボタン。{"name": ボタンの名前, "path": 作品フォルダのファイル(なければ None), "url": 外部のURL, "ext": 種類, "size": バイト数}
+    for stem, name, exts in DL_KINDS:
+        for p in sorted(d.iterdir()):  # 作品のフォルダに置いたファイル(offvocal.mp3 / lyrics.txt など)
+            if p.is_file() and p.stem.lower() == stem and p.suffix.lower() in exts and not p.name.startswith((".", "_")):
+                downloads.append({"name": name, "path": p, "url": "", "ext": p.suffix[1:].upper(), "size": p.stat().st_size})
+                if p.stat().st_size > 50 * 1048576:
+                    print("  ! %s: %s は %s あります。GitHub は 1ファイル100MBまでで、公開サイトも重くなるので、mp3 にするか、GitHub の Releases に置くことをおすすめします(オフボーカルを置く.command)" % (d.name, p.name, fmt_size(p.stat().st_size)))
+        url = f.get(stem, "").strip()  # info.txt の offvocal: URL / lyrics: URL(GitHub の Releases に置いたファイルなど。種類と大きさは offvocal-type: / offvocal-size:)
+        if url.startswith("http"):
+            size = f.get(stem + "-size", "").strip()
+            downloads.append({"name": name, "path": None, "url": url, "size": int(size) if size.isdigit() else 0,
+                              "ext": (f.get(stem + "-type", "") or Path(url.split("?")[0]).suffix[1:]).strip().upper()})
     w = {
+        "downloads": downloads,
         "bpm": parse_bpm(f.get("bpm", "")),
         "genre": f.get("genre", "").strip(),
         "duration": int(f["duration"]) if f.get("duration", "").strip().isdigit() else 0,  # 全曲の合計の秒数(Apple Music から取り込む)
@@ -536,6 +552,24 @@ def svc_of(url):
             "ニコニコ動画": "niconico", "BOOTH": "booth", "SoundCloud": "soundcloud", "Bandcamp": "bandcamp"}.get(name, "")
 
 
+def fmt_size(n):
+    return "%.1fMB" % (n / 1048576) if n >= 1048576 else "%dKB" % max(1, round(n / 1024))
+
+
+def download_buttons(w):
+    """作品のフォルダに置いたオフボーカル・歌詞のファイルを、直接ダウンロードするボタン(あるときだけ)"""
+    if not w["downloads"]:
+        return ""
+    def btn(x):
+        info = " · ".join(v for v in (esc(x["ext"]), fmt_size(x["size"]) if x["size"] else "") if v)
+        return ('<a class="btn dl" href="%s" download%s>%s<span aria-hidden="true"> ↓</span>%s</a>'
+                % (esc(x["url"] or quote(x["path"].name)), ' rel="noopener"' if x["url"] else "", esc(x["name"]),
+                   "<small>%s</small>" % info if info else ""))
+    btns = "\n".join(btn(x) for x in w["downloads"])
+    return ('<div class="downloads"><div class="links">%s</div>'
+            '<p class="dl-note">ご利用の前に、<a href="../../#guideline">ガイドライン</a>をご確認ください。</p></div>' % btns)
+
+
 def link_buttons(links):
     out = []
     for i, (lab, u) in enumerate(links):
@@ -650,6 +684,7 @@ def render_work(site, w):
 %s
 <div class="links">%s</div>
 %s
+%s
 </div>
 </div>
 %s
@@ -663,7 +698,7 @@ def render_work(site, w):
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
-        link_buttons(list(w["links"]) + booth_buttons(w)), render_tracks(w),
+        link_buttons(list(w["links"]) + booth_buttons(w)), download_buttons(w), render_tracks(w),
         "".join(render_embed(e, w["title"]) for e in w["embeds"]),
         paragraphs(w["body"]), render_booth(w) + render_related(w), gallery)
     og = None
@@ -1122,6 +1157,14 @@ def main():
             save_image(w["cover"], wdir / w["cover"].name, 900, written)
         for p in w["gallery"]:
             save_image(p, wdir / p.name, 1800, written)
+        for x in w["downloads"]:
+            if not x["path"]:
+                continue
+            p = x["path"]
+            dst = wdir / p.name
+            written.add(dst)
+            if not (dst.exists() and dst.stat().st_mtime >= p.stat().st_mtime):
+                shutil.copy2(p, dst)
         for clip in w["clips"]:
             dst = wdir / clip.name
             written.add(dst)

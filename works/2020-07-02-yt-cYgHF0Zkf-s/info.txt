@@ -5,4 +5,3 @@ source: youtube-cYgHF0Zkf-s
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=cYgHF0Zkf-s
-OffVocal / 歌詞: http://bit.ly/40pX8Bw
