@@ -620,8 +620,9 @@ def render_offvocal(works, g):
     if not rows:
         return ""
     gl = g["link"] if g and g["link"] else ""
-    note = '<p class="note">%s%s</p>' % ("オフボーカル・歌詞のダウンロードです。ご利用の前に、ガイドラインをご確認ください。",
-                                          ' <a href="%s" target="_blank" rel="noopener">ガイドライン全文(note) ↗</a>' % esc(gl) if gl else "")
+    # 注意書き。文中の「%s」の場所に、ガイドライン全文(note)へのリンクが入る(リンクにしたい言葉は、下の glink の中の文字)。改行は <br>
+    glink = '<a href="%s" target="_blank" rel="noopener">ガイドライン</a>' % esc(gl) if gl else "ガイドライン"
+    note = '<p class="note">%s</p>' % ("オフボーカル・歌詞のダウンロードが可能です。<br>ご利用の前に必ず%sをご確認ください。" % glink)
     def row(w):  # 1行 = 曲名(作品のページへのリンク)と、その右隣にダウンロードのボタン
         return ('<div class="ov"><a class="t" href="w/%s/">%s</a><div class="ov-btns">%s</div></div>'
                 % (quote(w["slug"]), esc(video_song(w["title"]) if w["type"] == "video" else w["title"]),
