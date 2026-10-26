@@ -249,6 +249,17 @@ def video_song(title):
     return title.split(" - ", 1)[1].strip() if " - " in title else title.strip()
 
 
+def trailer_album(title):
+    """Trailer / XFD の動画タイトルから、アルバム・EP の名前を取り出す(「D.C. / BCNO」2nd Album Trailer → D.C.、BCNO 5th Album - Kith and Kin - Trailer → Kith and Kin、1st EP「Day Breaks」XFD → Day Breaks)"""
+    m = re.search(r"[「『](.+?)[」』]", title)
+    if m:
+        name = m.group(1)
+    else:
+        m = re.search(r"\s-\s(.+?)\s-\s*(?:Trailer|XFD)", title, re.I)
+        name = m.group(1) if m else title
+    return re.sub(r"\s*/\s*BCNO\s*$", "", name).strip()
+
+
 def make_headline(w, f):
     """作品の見出し文。info.txt の headline: があればそれを使う"""
     if f.get("headline"):
@@ -419,7 +430,8 @@ def read_work(d):
         w["bpm"] = None
     w["headline"] = make_headline(w, f)
     songs = {norm_song(clean_track(x)) for x in tracks}
-    songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else w["title"]))
+    # 関連作品の判定に使う名前: MV は曲名、Trailer はアルバム・EP の名前(同じ名前の Streaming と結びつき、その BOOTH も付く)、ほかは作品名
+    songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else trailer_album(w["title"]) if w["type"] == "trailer" else w["title"]))
     w["songs"] = {x for x in songs if x}
     return w
 

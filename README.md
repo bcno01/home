@@ -154,7 +154,8 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 - **Trailer になる動画は、「プレイリストに入っている動画」に限ります**: `import.txt` の `trailer-playlist:`(いまは「オリジナル曲」のプレイリスト)に入っていて、**かつ**、タイトルに `XFD`・`Trailer`・`トレーラー` のどれかを含む動画だけが、Trailer です(大文字・小文字は区別しません)。同じ XFD でも、このプレイリストに入っていない動画(関わらせて頂いた作品の XFD など)は、Projects のままです。
 - **自動で入ります**: `MVを追加.command`(`add_youtube.py`)で追加するときと、毎日の自動取り込みで、上の条件に合う動画は、自動で Trailer になります(プレイリストは、先頭100本までを調べます)。ただし、毎日の自動取り込みは、`youtube-exclude: Trailer, Teaser` の除外ワードにより、タイトルに Trailer を含む動画は、取り込みません。Trailer を足すときは、プレイリストに入れてから、`python3 add_youtube.py --force URL` で追加してください(`--force` が、除外ワードを飛ばします。分類は、自動で Trailer になります)。
 - **手で変えるとき**: その作品の `info.txt` の `type:` を `trailer`(または `トレーラー`)にします。
-- BPM・オフボーカルは、MV にだけ付きます。Trailer と Projects には出ません。Trailer は、BOOTH の商品との自動の紐づけもしません(案件と同じです)。
+- BPM・オフボーカルは、MV にだけ付きます。Trailer と Projects には出ません。
+- **Streaming との関連づけと、BOOTH**: Trailer のタイトルから、アルバム・EP の名前を取り出し(「D.C. / BCNO」2nd Album Trailer → `D.C.`、`BCNO 5th Album - Kith and Kin - Trailer` → `Kith and Kin`、`1st EP「Day Breaks」XFD` → `Day Breaks`)、**同じ名前の Streaming の作品と、お互いの「関連作品」に、自動でリンクします**。その Streaming に BOOTH の商品があれば、Trailer のページにも、「BOOTH(作品名)」のボタンが付きます(MV と同じ仕組みです)。同じ名前の Streaming がない Trailer(「Periodic Table」「Day Breaks」「二〇一六」など)には、何も付きません。名前が合わないときは、`info.txt` に `related: 作品名` を書きます。
 - いまの Trailer は、8本です(「二〇一六」「D.C.」「途中」「Day Breaks」XFD「Periodic Table」「COLLAGE」「Nightfall」「Kith and Kin」)。「Tribute Album - 経緯 - Trailer」は、以前に消した記録があるため、入れていません(入れたいときは、`python3 add_youtube.py --force --type trailer URL`)。
 
 ## Works の一覧(年のタブ)
