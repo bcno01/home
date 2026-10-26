@@ -31,7 +31,7 @@ form-key: 67459036-52f8-4b01-95c6-f71207ef9cd2
 
 # 左のメニューに「Works」「Events」に続いて並ぶ項目(配信ページ・通販ページなど)
 menu:
-Shop: https://myship.booth.pm/
+CD / Goods: https://myship.booth.pm/
 Guideline: #guideline
 
 # メニューの下に小さく並ぶリンク(音楽サービスとSNS。名前は省略するとURLから自動で付きます)

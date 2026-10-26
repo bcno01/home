@@ -309,7 +309,7 @@ def import_spotify(imp, cfg):
 
 
 def import_booth(imp, cfg):
-    """BOOTH のショップの全商品(名前・価格・URL)を 設定/booth-items.json に保存する"""
+    """BOOTH のショップの全商品(名前・価格・URL・画像)を 設定/booth-items.json に保存する"""
     m = re.match(r"https?://([a-z0-9-]+\.booth\.pm)", cfg["booth"].strip())
     if not m:
         print("  ! 設定/import.txt の booth: からショップのURLを読み取れませんでした")
@@ -325,8 +325,11 @@ def import_booth(imp, cfg):
     items = []
     for pid in ids:
         d = json.loads(fetch("https://booth.pm/ja/items/%s.json" % pid))
+        imgs = d.get("images") or []
         items.append({"id": int(pid), "name": d["name"], "price": int(re.sub(r"\D", "", str(d.get("price", "0"))) or 0),
-                      "url": d.get("url") or "https://%s/items/%s" % (m.group(1), pid)})
+                      "url": d.get("url") or "https://%s/items/%s" % (m.group(1), pid),
+                      "image": (imgs[0].get("original") or "") if imgs else "",
+                      "category": ((d.get("category") or {}).get("parent") or d.get("category") or {}).get("name", "")})  # 商品の1枚目の画像(サイトの「CD / Goods」に出す)
         time.sleep(0.3)
     items.sort(key=lambda x: -x["id"])
     old = json.loads(BOOTH_FILE.read_text(encoding="utf-8")) if BOOTH_FILE.exists() else []

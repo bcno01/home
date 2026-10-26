@@ -771,6 +771,49 @@ def booth_buttons(w):
     return [("BOOTH(%s)" % r["title"], i["url"]) for r, i in w["booth_rel"] if _CD.search(i["name"])][:2]
 
 
+def is_booth_shop(url):
+    """BOOTH のショップのトップ(例: https://myship.booth.pm/)を指すURLか"""
+    u = urlparse(url)
+    return u.netloc.endswith("booth.pm") and u.path.rstrip("/") in ("", "/ja")
+
+
+def booth_thumb(url, size=300):
+    """BOOTH の商品画像の、小さい版(元の画像は大きいので、サイズを指定した版を出す)"""
+    pre = "https://booth.pximg.net/"
+    return pre + "c/%dx%d_a2_g5/" % (size, size) + url[len(pre):] if url.startswith(pre) and "/c/" not in url else url
+
+
+SHOP_KINDS = [("cd", "CD"), ("goods", "Goods"), ("other", "Other")]
+
+
+def shop_kind(item):
+    """商品の分類(CD / Goods / Other)。BOOTH の大きな分類(音楽 → CD、グッズ・ファッション → Goods、それ以外 → Other)から決める"""
+    cat = item.get("category", "")
+    if cat == "音楽" or _CD.search(item["name"]):
+        return "cd"
+    return "goods" if cat in ("グッズ", "ファッション") else "other"
+
+
+def render_shop(items, shop_url, label="CD / Goods"):
+    """メニューの「CD / Goods」: BOOTH の商品を、画像・名前・価格で並べる(購入は、各商品の BOOTH のページ)。種類(All / CD / Goods / Other)で絞り込める。商品がなければ空"""
+    if not items:
+        return ""
+    cards = "".join(
+        '<a class="shop-item" data-kind="%s" href="%s" target="_blank" rel="noopener"><span class="shop-img">%s</span>'
+        '<span class="shop-name">%s</span><span class="shop-price">¥%s</span></a>'
+        % (shop_kind(i), esc(i["url"]), '<img src="%s" alt="" loading="lazy" referrerpolicy="no-referrer">' % esc(booth_thumb(i["image"])) if i.get("image") else "",
+           esc(i["name"]), "{:,}".format(i["price"])) for i in items)
+    present = [(k, n) for k, n in SHOP_KINDS if any(shop_kind(i) == k for i in items)]
+    chips = ""
+    if len(present) > 1:
+        chips = '<nav class="shop-chips chips" aria-label="絞り込み"><button type="button" class="shop-chip" data-kind="all" aria-pressed="true">All</button>%s</nav>' % "".join(
+            '<button type="button" class="shop-chip" data-kind="%s" aria-pressed="false">%s</button>' % (k, n) for k, n in present)
+    return ('<section class="rpanel" id="shop" aria-label="%s"><h2 class="ptitle">%s</h2>'
+            '<p class="note">商品のご購入は、BOOTH の各商品のページで行います。</p>%s'
+            '<div class="shop-grid">%s</div><p class="more-link"><a href="%s" target="_blank" rel="noopener">BOOTH のショップを開く ↗</a></p></section>'
+            % (esc(label), esc(label), chips, cards, esc(shop_url)))
+
+
 def render_booth(w):
     rel_only = not w["booth"]
     rows = [(i, None) for i in w["booth"]] + ([(i, r) for r, i in w["booth_rel"][:4]] if rel_only else [])
@@ -972,7 +1015,7 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    panel = {"#works": "works", "#events": "events", "#offvocal": "offvocal", "#contact": "contact", "#guideline": "guideline"}.get(url)
+    panel = {"#works": "works", "#events": "events", "#offvocal": "offvocal", "#contact": "contact", "#guideline": "guideline", "#shop": "shop"}.get(url)
     attrs = ' target="_blank" rel="noopener"' if ext else (
         ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
@@ -1220,7 +1263,10 @@ def render_index(site, works):
     bgvideo = render_bgvideo(site)
 
     guideline = load_guideline()
-    menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # 設定/guideline.txt がなければ「Guideline」の項目は出さない
+    booth_items = load_booth()
+    shop_label, shop_url = next(((lab, u) for lab, u in site["menu"] if is_booth_shop(u)), ("", ""))
+    shop = render_shop(booth_items, shop_url, shop_label or "CD / Goods") if shop_url else ""  # メニューの Shop(BOOTH のショップのURL)があれば、サイトの中に商品の一覧を作る
+    menu = [(lab, "#shop" if shop and is_booth_shop(u) else u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # 設定/guideline.txt がなければ「Guideline」の項目は出さない
     offvocal = render_offvocal(works, guideline)  # オフボーカル・歌詞がある作品があるときだけ、メニューに「OffVocal」が出る(Shop と Guideline の間)
     if offvocal:
         at = next((i for i, (_, u) in enumerate(menu) if u == "#guideline"), len(menu))
@@ -1316,6 +1362,16 @@ def render_index(site, works):
     }
     box.addEventListener('input', apply);
     box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && box.value) { box.value = ''; apply(); e.stopPropagation(); } });
+  })();
+  // CD / Goods の絞り込み(All / CD / Goods / Other)
+  (function () {
+    var chips = [].slice.call(document.querySelectorAll('.shop-chip')), cards = [].slice.call(document.querySelectorAll('.shop-item'));
+    chips.forEach(function (b) {
+      b.addEventListener('click', function () {
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
+        cards.forEach(function (c) { c.hidden = b.dataset.kind !== 'all' && c.dataset.kind !== b.dataset.kind; });
+      });
+    });
   })();
   var W = tabify(document.querySelector('#works .yrs'));
   var yrs = W.yrs, tabs = W.tabs, bar = W.bar, show = W.show;
@@ -1414,12 +1470,13 @@ def render_index(site, works):
 %s
 %s
 %s
+%s
 </div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
          nav, sns,
-         render_feature(site, works), chips, rows, render_events(load_events()), offvocal, render_guideline(guideline), render_contact(site), about, script)
+         render_feature(site, works), chips, rows, render_events(load_events()), offvocal, shop, render_guideline(guideline), render_contact(site), about, script)
     og = None
     if site.get("url") and site["og_image"] and (CONFIG / site["og_image"]).is_file():  # 設定/site.txt の og-image: で指定した画像
         og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)
