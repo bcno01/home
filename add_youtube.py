@@ -157,11 +157,14 @@ def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False, bpm=Non
     if bulk and not force and any(w in title.lower() for w in EXCLUDE):
         print("  - %s: 「%s」は除外ワードを含むので、飛ばしました(追加するなら --force)" % (vid, title))
         return False
+    orig_type = wtype
+    if wtype in ("video", "project") and iw.is_trailer(title, vid):  # import.txt の trailer-playlist のプレイリストに入っていて、タイトルに XFD / Trailer を含む動画は、Trailer にする
+        wtype = "trailer"
     mats = iw.material_links(desc)
-    if wtype == "project":  # 案件は、概要欄の配信・販売のリンクも、ボタンにする
+    if orig_type == "project":  # 案件は、概要欄の配信・販売のリンクも、ボタンにする
         mats += alive([m for m in iw.stream_links(desc) if m[1] not in {u for _, u in mats}])
     fields = [("title", title), ("date", date), ("type", wtype)]
-    if wtype == "project":  # 案件は、長い題名を短くする(元の題名は yt-title: に残す)
+    if orig_type == "project":  # 案件は、長い題名を短くする(元の題名は yt-title: に残す)
         short = tidy_title(title)
         if short != title:
             fields = [("title", short), ("date", date), ("type", wtype), ("yt-title", title)]

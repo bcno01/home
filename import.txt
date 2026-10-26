@@ -12,6 +12,8 @@ genre: Alternative
 youtube: UCcWRWyaHi1_RTHYUk6KG4kg
 # YouTube ショート動画も取り込むか(yes / no)
 youtube-shorts: no
+# Trailer(XFD・アルバムのトレーラーなど)にする動画を決めるプレイリスト。ここに入っていて、タイトルに XFD / Trailer / トレーラーを含む動画だけが、Trailer になります
+trailer-playlist: https://youtube.com/playlist?list=PL8O-SJ_gM65IE0SW9J-Aodw4blVCunJfR
 # YouTube の概要欄にある、オフボーカルなどの素材のリンクを、作品のボタンとして取り込むか(yes / no)。
 # オフボーカルは、サイトから直接ダウンロードする形に変えたので、no にしています(直接ダウンロードは README の「オフボーカル・歌詞のダウンロード」)
 materials: no

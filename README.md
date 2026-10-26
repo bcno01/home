@@ -147,6 +147,16 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 
 ページを新しく開いたとき(URL を開く・リンクを押す)は、いつも **Works** が開きます。再読み込みと、ブラウザの「戻る」のときだけは、前に開いていたパネルを引き継ぎます。`https://…/#contact` のように、URL の最後にパネル名(`#works`・`#events`・`#guideline`・`#contact`)を付けると、新しく開いたときも、そのパネルが開きます。
 
+## Trailer の分類
+
+アルバム・EP の予告(Trailer)や、クロスフェードデモ(XFD)の動画は、**Trailer** という分類にまとまります。Works の絞り込みのボタンは、「All」「MV」「**Trailer**」「Streaming」「Projects」の順で、MV と Streaming の間に出ます(作品ページのバッジや、一覧の右端の表示も「Trailer」です)。
+
+- **Trailer になる動画は、「プレイリストに入っている動画」に限ります**: `import.txt` の `trailer-playlist:`(いまは「オリジナル曲」のプレイリスト)に入っていて、**かつ**、タイトルに `XFD`・`Trailer`・`トレーラー` のどれかを含む動画だけが、Trailer です(大文字・小文字は区別しません)。同じ XFD でも、このプレイリストに入っていない動画(関わらせて頂いた作品の XFD など)は、Projects のままです。
+- **自動で入ります**: `MVを追加.command`(`add_youtube.py`)で追加するときと、毎日の自動取り込みで、上の条件に合う動画は、自動で Trailer になります(プレイリストは、先頭100本までを調べます)。ただし、毎日の自動取り込みは、`youtube-exclude: Trailer, Teaser` の除外ワードにより、タイトルに Trailer を含む動画は、取り込みません。Trailer を足すときは、プレイリストに入れてから、`python3 add_youtube.py --force URL` で追加してください(`--force` が、除外ワードを飛ばします。分類は、自動で Trailer になります)。
+- **手で変えるとき**: その作品の `info.txt` の `type:` を `trailer`(または `トレーラー`)にします。
+- BPM・オフボーカルは、MV にだけ付きます。Trailer と Projects には出ません。Trailer は、BOOTH の商品との自動の紐づけもしません(案件と同じです)。
+- いまの Trailer は、8本です(「二〇一六」「D.C.」「途中」「Day Breaks」XFD「Periodic Table」「COLLAGE」「Nightfall」「Kith and Kin」)。「Tribute Album - 経緯 - Trailer」は、以前に消した記録があるため、入れていません(入れたいときは、`python3 add_youtube.py --force --type trailer URL`)。
+
 ## Works の一覧(年のタブ)
 
 トップの Works は、年ごとのタブが横に並び、選んだ年の作品だけが出ます(最初はいちばん新しい年。タブの右の数字は、その年の作品数)。タブが画面に入りきらないときは、横にスワイプ(PC は横スクロール)できます。「MV」「Streaming」「Projects」(案件)で絞り込むと、件数が数え直され、該当のない年のタブは隠れ、絞り込みを切り替えるたびに、該当のあるいちばん新しい年が選ばれます。年は、作品の `date:` で決まります。
@@ -216,7 +226,8 @@ WAV(24bit/48kHz で、3分半の曲なら約 60MB)を、サイトのリポジト
 
 1. `コマンド/オフボーカルを置く.command` をダブルクリックします(中身は `offvocal_upload.py`)。
 2. どの MV に付けるか(番号か、フォルダ名の頭)を選びます。
-3. オフボーカルのファイルを、ターミナルにドラッグして Enter を押します(`.wav`・`.mp3`・`.flac`・`.m4a`・`.zip`)。続けて、**歌詞のファイル(`.txt` か `.pdf`)も、ドラッグして Enter** を押すと、オフボーカルと歌詞が **1つの ZIP**(中身は `offvocal.wav`・`lyrics.txt`・`README.txt`。`README.txt` には、作品名と、ガイドライン全文(note)のURLだけが入ります。Windows のメモ帳でも読めます)にまとめられ、MV のページに「**オフボーカル + 歌詞 ↓ ZIP**」の**1つのボタン**が出ます(歌詞がなければ、そのまま Enter。オフボーカルだけのボタンになります)。
+3. オフボーカルのファイルを、ターミナルにドラッグして Enter を押します(`.wav`・`.mp3`・`.flac`・`.m4a`・`.zip`)。続けて、**歌詞のファイル(`.txt`・`.pdf`・**`.docx`**)も、ドラッグして Enter** を押すと、オフボーカルと歌詞が **1つの ZIP**(中身は `offvocal.wav`・`lyrics.txt`・`README.txt`。`README.txt` には、作品名と、ガイドライン全文(note)のURLだけが入ります。Windows のメモ帳でも読めます)にまとめられ、MV のページに「**オフボーカル + 歌詞 ↓ ZIP**」の**1つのボタン**が出ます(歌詞がなければ、そのまま Enter。オフボーカルだけのボタンになります)。
+   - **Word の歌詞(`.docx`・`.doc`)は、自動で `.txt` に変換して、ZIP に入れます**(`.docx` は、標準ライブラリだけで読み取ります。`.doc` は、Mac の `textutil` で変換します)。段落ごとに1行になり、空の段落は空行になります。ルビ(ふりがな)は、読み飛ばして、本文だけにします。太字・色などの書式は、なくなります。変換した行数と先頭の数行が、画面に出るので、内容を確かめてください。サイトのフォルダに置く方式(`lyrics.txt`)には、docx は使えません(txt か pdf だけです)。
 4. 内容を確かめて `y` を押すと、GitHub の Releases の「offvocal」に、`<作品フォルダ名>-offvocal.wav`(歌詞つきは `.zip`)という名前でアップロードされ、その MV の `info.txt` に `offvocal:`(ダウンロードのURL)・`offvocal-size:`(バイト数)・`offvocal-type:`(WAV・ZIP など)・歌詞つきなら `offvocal-bundle: lyrics` が書き込まれます。
 5. 「サイトを作り直しますか?」に答えると、ボタンが出ます。**公開は、いつもの手順(`サイトを更新.command` など)で行ってください**(このコマンドは、公開しません。ただし、アップロードしたファイルは、その時点で、誰でもダウンロードできる状態になります)。
 

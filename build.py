@@ -23,12 +23,19 @@ IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
 DL_KINDS = (("offvocal", "オフボーカル", {".mp3", ".wav", ".m4a", ".flac", ".zip"}),
             ("lyrics", "歌詞", {".txt", ".pdf"}))
 
-TYPES = {"video": "MV", "music": "Streaming", "project": "Projects", "goods": "通販・グッズ", "other": "その他"}
+TYPES = {"video": "MV", "trailer": "Trailer", "music": "Streaming", "project": "Projects", "goods": "通販・グッズ", "other": "その他"}  # この順で、Works の絞り込みのボタンが並ぶ
+TYPES_JA = {"video": "MV", "trailer": "トレーラー(Trailer)", "music": "Streaming(配信)", "project": "案件(Projects)", "goods": "通販・グッズ", "other": "その他"}  # コマンドの画面に出す名前
+
+
+def is_trailer_title(title):
+    """タイトルに XFD(クロスフェードデモ)・Trailer・トレーラーを含むか(Trailer にするのは、これに加えて、import.txt の trailer-playlist: のプレイリストに入っている動画だけ)"""
+    return bool(re.search(r"XFD|Trailer|トレーラー", title or "", re.I))
 TYPE_ALIAS = {
     "音楽": "music", "曲": "music", "動画": "video", "映像": "video", "streaming": "music", "mv": "video",
     "グッズ": "goods", "通販": "goods", "商品": "goods", "shop": "goods",
     "その他": "other",
     "案件": "project", "project": "project", "projects": "project", "参加作品": "project",
+    "トレーラー": "trailer", "trailer": "trailer", "xfd": "trailer",
 }
 KEY_ALIAS = {
     "タイトル": "title", "日付": "date", "種類": "type", "説明": "description",
@@ -274,7 +281,7 @@ def attach_booth(works, items):
     for w in works:
         names = {norm_song(x) for x in [w["title"], w["title_orig"]] + w["aliases"] if x}
         names = {n for n in names if len(n) >= 3}
-        own = [i for i in items if w["type"] not in ("video", "project") and any(n in inorm[i["id"]] for n in names)]
+        own = [i for i in items if w["type"] not in ("video", "project", "trailer") and any(n in inorm[i["id"]] for n in names)]
         own += [by_id[x] for x in w["booth_ids"] if x in by_id and by_id[x] not in own]
         w["booth"] = sorted(own, key=lambda i: (not _CD.search(i["name"]), -i["id"]))
     for w in works:
@@ -476,7 +483,7 @@ def work_jsonld(site, w):
         if w["tracks"]:
             d["numTracks"] = len(w["tracks"])
             d["track"] = [{"@type": "MusicRecording", "name": t, "byArtist": artist} for t in w["tracks"]]
-    elif w["type"] in ("video", "project") and image:
+    elif w["type"] in ("video", "project", "trailer") and image:
         d["@type"] = "VideoObject"
         d["description"] = w["headline"] or w["desc"] or w["title"]
         d["thumbnailUrl"] = image

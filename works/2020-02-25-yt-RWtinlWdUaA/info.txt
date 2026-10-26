@@ -1,0 +1,7 @@
+title: BCNO Best Album「Periodic Table」Trailer
+date: 2020-02-25
+type: trailer
+source: youtube-RWtinlWdUaA
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=RWtinlWdUaA

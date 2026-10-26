@@ -350,6 +350,31 @@ def youtube_channel_id(v):
 _MATERIAL = re.compile(r"off\s*vocal|オフボーカル|オフヴォーカル|素材|ダウンロード|download|配布|\bDL\b", re.I)
 
 
+_TRAILER_IDS = None
+
+
+def trailer_ids():
+    """import.txt の trailer-playlist: のプレイリストに入っている動画ID(先頭100本まで)。設定がない・読み込めなければ、空"""
+    global _TRAILER_IDS
+    if _TRAILER_IDS is None:
+        _TRAILER_IDS = set()
+        path = ROOT / "import.txt"
+        cfg = build.parse_info(path.read_text(encoding="utf-8"))[0] if path.exists() else {}
+        url = cfg.get("trailer-playlist", "").strip()
+        if url:
+            try:
+                import add_youtube  # 相互に読み込むので、使うときに読み込む
+                _TRAILER_IDS = set(add_youtube.playlist_videos(add_youtube.playlist_id(url))[1])
+            except Exception as e:
+                print("  ! trailer-playlist のプレイリストを読み込めませんでした(%s)。Trailer の自動分類は、今回は飛ばします" % e)
+    return _TRAILER_IDS
+
+
+def is_trailer(title, vid):
+    """Trailer にするか: タイトルに XFD / Trailer / トレーラーを含み、かつ、trailer-playlist のプレイリストに入っている動画"""
+    return build.is_trailer_title(title) and vid in trailer_ids()
+
+
 def materials_on():
     """import.txt の materials: が no なら、概要欄からの素材リンクの自動取り込みをしない"""
     path = ROOT / "import.txt"
@@ -448,7 +473,7 @@ def import_youtube(imp, cfg):
         if any(w in title.lower() for w in exclude):
             continue  # 除外ワードを含む動画は取り込まない
         imp.create(key, "%s-yt-%s" % (date, vid),
-                   [("title", title), ("date", date), ("type", "video")],
+                   [("title", title), ("date", date), ("type", "trailer" if is_trailer(title, vid) else "video")],
                    ["YouTube: https://www.youtube.com/watch?v=" + vid] + ["%s: %s" % m for m in mats])
 
 

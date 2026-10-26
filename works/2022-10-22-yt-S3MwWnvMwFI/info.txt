@@ -1,0 +1,7 @@
+title: BCNO 5th Album - Kith and Kin - Trailer
+date: 2022-10-22
+type: trailer
+source: youtube-S3MwWnvMwFI
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=S3MwWnvMwFI
