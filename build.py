@@ -617,7 +617,9 @@ def download_buttons(w):
     btns = "\n".join(btn(x) for x in w["downloads"])
     g = load_guideline()  # ダウンロードを押したときの確認(fx.js)で、読んでもらうガイドライン全文のURL(note)
     gl = g["link"] if g and g["link"] else ""
-    return '<div class="downloads"%s><div class="links">%s</div></div>' % (' data-guideline="%s"' % esc(gl) if gl else "", btns)
+    return ('<div class="downloads"%s><div class="links">%s</div>'
+            '<p class="dl-note">ご利用の前に、<a href="../../#guideline">ガイドライン</a>をご確認ください。</p></div>'
+            % (' data-guideline="%s"' % esc(gl) if gl else "", btns))
 
 
 def link_buttons(links):

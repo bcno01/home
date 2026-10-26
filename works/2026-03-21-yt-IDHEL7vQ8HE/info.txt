@@ -4,5 +4,9 @@ type: video
 source: youtube-IDHEL7vQ8HE
 auto: yes
 bpm: 152
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2026-03-21-yt-IDHEL7vQ8HE-offvocal.zip
+offvocal-size: 46797758
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=IDHEL7vQ8HE

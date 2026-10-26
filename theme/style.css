@@ -381,6 +381,8 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 .btn.dl { background: transparent; border: 2px solid currentColor; color: var(--fg); display: inline-flex; align-items: baseline; gap: 2px; }
 .btn.dl small { margin-left: 10px; font: 600 11px/1 var(--head); opacity: .6; letter-spacing: .04em; }
 .btn.dl:hover { background: var(--fg); color: var(--white); border-color: var(--fg); }
+.dl-note { margin: 8px 0 0; font: 600 12px/1.6 var(--head); color: var(--muted); }
+.dl-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 /* ダウンロードの前の確認(「ガイドラインを確認しましたか」。fx.js が出す) */
 .dl-modal {
   position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px;
