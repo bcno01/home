@@ -561,19 +561,12 @@ def svc_of(url):
 
 
 def bundle_readme(title, site_url):
-    """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名、ガイドライン全文(note)へのリンク、guideline.txt の要点。
+    """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名と、ガイドライン全文(note。guideline.txt の link:)へのURLだけ。
     Windows のメモ帳でも文字化けしないよう、先頭に BOM を付け、改行は CRLF にする"""
     g = load_guideline()
     lines = [title, "オフボーカル・歌詞", "", "【ご利用の前に、必ずお読みください】"]
-    if g:
-        if g["intro"]:
-            lines.append(g["intro"])
-        if g["link"]:
-            lines.append("ガイドライン全文: " + g["link"])
-        if g["updated"]:
-            lines.append("(%s)" % g["updated"])
-        for head, items in g["sections"]:
-            lines += ["", "■ " + head] + ["・" + x for x in items]
+    if g and g["link"]:
+        lines.append("ガイドライン全文: " + g["link"])
     elif site_url:
         lines.append("ガイドライン: " + site_url.rstrip("/") + "/#guideline")
     return "\ufeff" + "\r\n".join(lines) + "\r\n"
