@@ -6,3 +6,4 @@ __pycache__/
 # Spotify のキー(絶対に GitHub に載せない)
 spotify-keys.txt
 bpm-key*.csv
+bpm-passed.txt

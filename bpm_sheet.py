@@ -3,8 +3,11 @@
 # 使い方: python3 bpm_sheet.py                 一覧を書き出す → 開く → 保存したら取り込む、までを順に行う(ふつうはこれ)
 #         python3 bpm_sheet.py export           一覧(bpm-key.csv)を書き出すだけ
 #         python3 bpm_sheet.py import           bpm-key.csv の BPM を、作品の info.txt に取り込むだけ
-#         python3 bpm_sheet.py --from 2022      対象にする最初の年(初めからの設定は 2022。それ以降の MV がすべて対象)
-#         python3 bpm_sheet.py --from 2018 --to 2021   年の範囲を指定
+#         初めからの設定は、2021 年以前の MV のうち、BPM が空のものを、新しい順に 15 本ずつ書き出します(2回目からは、続きの 15 本)。
+#         わからなくて空のまま取り込んだ曲は、「見送り」にして、次からは出しません(見送りは bpm-passed.txt。消すと、また出ます)。
+#         python3 bpm_sheet.py --count 20       1回に書き出す本数を変える
+#         python3 bpm_sheet.py --reset          見送りを、すべて元に戻す
+#         python3 bpm_sheet.py --from 2018 --to 2021   年の範囲を指定する(この場合は、入力済みも含めて、範囲のすべてを書き出す)
 # 一覧の列: フォルダ名(変えないでください)・日付・曲名・BPM。BPM の列だけ、入力します。
 # 取り込むのは、入力した行だけです(空の行は何もしません。入力済みの値を消したいときは、その作品の info.txt を直接直してください)。
 # 以前の一覧にあった Key の列は、読み飛ばします(Key は、サイトに表示しません)。
@@ -18,6 +21,8 @@ import import_works as iw
 
 CSV_PATH = iw.ROOT / "bpm-key.csv"
 BACKUP = iw.ROOT / "bpm-key.前回.csv"
+PASSED = iw.ROOT / "bpm-passed.txt"
+DEFAULT_TO, DEFAULT_COUNT = 2021, 15
 HEAD = ["フォルダ名", "日付", "曲名", "BPM"]
 
 
@@ -38,8 +43,16 @@ def mv_rows(y_from, y_to):
     return rows
 
 
-def export(y_from, y_to):
+def read_passed():
+    return set(PASSED.read_text(encoding="utf-8").split()) if PASSED.exists() else set()
+
+
+def export(y_from, y_to, count=None):
+    """count を渡すと、BPM が空で、見送っていないものだけを、新しい順に count 本書き出す"""
     rows = mv_rows(y_from, y_to)
+    if count:
+        passed = read_passed()
+        rows = [r for r in rows if not r[3] and r[1] not in passed][:count]
     if CSV_PATH.exists():  # 前回の一覧に、まだ取り込んでいない入力があっても消えないように、1つ前を残す
         CSV_PATH.replace(BACKUP)
         print("前回の一覧は、%s に残しました。" % BACKUP.name)
@@ -50,8 +63,25 @@ def export(y_from, y_to):
         for d, slug, title, bpm in rows:
             w.writerow([slug, d.strftime("%Y-%m-%d"), title, bpm])
     filled = sum(1 for r in rows if r[3])
-    print("%d 本の MV(%d〜%d 年)を %s に書き出しました(入力済み %d 本)。" % (len(rows), y_from, y_to, CSV_PATH.name, filled))
+    if count:
+        print("まだ BPM が空の MV を、新しい順に %d 本、%s に書き出しました(%s 〜 %s)。" % (
+            len(rows), CSV_PATH.name, rows[-1][0].strftime("%Y-%m-%d") if rows else "-", rows[0][0].strftime("%Y-%m-%d") if rows else "-"))
+    else:
+        print("%d 本の MV(%d〜%d 年)を %s に書き出しました(入力済み %d 本)。" % (len(rows), y_from, y_to, CSV_PATH.name, filled))
     return len(rows)
+
+
+def pass_blanks():
+    """書き出した一覧のうち、取り込み後も BPM が空の曲を、見送りにする"""
+    skipped = []
+    for row in read_csv()[1:]:
+        if row and row[0].strip():
+            info = iw.WORKS / row[0].strip() / "info.txt"
+            if info.exists() and not build.parse_info(info.read_text(encoding="utf-8"))[0].get("bpm"):
+                skipped.append(row[0].strip())
+    if skipped:
+        PASSED.write_text("\n".join(sorted(read_passed() | set(skipped))) + "\n", encoding="utf-8")
+    return len(skipped)
 
 
 def read_csv():
@@ -113,7 +143,19 @@ def import_csv():
 
 def main():
     argv = sys.argv[1:]
-    y_from, y_to = 2022, 9999
+    y_from, y_to, count, ranged = 0, DEFAULT_TO, DEFAULT_COUNT, False
+    if "--reset" in argv:
+        PASSED.unlink(missing_ok=True)
+        print("見送りを、元に戻しました。")
+        return 0
+    if "--count" in argv:
+        i = argv.index("--count")
+        try:
+            count = int(argv[i + 1])
+        except (IndexError, ValueError):
+            print("--count には、本数(例: 15)を指定してください。")
+            return 1
+        del argv[i:i + 2]
     for opt in ("--from", "--to"):
         if opt in argv:
             i = argv.index(opt)
@@ -123,13 +165,17 @@ def main():
                 print("%s には、年(例: 2022)を指定してください。" % opt)
                 return 1
             del argv[i:i + 2]
+            ranged = True
             if opt == "--from":
                 y_from = v
             else:
                 y_to = v
+    if ranged:
+        count = None
+        y_to = y_to if "--to" in sys.argv else 9999
     mode = argv[0] if argv else "all"
     if mode == "export":
-        export(y_from, y_to)
+        export(y_from, y_to, count)
         return 0
     if mode == "import":
         import_csv()
@@ -137,14 +183,18 @@ def main():
     if not sys.stdin.isatty():
         print("対話の環境でないため、export / import を指定してください。")
         return 1
-    if not export(y_from, y_to):
-        print("対象の MV がありませんでした。")
+    if not export(y_from, y_to, count):
+        print("対象の MV がありませんでした(2021 年以前は、すべて入力済みか見送り済みです)。" if count else "対象の MV がありませんでした。")
         return 1
     subprocess.run(["open", str(CSV_PATH)], check=False)  # 標準のアプリ(Numbers・Excel など)で開く
     print("\nBPM の列に入力して、保存してください(形式は CSV のままで構いません)。")
     print("入力しない行は、何もしません。途中までの入力でも、取り込めます。")
     input("保存できたら、Enter を押してください(取り込みます): ")
     changed = import_csv()
+    if count:
+        n = pass_blanks()
+        if n:
+            print("BPM が空のままの %d 本は、見送りにしました(次からは出しません。もう一度出したいときは、python3 bpm_sheet.py --reset)。" % n)
     if changed and input("\nサイトを作り直して、表示を確認しますか? [Y/n]: ").strip().lower() in ("", "y", "yes"):
         build.main()
     return 0

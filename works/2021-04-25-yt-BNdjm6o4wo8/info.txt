@@ -3,5 +3,10 @@ date: 2021-04-25
 type: video
 source: youtube-BNdjm6o4wo8
 auto: yes
+bpm: 150
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2021-04-25-yt-BNdjm6o4wo8-offvocal.zip
+offvocal-size: 64186701
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=BNdjm6o4wo8

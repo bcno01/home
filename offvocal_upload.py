@@ -4,6 +4,8 @@
 # 使い方: python3 offvocal_upload.py                   質問に答える(どの MV か → ファイルをドラッグして貼る)
 #         python3 offvocal_upload.py ファイル [歌詞]      ファイル(と歌詞)を指定して、MV だけ選ぶ
 # 歌詞のファイル(txt・pdf)も渡すと、オフボーカルと歌詞を1つの ZIP にまとめて、「オフボーカル + 歌詞」の1つのボタンにします。
+# 選ぶ一覧には、オフボーカルが入っていない MV だけを出します(入れ済みの MV は非表示。置き換えたいときは、フォルダ名の頭を入力するか、--all で全部出します)。
+#         python3 offvocal_upload.py --all              入れ済みの MV も、一覧に出す
 #         python3 offvocal_upload.py --dry-run          何をするかだけ表示(アップロードも、書き込みもしません)
 # しくみ: Releases の「offvocal」(なければ作ります)に、<作品フォルダ名>-offvocal.wav(歌詞つきは .zip)という名前でアップロードし、
 #         作品の info.txt に offvocal: URL・offvocal-size:・offvocal-type:(歌詞つきは offvocal-bundle: lyrics も)を書きます。サイトを作り直すと、ボタンが出ます(公開は、いつもの手順で)。
@@ -103,19 +105,26 @@ def mv_works():
     return rows
 
 
-def pick_work(rows):
-    print("\nどの MV に付けますか?(新しい順。番号か、フォルダ名の頭を入力。Enter で、先頭の MV)")
-    for i, (slug, title, url, _) in enumerate(rows[:15], 1):
+def pick_work(rows, show_all=False):
+    shown = rows if show_all else [r for r in rows if not r[2]]
+    hidden = len(rows) - len(shown)
+    if not shown:
+        print("\nオフボーカルが入っていない MV はありません(入れ済みの %d 本は、非表示です)。置き換えるときは、フォルダ名の頭を入力してください。" % hidden)
+    else:
+        print("\nどの MV に付けますか?(新しい順。番号か、フォルダ名の頭を入力。Enter で、先頭の MV)")
+    for i, (slug, title, url, _) in enumerate(shown[:15], 1):
         print("  %2d. %s  %s%s" % (i, slug[:10], title[:36], "   [オフボーカルあり]" if url else ""))
-    if len(rows) > 15:
-        print("  …ほか %d 本(フォルダ名の頭、例: 2022-11 で選べます)" % (len(rows) - 15))
+    if len(shown) > 15:
+        print("  …ほか %d 本(フォルダ名の頭、例: 2022-11 で選べます)" % (len(shown) - 15))
+    if hidden and shown:
+        print("  (オフボーカル入れ済みの %d 本は、非表示です。置き換えるときは、フォルダ名の頭を入力するか、--all で全部出します)" % hidden)
     while True:
         a = input("選ぶ: ").strip()
-        if not a:
-            return rows[0]
-        if a.isdigit() and 1 <= int(a) <= min(15, len(rows)):
-            return rows[int(a) - 1]
-        hit = [r for r in rows if r[0].startswith(a)]
+        if not a and shown:
+            return shown[0]
+        if a.isdigit() and 1 <= int(a) <= min(15, len(shown)):
+            return shown[int(a) - 1]
+        hit = [r for r in rows if a and r[0].startswith(a)]
         if len(hit) == 1:
             return hit[0]
         print("  ! 1つに決まりませんでした(%d 件)。もう少し長く入力してください" % len(hit) if hit else "  ! 見つかりませんでした")
@@ -139,7 +148,7 @@ def main():
     if not rows:
         print("MV の作品が見つかりません。")
         return 1
-    slug, title, old, info = pick_work(rows)
+    slug, title, old, info = pick_work(rows, "--all" in argv)
     raw = args[0] if args else input("\nオフボーカルのファイルを、ここにドラッグして Enter(%s): " % "/".join(sorted(e[1:] for e in EXTS)))
     src = clean_path(raw)
     if not src.is_file():

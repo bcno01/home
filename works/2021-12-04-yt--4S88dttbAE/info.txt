@@ -3,5 +3,10 @@ date: 2021-12-04
 type: video
 source: youtube--4S88dttbAE
 auto: yes
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2021-12-04-yt--4S88dttbAE-offvocal.zip
+offvocal-size: 58250963
+offvocal-type: ZIP
+offvocal-bundle: lyrics
+bpm: 129
 links:
 YouTube: https://www.youtube.com/watch?v=-4S88dttbAE

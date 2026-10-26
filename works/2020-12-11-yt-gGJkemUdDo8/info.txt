@@ -3,5 +3,10 @@ date: 2020-12-11
 type: video
 source: youtube-gGJkemUdDo8
 auto: yes
+bpm: 120
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2020-12-11-yt-gGJkemUdDo8-offvocal.zip
+offvocal-size: 74720045
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=gGJkemUdDo8

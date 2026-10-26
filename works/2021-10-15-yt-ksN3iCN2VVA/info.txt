@@ -3,5 +3,10 @@ date: 2021-10-15
 type: video
 source: youtube-ksN3iCN2VVA
 auto: yes
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2021-10-15-yt-ksN3iCN2VVA-offvocal.zip
+offvocal-size: 57839565
+offvocal-type: ZIP
+offvocal-bundle: lyrics
+bpm: 134
 links:
 YouTube: https://www.youtube.com/watch?v=ksN3iCN2VVA
