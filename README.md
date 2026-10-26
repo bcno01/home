@@ -6,7 +6,7 @@
 ## フォルダの構成
 
 ```
-PortfolioBuild/
+BCNO/
 ├─ works/        作品のフォルダ(1作品=1フォルダ。info.txt・画像・ダウンロードのファイル)
 ├─ 設定/         サイトの設定とデータ(site.txt・import.txt・events.txt・guideline.txt・pricing.txt・booth-items.json・ogp.jpg)
 ├─ コマンド/     ダブルクリックで使う .command ファイル
