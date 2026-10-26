@@ -507,8 +507,9 @@
         w.className = 'wipe';
         w.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:' + (R * 2) + 'px;height:' + (R * 2) + 'px;margin:' + (-R) + 'px 0 0 ' + (-R) + 'px';
         document.body.appendChild(w);
-        w.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.5, 0, .15, 1)', fill: 'forwards' });
-        setTimeout(function () { location.href = u.href; }, 580);
+        w.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 700, easing: 'cubic-bezier(.5, 0, .15, 1)', fill: 'forwards' });
+        try { sessionStorage.setItem('wipe', JSON.stringify({ x: cx, y: cy, t: Date.now() })); } catch (err) {}  // 次のページが、同じ場所から円を開く
+        setTimeout(function () { location.href = u.href; }, 720);
         return;
       }
       document.body.classList.add('leaving');
@@ -518,6 +519,7 @@
       if (!e.persisted) return;
       document.body.classList.remove('leaving');
       [].forEach.call(document.querySelectorAll('.wipe'), function (w) { w.remove(); });
+      document.documentElement.classList.remove('wipe-in');
     });
   }
 

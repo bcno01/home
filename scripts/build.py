@@ -605,7 +605,12 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap">
-<script>document.documentElement.className += " js"</script>
+<script>document.documentElement.className += " js"
+// 前のページで押した場所から、波紋の続き(円が開いて、このページが現れる)。押した場所は sessionStorage に入っている。対応していないブラウザ・動きを減らす設定では、何もしない
+try { var w = JSON.parse(sessionStorage.getItem("wipe") || "null"); sessionStorage.removeItem("wipe");
+  if (w && Date.now() - w.t < 4000 && window.CSS && CSS.registerProperty && matchMedia("(pointer: fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    var st = document.documentElement.style; st.setProperty("--wx", w.x + "px"); st.setProperty("--wy", w.y + "px"); st.setProperty("--wmax", Math.round(Math.hypot(Math.max(w.x, innerWidth - w.x), Math.max(w.y, innerHeight - w.y)) + 40) + "px");
+    document.documentElement.className += " wipe-in"; setTimeout(function () { document.documentElement.classList.remove("wipe-in"); }, 1600); } } catch (e) {}</script>
 <link rel="stylesheet" href="%sstyle.css?v=%s">
 <script src="%sfx.js?v=%s" defer></script>
 </head>

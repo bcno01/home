@@ -658,6 +658,21 @@ body::after {
 .gallery { animation-delay: .5s; }
 body { transition: opacity .25s ease; }
 body.leaving { opacity: 0; }
+/* 移った先のページ: 押した場所から、円が開いて、ページが現れる(head の小さなスクリプトが、html に wipe-in を付ける) */
+@property --wr { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes wipe-open { from { --wr: 0px; } to { --wr: var(--wmax, 150vmax); } }  /* --wmax: 押した場所から、いちばん遠い角まで */
+html.wipe-in::after {
+  content: ""; position: fixed; inset: 0; z-index: 300; pointer-events: none; background: var(--bg);
+  -webkit-mask: radial-gradient(circle at var(--wx) var(--wy), transparent var(--wr), #000 calc(var(--wr) + 1px));
+  mask: radial-gradient(circle at var(--wx) var(--wy), transparent var(--wr), #000 calc(var(--wr) + 1px));
+  animation: wipe-open .85s cubic-bezier(.5, 0, .15, 1) both;
+}
+html.wipe-in::before {  /* 開いていく円の縁の光(閉じるときの円と同じ) */
+  content: ""; position: fixed; z-index: 301; pointer-events: none; left: var(--wx); top: var(--wy);
+  width: calc(var(--wr) * 2); height: calc(var(--wr) * 2); transform: translate(-50%, -50%); border-radius: 50%;
+  box-shadow: 0 0 44px rgba(150, 185, 255, .7), inset 0 0 34px rgba(255, 255, 255, .8);
+  animation: wipe-open .85s cubic-bezier(.5, 0, .15, 1) both;
+}
 /* 作品ページなどへ移るときの波紋(クリックした場所から、次のページの背景色の円が広がる。fx.js が作る) */
 .wipe {
   position: fixed; z-index: 200; border-radius: 50%; pointer-events: none; background: var(--bg);
