@@ -14,7 +14,8 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
+CONFIG = ROOT / "設定"  # サイトの設定・データ(設定/site.txt など)
 
 WORKS = ROOT / "works"
 OUT = ROOT / "docs"
@@ -29,7 +30,7 @@ TYPES_JA = {"video": "MV", "trailer": "トレーラー(Trailer)", "music": "Stre
 
 
 def is_trailer_title(title):
-    """タイトルに XFD(クロスフェードデモ)・Trailer・トレーラーを含むか(Trailer にするのは、これに加えて、import.txt の trailer-playlist: のプレイリストに入っている動画だけ)"""
+    """タイトルに XFD(クロスフェードデモ)・Trailer・トレーラーを含むか(Trailer にするのは、これに加えて、設定/import.txt の trailer-playlist: のプレイリストに入っている動画だけ)"""
     return bool(re.search(r"XFD|Trailer|トレーラー", title or "", re.I))
 TYPE_ALIAS = {
     "音楽": "music", "曲": "music", "動画": "video", "映像": "video", "streaming": "music", "mv": "video",
@@ -274,7 +275,7 @@ def make_headline(w, f):
     return ""
 
 
-BOOTH_FILE = ROOT / "booth-items.json"
+BOOTH_FILE = CONFIG / "booth-items.json"
 _CD = re.compile(r"(EP|Album|Single)「")
 
 
@@ -610,7 +611,7 @@ def portable_text(path):
 
 
 def bundle_readme(title, site_url):
-    """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名と、ガイドライン全文(note。guideline.txt の link:)へのURLだけ。
+    """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名と、ガイドライン全文(note。設定/guideline.txt の link:)へのURLだけ。
     Windows のメモ帳でも文字化けしないよう、先頭に BOM を付け、改行は CRLF にする"""
     g = load_guideline()
     lines = [title, "オフボーカル・歌詞", "", "【ご利用の前に、必ずお読みください】"]
@@ -646,8 +647,8 @@ def dl_btn(x, prefix=""):
 
 
 def render_feature(site, works=()):
-    """サイトを新しく開いたとき・メニューが全部閉じているときに、右側に出す YouTube 動画(site.txt の featured:)。
-    上に動画名(site.txt の featured-title:。なければ、同じ動画をもつ作品の題名)、下に YouTube へのリンク。
+    """サイトを新しく開いたとき・メニューが全部閉じているときに、右側に出す YouTube 動画(設定/site.txt の featured:)。
+    上に動画名(設定/site.txt の featured-title:。なければ、同じ動画をもつ作品の題名)、下に YouTube へのリンク。
     最初はサムネイルだけ(YouTube の読み込みは、押したときだけ)。JavaScript が使えないときは、YouTube へのリンクとして動く"""
     vid = youtube_id(site.get("featured", ""))
     if not vid:
@@ -937,7 +938,7 @@ def cover_src(w):
     return w["cover_url"] or ""
 
 
-EVENTS_FILE = ROOT / "events.txt"
+EVENTS_FILE = CONFIG / "events.txt"
 
 
 def load_events():
@@ -973,8 +974,8 @@ def render_events(events):
     return '<section class="rpanel" id="events" aria-label="Events"><h2 class="ptitle">Events</h2>%s</section>' % body
 
 
-GUIDELINE_FILE = ROOT / "guideline.txt"
-PRICING_FILE = ROOT / "pricing.txt"
+GUIDELINE_FILE = CONFIG / "guideline.txt"
+PRICING_FILE = CONFIG / "pricing.txt"
 
 
 def yen(n):
@@ -1047,7 +1048,7 @@ def price_text(e):
 
 
 def render_prices(plans, opts, notes):
-    """料金表(折りたたみ)。pricing.txt から作る"""
+    """料金表(折りたたみ)。設定/pricing.txt から作る"""
     def table(entries):
         out, last = [], None
         for e in entries:
@@ -1062,7 +1063,7 @@ def render_prices(plans, opts, notes):
 
 
 def render_contact(site):
-    """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければ pricing.txt の料金表をもとにした、メールの下書きを作るフォーム"""
+    """依頼受付フォーム。form: にフォームのURLがあれば埋め込み、なければ 設定/pricing.txt の料金表をもとにした、メールの下書きを作るフォーム"""
     to = site["contact"] if "@" in site["contact"] and "://" not in site["contact"] else ""
     note = '<p class="note">%s</p>' % "お仕事のご依頼・ご相談はこちらから。内容を確認のうえ、ご返信します。"
     required_note = '<p class="note">%s</p>' % "※ オプション以外の項目は、すべて入力が必要です。"
@@ -1158,7 +1159,7 @@ def render_index(site, works):
     bgvideo = render_bgvideo(site)
 
     guideline = load_guideline()
-    menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # guideline.txt がなければ「Guideline」の項目は出さない
+    menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # 設定/guideline.txt がなければ「Guideline」の項目は出さない
     offvocal = render_offvocal(works, guideline)  # オフボーカル・歌詞がある作品があるときだけ、メニューに「OffVocal」が出る(Shop と Guideline の間)
     if offvocal:
         at = next((i for i, (_, u) in enumerate(menu) if u == "#guideline"), len(menu))
@@ -1315,7 +1316,7 @@ def render_index(site, works):
          nav, sns,
          render_feature(site, works), chips, rows, render_events(load_events()), offvocal, render_guideline(guideline), render_contact(site), about, script)
     og = None
-    if site.get("url") and site["og_image"] and (ROOT / site["og_image"]).is_file():  # site.txt の og-image: で指定した画像
+    if site.get("url") and site["og_image"] and (CONFIG / site["og_image"]).is_file():  # 設定/site.txt の og-image: で指定した画像
         og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)
     for w in works:
         if og:
@@ -1328,7 +1329,7 @@ def render_index(site, works):
 
 
 def load_site():
-    path = ROOT / "site.txt"
+    path = CONFIG / "site.txt"
     f, links, about = parse_info(path.read_text(encoding="utf-8")) if path.exists() else ({}, [], "")
     logo = f.get("logo", "")
     try:
@@ -1349,7 +1350,7 @@ def load_site():
         "tagline": f.get("tagline", ""),
         "url": f.get("url", ""),
         "contact": f.get("contact", ""),
-        "logo": logo if logo and (ROOT / logo).is_file() else "",
+        "logo": logo if logo and (CONFIG / logo).is_file() else "",
         "menu": f.get("_menu", []),
         "about": about,
         "links": links,
@@ -1421,9 +1422,9 @@ def main():
     shutil.copy2(THEME / "style.css", OUT / "style.css")
     shutil.copy2(THEME / "fx.js", OUT / "fx.js")
     if site["logo"]:
-        shutil.copy2(ROOT / site["logo"], OUT / site["logo"])
-    if site["og_image"] and (ROOT / site["og_image"]).is_file():
-        shutil.copy2(ROOT / site["og_image"], OUT / Path(site["og_image"]).name)
+        shutil.copy2(CONFIG / site["logo"], OUT / site["logo"])
+    if site["og_image"] and (CONFIG / site["og_image"]).is_file():
+        shutil.copy2(CONFIG / site["og_image"], OUT / Path(site["og_image"]).name)
     sm = render_sitemap(site, works)
     if sm:
         (OUT / "sitemap.xml").write_text(sm, encoding="utf-8")

@@ -31,8 +31,8 @@ jobs:
           python-version: "3.12"
       # 大きい画像を縮小するために Pillow を使う
       - run: pip install pillow
-      # 定時・手動実行のときだけ、Apple Music / YouTube の新着の取り込みと Spotify のリンク付け、BOOTH の商品一覧の更新をして、works/ と booth-items.json にコミットする
-      # (booth-items.json もコミットしておかないと、ふだんの push でのビルドで、新しい BOOTH の商品が消えてしまう)
+      # 定時・手動実行のときだけ、Apple Music / YouTube の新着の取り込みと Spotify のリンク付け、BOOTH の商品一覧の更新をして、works/ と 設定/booth-items.json にコミットする
+      # (設定/booth-items.json もコミットしておかないと、ふだんの push でのビルドで、新しい BOOTH の商品が消えてしまう)
       - name: Import new releases
         if: github.event_name != 'push'
         env:
@@ -42,11 +42,11 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}   # 任意。あれば、Discord にも通知する
         run: |
           export IMPORT_SUMMARY="$RUNNER_TEMP/import-summary.md"
-          python import_works.py
-          if [ -n "$(git status --porcelain works booth-items.json)" ]; then
+          python scripts/import_works.py
+          if [ -n "$(git status --porcelain works 設定/booth-items.json)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add works booth-items.json
+            git add works 設定/booth-items.json
             git commit -m "Import new releases"
             git pull --rebase origin main
             git push origin HEAD:main
@@ -58,9 +58,9 @@ jobs:
             gh issue create --title "$title" --body-file "$IMPORT_SUMMARY" --assignee "$GITHUB_REPOSITORY_OWNER" \
               || gh issue create --title "$title" --body-file "$IMPORT_SUMMARY" \
               || echo "Issue の作成に失敗しました"
-            python notify.py "$IMPORT_SUMMARY" || true
+            python scripts/notify.py "$IMPORT_SUMMARY" || true
           fi
-      - run: python build.py
+      - run: python scripts/build.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

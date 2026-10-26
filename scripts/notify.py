@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # 新作などの取り込み結果(import_works.py が書き出した文章)を、Discord に送る(標準ライブラリのみ)
-# 使い方: python3 notify.py 文章のファイル
+# 使い方: python3 scripts/notify.py 文章のファイル
 # 環境変数 DISCORD_WEBHOOK_URL がなければ、何もしない(Discord を使わない場合)。GitHub への Issue 通知は、ワークフロー側で行う
 import json
 import os

@@ -25,7 +25,7 @@ jobs:
         run: |
           export LINKCHECK_REPORT="$RUNNER_TEMP/linkcheck.md"
           rc=0
-          python check_links.py || rc=$?
+          python scripts/check_links.py || rc=$?
           # 同じタイトルの、開いている Issue を探す
           num=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
           if [ "$rc" -ne 0 ] && [ -s "$LINKCHECK_REPORT" ]; then

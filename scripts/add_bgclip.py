@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 動画ファイルから、背景用の短いクリップ(480p・約20秒)を作って、作品のフォルダに入れる(ffmpeg が必要)
-# 使い方: python3 add_bgclip.py                              質問に答える
-#         python3 add_bgclip.py 動画.mp4 --work 3 --start 1:05 --length 20
+# 使い方: python3 scripts/add_bgclip.py                              質問に答える
+#         python3 scripts/add_bgclip.py 動画.mp4 --work 3 --start 1:05 --length 20
 #         (--work は一覧の番号。--slug 2025-09-03-apple-… でフォルダ名の指定もできる)
 # 作られた works/<作品>/bg.mp4(2本目以降は bg-<名前>.mp4)は、ビルドするとサイトに載り、トップの背景でランダムに再生される。
 #   1つの作品に何本でも置ける。--name 名前 で bg-名前.mp4 として追加する。

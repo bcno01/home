@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # Apple Music と YouTube の新着を works/ に取り込み、Spotify のリンクを付ける(標準ライブラリのみ)
 # Spotify のリンクだけは、Spotify の開発者アプリのキー(SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET)が必要。なければスキップする
-# 使い方: python3 import_works.py            取り込み
-#         python3 import_works.py --dry-run  何が取り込まれるか表示するだけ
-# 設定は import.txt。取り込み済みの記録は works/.imported.txt(消した作品が復活しないように残す)
+# 使い方: python3 scripts/import_works.py            取り込み
+#         python3 scripts/import_works.py --dry-run  何が取り込まれるか表示するだけ
+# 設定は 設定/import.txt。取り込み済みの記録は works/.imported.txt(消した作品が復活しないように残す)
 import base64
 import datetime
 import html
@@ -19,10 +19,11 @@ from pathlib import Path
 
 import build
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
+CONFIG = ROOT / "設定"
 WORKS = ROOT / "works"
 LEDGER = WORKS / ".imported.txt"
-BOOTH_FILE = ROOT / "booth-items.json"  # BOOTH の商品一覧(サイトのビルドはこのファイルだけを使う)
+BOOTH_FILE = CONFIG / "booth-items.json"  # BOOTH の商品一覧(サイトのビルドはこのファイルだけを使う)
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; portfolio-importer)", "Accept-Language": "ja,en;q=0.8",
            "Cookie": "CONSENT=YES+1"}
 YES = ("yes", "true", "1", "on", "y", "はい")
@@ -92,7 +93,7 @@ class Importer:
 def apple_lookup(cid, country, genre=None):
     """(収録曲名のリスト, 追加の情報)。収録曲名は Apple Music に登録された日本語表記。
     追加の情報は info.txt の項目の [(名前, 値)]: genre(ジャンル)・duration(全曲の合計の秒数)・copyright(℗ の表記)
-    genre を指定すると(import.txt の genre:)、Apple Music の表記の代わりに、すべての作品に、その表記を使う"""
+    genre を指定すると(設定/import.txt の genre:)、Apple Music の表記の代わりに、すべての作品に、その表記を使う"""
     r = json.loads(fetch("https://itunes.apple.com/lookup?id=%s&entity=song&country=%s&lang=ja_jp" % (cid, country)))
     res = r.get("results", [])
     coll = next((x for x in res if x.get("wrapperType") == "collection"), {})
@@ -136,7 +137,7 @@ def apple_naming(r, tracks):
 def import_apple(imp, cfg):
     ids = re.findall(r"\d{6,}", cfg["apple"])
     if not ids:
-        print("  ! import.txt の apple: からアーティストIDを読み取れませんでした")
+        print("  ! 設定/import.txt の apple: からアーティストIDを読み取れませんでした")
         return
     country = cfg.get("apple-country", "jp")
     url = "https://itunes.apple.com/lookup?id=%s&entity=album&country=%s&limit=200" % (ids[-1], country)
@@ -225,9 +226,9 @@ def enrich_apple(imp, albums, country):
 
 
 def spotify_keys():
-    """環境変数(GitHub の Secrets)か、手元の spotify-keys.txt からキーを読む"""
+    """環境変数(GitHub の Secrets)か、手元の 設定/spotify-keys.txt からキーを読む"""
     cid, sec = os.environ.get("SPOTIFY_CLIENT_ID"), os.environ.get("SPOTIFY_CLIENT_SECRET")
-    path = ROOT / "spotify-keys.txt"
+    path = CONFIG / "spotify-keys.txt"
     if not (cid and sec) and path.exists():
         f = build.parse_info(path.read_text(encoding="utf-8"))[0]
         cid, sec = f.get("client_id"), f.get("client_secret")
@@ -285,7 +286,7 @@ def import_spotify(imp, cfg):
         return
     m = re.search(r"[A-Za-z0-9]{22}", cfg["spotify"])
     if not m:
-        print("  ! import.txt の spotify: からアーティストIDを読み取れませんでした")
+        print("  ! 設定/import.txt の spotify: からアーティストIDを読み取れませんでした")
         return
     albums = spotify_albums(spotify_token(*keys), m.group(0), cfg.get("apple-country", "jp").upper())
     for d in sorted(WORKS.glob("*-apple-*")):
@@ -308,10 +309,10 @@ def import_spotify(imp, cfg):
 
 
 def import_booth(imp, cfg):
-    """BOOTH のショップの全商品(名前・価格・URL)を booth-items.json に保存する"""
+    """BOOTH のショップの全商品(名前・価格・URL)を 設定/booth-items.json に保存する"""
     m = re.match(r"https?://([a-z0-9-]+\.booth\.pm)", cfg["booth"].strip())
     if not m:
-        print("  ! import.txt の booth: からショップのURLを読み取れませんでした")
+        print("  ! 設定/import.txt の booth: からショップのURLを読み取れませんでした")
         return
     base = "https://%s/items" % m.group(1)
     ids = []
@@ -358,7 +359,7 @@ def trailer_ids():
     global _TRAILER_IDS
     if _TRAILER_IDS is None:
         _TRAILER_IDS = set()
-        path = ROOT / "import.txt"
+        path = CONFIG / "import.txt"
         cfg = build.parse_info(path.read_text(encoding="utf-8"))[0] if path.exists() else {}
         url = cfg.get("trailer-playlist", "").strip()
         if url:
@@ -377,7 +378,7 @@ def is_trailer(title, vid):
 
 def materials_on():
     """import.txt の materials: が no なら、概要欄からの素材リンクの自動取り込みをしない"""
-    path = ROOT / "import.txt"
+    path = CONFIG / "import.txt"
     cfg = build.parse_info(path.read_text(encoding="utf-8"))[0] if path.exists() else {}
     return cfg.get("materials", "yes").strip().lower() not in ("no", "off", "false", "0", "いいえ")
 
@@ -442,7 +443,7 @@ def stream_links(desc):
 def import_youtube(imp, cfg):
     ch = youtube_channel_id(cfg["youtube"])
     if not ch:
-        print("  ! import.txt の youtube: からチャンネルIDを取得できませんでした。UC から始まるIDを直接書いてください")
+        print("  ! 設定/import.txt の youtube: からチャンネルIDを取得できませんでした。UC から始まるIDを直接書いてください")
         return
     root = ET.fromstring(fetch("https://www.youtube.com/feeds/videos.xml?channel_id=" + ch))
     ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015",
@@ -501,7 +502,7 @@ def summary_text(imp, base_url):
 
 def main():
     dry = "--dry-run" in sys.argv
-    cfg_path = ROOT / "import.txt"
+    cfg_path = CONFIG / "import.txt"
     cfg = build.parse_info(cfg_path.read_text(encoding="utf-8"))[0] if cfg_path.exists() else {}
     WORKS.mkdir(exist_ok=True)
     imp = Importer(dry)

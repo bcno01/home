@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # MV のオフボーカル(WAV など)と、歌詞を、GitHub の Releases にアップロードして、その MV のページに「ダウンロード」ボタンを付ける(標準ライブラリ + gh コマンド)
 # 重い WAV をリポジトリに入れると、Git の履歴が重くなって戻せないので、Releases(1ファイル2GBまで)に置きます。
-# 使い方: python3 offvocal_upload.py                   質問に答える(どの MV か → ファイルをドラッグして貼る)
-#         python3 offvocal_upload.py ファイル [歌詞]      ファイル(と歌詞)を指定して、MV だけ選ぶ
+# 使い方: python3 scripts/offvocal_upload.py                   質問に答える(どの MV か → ファイルをドラッグして貼る)
+#         python3 scripts/offvocal_upload.py ファイル [歌詞]      ファイル(と歌詞)を指定して、MV だけ選ぶ
 # 歌詞のファイル(txt・pdf)も渡すと、オフボーカルと歌詞を1つの ZIP にまとめて、「オフボーカル + 歌詞」の1つのボタンにします。
 # 選ぶ一覧には、オフボーカルが入っていない MV だけを出します(入れ済みの MV は非表示。置き換えたいときは、フォルダ名の頭を入力するか、--all で全部出します)。
-#         python3 offvocal_upload.py --all              入れ済みの MV も、一覧に出す
-#         python3 offvocal_upload.py --dry-run          何をするかだけ表示(アップロードも、書き込みもしません)
+#         python3 scripts/offvocal_upload.py --all              入れ済みの MV も、一覧に出す
+#         python3 scripts/offvocal_upload.py --dry-run          何をするかだけ表示(アップロードも、書き込みもしません)
 # しくみ: Releases の「offvocal」(なければ作ります)に、<作品フォルダ名>-offvocal.wav(歌詞つきは .zip)という名前でアップロードし、
 #         作品の info.txt に offvocal: URL・offvocal-size:・offvocal-type:(歌詞つきは offvocal-bundle: lyrics も)を書きます。サイトを作り直すと、ボタンが出ます(公開は、いつもの手順で)。
 # 事前に、gh コマンドのログインが必要です(ターミナルで gh auth login。済んでいなければ、このコマンドが案内します)。

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Spotify のアルバムURLを、対応する作品に紐づける(APIキー不要)
-# 使い方: python3 add_spotify.py URL [URL ...]
+# 使い方: python3 scripts/add_spotify.py URL [URL ...]
 #         引数なしで実行すると、URL を1行ずつ貼り付けられる(空Enterで終了)
 # Spotify のアプリで「共有 → アルバムのリンクをコピー」したURLをそのまま使える。
 import json

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # MV の BPM を、スプレッドシート(Numbers・Excel など)でまとめて入力する(標準ライブラリのみ)
-# 使い方: python3 bpm_sheet.py                 一覧を書き出す → 開く → 保存したら取り込む、までを順に行う(ふつうはこれ)
-#         python3 bpm_sheet.py export           一覧(bpm-key.csv)を書き出すだけ
-#         python3 bpm_sheet.py import           bpm-key.csv の BPM を、作品の info.txt に取り込むだけ
+# 使い方: python3 scripts/bpm_sheet.py                 一覧を書き出す → 開く → 保存したら取り込む、までを順に行う(ふつうはこれ)
+#         python3 scripts/bpm_sheet.py export           一覧(bpm-key.csv)を書き出すだけ
+#         python3 scripts/bpm_sheet.py import           bpm-key.csv の BPM を、作品の info.txt に取り込むだけ
 #         初めからの設定は、2021 年以前の MV のうち、BPM が空のものを、新しい順に 15 本ずつ書き出します(2回目からは、続きの 15 本)。
 #         わからなくて空のまま取り込んだ曲は、「見送り」にして、次からは出しません(見送りは bpm-passed.txt。消すと、また出ます)。
-#         python3 bpm_sheet.py --count 20       1回に書き出す本数を変える
-#         python3 bpm_sheet.py --reset          見送りを、すべて元に戻す
-#         python3 bpm_sheet.py --from 2018 --to 2021   年の範囲を指定する(この場合は、入力済みも含めて、範囲のすべてを書き出す)
+#         python3 scripts/bpm_sheet.py --count 20       1回に書き出す本数を変える
+#         python3 scripts/bpm_sheet.py --reset          見送りを、すべて元に戻す
+#         python3 scripts/bpm_sheet.py --from 2018 --to 2021   年の範囲を指定する(この場合は、入力済みも含めて、範囲のすべてを書き出す)
 # 一覧の列: フォルダ名(変えないでください)・日付・曲名・BPM。BPM の列だけ、入力します。
 # 取り込むのは、入力した行だけです(空の行は何もしません。入力済みの値を消したいときは、その作品の info.txt を直接直してください)。
 # 以前の一覧にあった Key の列は、読み飛ばします(Key は、サイトに表示しません)。
@@ -19,9 +19,10 @@ import sys
 import build
 import import_works as iw
 
-CSV_PATH = iw.ROOT / "bpm-key.csv"
-BACKUP = iw.ROOT / "bpm-key.前回.csv"
-PASSED = iw.ROOT / "bpm-passed.txt"
+WORK_DIR = iw.ROOT / "作業用"  # 書き出した一覧など(GitHub には載せない)
+CSV_PATH = WORK_DIR / "bpm-key.csv"
+BACKUP = WORK_DIR / "bpm-key.前回.csv"
+PASSED = WORK_DIR / "bpm-passed.txt"
 DEFAULT_TO, DEFAULT_COUNT = 2021, 15
 HEAD = ["フォルダ名", "日付", "曲名", "BPM"]
 
@@ -49,6 +50,7 @@ def read_passed():
 
 def export(y_from, y_to, count=None):
     """count を渡すと、BPM が空で、見送っていないものだけを、新しい順に count 本書き出す"""
+    WORK_DIR.mkdir(exist_ok=True)
     rows = mv_rows(y_from, y_to)
     if count:
         passed = read_passed()
@@ -96,7 +98,7 @@ def read_csv():
 
 def import_csv():
     if not CSV_PATH.exists():
-        print("%s がありません。先に、書き出してください(python3 bpm_sheet.py export)。" % CSV_PATH.name)
+        print("%s がありません。先に、書き出してください(python3 scripts/bpm_sheet.py export)。" % CSV_PATH.name)
         return 0
     table = read_csv()
     if not table:
@@ -194,7 +196,7 @@ def main():
     if count:
         n = pass_blanks()
         if n:
-            print("BPM が空のままの %d 本は、見送りにしました(次からは出しません。もう一度出したいときは、python3 bpm_sheet.py --reset)。" % n)
+            print("BPM が空のままの %d 本は、見送りにしました(次からは出しません。もう一度出したいときは、python3 scripts/bpm_sheet.py --reset)。" % n)
     if changed and input("\nサイトを作り直して、表示を確認しますか? [Y/n]: ").strip().lower() in ("", "y", "yes"):
         build.main()
     return 0

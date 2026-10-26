@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # サイトに載せているリンク(作品のボタン・オフボーカル/歌詞のダウンロード・BOOTH・メニュー・SNS・Events・Guideline)が切れていないか調べる(標準ライブラリのみ)
-# 使い方: python3 check_links.py            調べて、結果を表示する(切れているものがあれば、終了コード 1)
+# 使い方: python3 scripts/check_links.py            調べて、結果を表示する(切れているものがあれば、終了コード 1)
 # 環境変数 LINKCHECK_REPORT にファイルのパスがあれば、切れているもの・要確認のものを Markdown で書き出す(GitHub Actions が Issue にする)
 # 判定:
 #   切れている … 404 / 410(ページがない)、YouTube・Spotify の埋め込み用の確認で「見つからない」、ドメインが存在しない
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import build
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 TIMEOUT = 15
 
@@ -129,7 +129,7 @@ def main():
         if not broken:
             lines = []  # 「要確認」だけのときは、Issue にしない(ボット対策で、毎回出るサイトがあるため)
         head = ("サイトに載せているリンクを自動で確認しました。\n\n"
-                "直すときは、該当する作品の `works/<フォルダ名>/info.txt`(または `site.txt` など)のリンクを直して push してください。"
+                "直すときは、該当する作品の `works/<フォルダ名>/info.txt`(または `設定/site.txt` など)のリンクを直して push してください。"
                 "直ったあと、次の確認で問題がなければ、この Issue は自動で閉じられます。\n\n") if lines else ""
         Path(out).write_text(head + "\n".join(lines), encoding="utf-8")
     return 1 if broken else 0

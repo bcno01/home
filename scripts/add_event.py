@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# イベント出演の予定を events.txt に1行追加する
-# 使い方: python3 add_event.py                                  質問に答える
-#         python3 add_event.py 2026-12-24 "イベント名" "場所" "URL"
+# イベント出演の予定を 設定/events.txt に1行追加する
+# 使い方: python3 scripts/add_event.py                                  質問に答える
+#         python3 scripts/add_event.py 2026-12-24 "イベント名" "場所" "URL"
 import sys
 
 import build

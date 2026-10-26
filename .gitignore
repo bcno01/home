@@ -4,6 +4,6 @@ __pycache__/
 .DS_Store
 .claude/
 # Spotify のキー(絶対に GitHub に載せない)
-spotify-keys.txt
-bpm-key*.csv
-bpm-passed.txt
+設定/spotify-keys.txt
+# 書き出した一覧など、作業中のファイル
+作業用/

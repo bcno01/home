@@ -13,7 +13,7 @@ from pathlib import Path
 
 import build
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def ask(prompt):

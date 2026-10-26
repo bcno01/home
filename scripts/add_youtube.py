@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # YouTube の動画(過去の MV など)を、URL からサイトの作品として追加する(標準ライブラリのみ)
 # 自動の取り込みは、チャンネルの新着(直近15本)だけが対象なので、それより前の動画は、これで足します。
-# 使い方: python3 add_youtube.py                       質問に答える(URL を1行ずつ貼る)
-#         python3 add_youtube.py URL [URL ...]          URL をいくつでも指定(動画のURLも、プレイリストのURLも使えます)
-#         python3 add_youtube.py --dry-run URL          何が追加されるかだけ表示
-#         python3 add_youtube.py --force URL            以前に消した・除外した動画も、もう一度追加する
-#         python3 add_youtube.py --bpm 128 URL         MV に BPM を付けて追加(MV にだけ入ります。質問に答える形のときは、1本ごとに聞きます)
-#         python3 add_youtube.py --type 案件 URL        「案件」(関わらせて頂いた作品)として追加する(すでにサイトにある動画は、そのまま)
-#         python3 add_youtube.py --type 案件 --reclassify URL   すでにサイトにある動画も、分類を「案件」に変える
-#         python3 add_youtube.py --refresh-links            自動で取り込んだ「案件」すべての概要欄から、配信リンクを足す(--dry-run で一覧だけ)
+# 使い方: python3 scripts/add_youtube.py                       質問に答える(URL を1行ずつ貼る)
+#         python3 scripts/add_youtube.py URL [URL ...]          URL をいくつでも指定(動画のURLも、プレイリストのURLも使えます)
+#         python3 scripts/add_youtube.py --dry-run URL          何が追加されるかだけ表示
+#         python3 scripts/add_youtube.py --force URL            以前に消した・除外した動画も、もう一度追加する
+#         python3 scripts/add_youtube.py --bpm 128 URL         MV に BPM を付けて追加(MV にだけ入ります。質問に答える形のときは、1本ごとに聞きます)
+#         python3 scripts/add_youtube.py --type 案件 URL        「案件」(関わらせて頂いた作品)として追加する(すでにサイトにある動画は、そのまま)
+#         python3 scripts/add_youtube.py --type 案件 --reclassify URL   すでにサイトにある動画も、分類を「案件」に変える
+#         python3 scripts/add_youtube.py --refresh-links            自動で取り込んだ「案件」すべての概要欄から、配信リンクを足す(--dry-run で一覧だけ)
 # 「案件」は、概要欄の配信・販売のリンク(Spotify / Apple Music / ニコニコ動画 / Bandcamp / BOOTH / linkco.re など)も、ボタンとして自動で付きます。
 # タイトル・公開日・概要欄のオフボーカルなどの配布リンクは、動画のページから自動で読み取ります。
 # 作られるのは、自動取り込みと同じ形の works/<公開日>-yt-<動画ID>/info.txt です(取り込み済みの記録にも残るので、あとで重複しません)。
@@ -97,7 +97,7 @@ def video_id(text):
     return text if re.fullmatch(r"[\w-]{11}", text) else None
 
 
-EXCLUDE = []  # import.txt の youtube-exclude(Trailer など)。プレイリストをまとめて追加するときだけ、これを含む動画を飛ばす
+EXCLUDE = []  # 設定/import.txt の youtube-exclude(Trailer など)。プレイリストをまとめて追加するときだけ、これを含む動画を飛ばす
 
 
 def reclassify(vid, wtype, dry):
@@ -158,7 +158,7 @@ def add(imp, vid, force=False, bulk=False, wtype="video", reclass=False, bpm=Non
         print("  - %s: 「%s」は除外ワードを含むので、飛ばしました(追加するなら --force)" % (vid, title))
         return False
     orig_type = wtype
-    if wtype in ("video", "project") and iw.is_trailer(title, vid):  # import.txt の trailer-playlist のプレイリストに入っていて、タイトルに XFD / Trailer を含む動画は、Trailer にする
+    if wtype in ("video", "project") and iw.is_trailer(title, vid):  # 設定/import.txt の trailer-playlist のプレイリストに入っていて、タイトルに XFD / Trailer を含む動画は、Trailer にする
         wtype = "trailer"
     mats = iw.material_links(desc)
     if orig_type == "project":  # 案件は、概要欄の配信・販売のリンクも、ボタンにする
@@ -258,7 +258,7 @@ def main():
         if args and not type_given and sys.stdin.isatty():  # ウィザードのときは、分類も聞く
             if input("分類 [Enter = MV(自分の動画) / 2 = 案件(関わらせて頂いた作品)]: ").strip() == "2":
                 wtype = "project"
-    cfg_path = iw.ROOT / "import.txt"
+    cfg_path = iw.CONFIG / "import.txt"
     cfg = build.parse_info(cfg_path.read_text(encoding="utf-8"))[0] if cfg_path.exists() else {}
     EXCLUDE[:] = [w.strip().lower() for w in re.split(r"[,、]", cfg.get("youtube-exclude", "")) if w.strip()]
     jobs = []  # (動画ID, プレイリストからか)
