@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-# MV のオフボーカル(WAV など)を、GitHub の Releases にアップロードして、その MV のページに「ダウンロード」ボタンを付ける(標準ライブラリ + gh コマンド)
+# MV のオフボーカル(WAV など)と、歌詞を、GitHub の Releases にアップロードして、その MV のページに「ダウンロード」ボタンを付ける(標準ライブラリ + gh コマンド)
 # 重い WAV をリポジトリに入れると、Git の履歴が重くなって戻せないので、Releases(1ファイル2GBまで)に置きます。
 # 使い方: python3 offvocal_upload.py                   質問に答える(どの MV か → ファイルをドラッグして貼る)
-#         python3 offvocal_upload.py ファイル            ファイルを指定して、MV だけ選ぶ
+#         python3 offvocal_upload.py ファイル [歌詞]      ファイル(と歌詞)を指定して、MV だけ選ぶ
+# 歌詞のファイル(txt・pdf)も渡すと、オフボーカルと歌詞を1つの ZIP にまとめて、「オフボーカル + 歌詞」の1つのボタンにします。
 #         python3 offvocal_upload.py --dry-run          何をするかだけ表示(アップロードも、書き込みもしません)
-# しくみ: Releases の「offvocal」(なければ作ります)に、<作品フォルダ名>-offvocal.wav という名前でアップロードし、
-#         作品の info.txt に offvocal: URL・offvocal-size:・offvocal-type: を書きます。サイトを作り直すと、ボタンが出ます(公開は、いつもの手順で)。
+# しくみ: Releases の「offvocal」(なければ作ります)に、<作品フォルダ名>-offvocal.wav(歌詞つきは .zip)という名前でアップロードし、
+#         作品の info.txt に offvocal: URL・offvocal-size:・offvocal-type:(歌詞つきは offvocal-bundle: lyrics も)を書きます。サイトを作り直すと、ボタンが出ます(公開は、いつもの手順で)。
 # 事前に、gh コマンドのログインが必要です(ターミナルで gh auth login。済んでいなければ、このコマンドが案内します)。
 import json
 import os
@@ -20,6 +21,7 @@ import import_works as iw
 
 TAG = "offvocal"
 EXTS = {".wav", ".mp3", ".flac", ".m4a", ".zip"}
+LYRICS_EXTS = {".txt", ".pdf"}
 LIMIT = 2 * 1024 ** 3  # GitHub の Releases は、1ファイル 2GB まで
 
 
@@ -91,14 +93,22 @@ def main():
     if src.suffix.lower() not in EXTS:
         print("対応していない形式です(%s)。%s のどれかにしてください。" % (src.suffix, " ".join(sorted(EXTS))))
         return 1
+    lyr = None
+    if src.suffix.lower() != ".zip":  # 歌詞も、一緒に ZIP にできる
+        raw2 = args[1] if len(args) > 1 else input("歌詞のファイル(txt か pdf)も一緒に入れるなら、ここにドラッグして Enter(なければ、そのまま Enter): ")
+        if raw2.strip():
+            lyr = clean_path(raw2)
+            if not lyr.is_file() or lyr.suffix.lower() not in LYRICS_EXTS:
+                print("歌詞のファイルを読み取れませんでした(%s)。txt か pdf を指定してください。" % lyr)
+                return 1
     size = src.stat().st_size
     if size > LIMIT:
         print("ファイルが大きすぎます(%s)。GitHub の Releases は、1ファイル 2GB までです。" % build.fmt_size(size))
         return 1
-    asset = "%s-offvocal%s" % (slug, src.suffix.lower())
+    asset = "%s-offvocal%s" % (slug, ".zip" if lyr else src.suffix.lower())
     url = "https://github.com/%s/releases/download/%s/%s" % (repo, TAG, asset)
-    print("\n  作品    : %s(%s)\n  ファイル: %s(%s)\n  置き場所: GitHub Releases「%s」→ %s\n  リンク  : %s" %
-          (title, slug, src.name, build.fmt_size(size), TAG, asset, url))
+    print("\n  作品    : %s(%s)\n  ファイル: %s(%s)%s\n  置き場所: GitHub Releases「%s」→ %s\n  リンク  : %s" %
+          (title, slug, src.name, build.fmt_size(size), "\n  歌詞    : %s(オフボーカルと一緒に、1つの ZIP にまとめます)" % lyr.name if lyr else "", TAG, asset, url))
     if old and not dry and input("\nこの MV には、すでにオフボーカルがあります。置き換えますか? [y/N]: ").strip().lower() not in ("y", "yes"):
         print("中止しました。")
         return 0
@@ -116,17 +126,27 @@ def main():
             return 1
     tmp = Path(tempfile.mkdtemp())
     link = tmp / asset  # gh は、ファイル名でアップロードするので、ASCII の名前の入口を作る
-    try:
-        os.symlink(src.resolve(), link)
-    except OSError:
-        shutil.copy2(src, link)
+    if lyr:  # オフボーカル・歌詞・README を、1つの ZIP に
+        print("ZIP にまとめています…")
+        build.make_bundle([("offvocal", src), ("lyrics", lyr)], link, title, build.load_site().get("url", ""))
+        size = link.stat().st_size
+    else:
+        try:
+            os.symlink(src.resolve(), link)
+        except OSError:
+            shutil.copy2(src, link)
     print("アップロード中…(%s。少し時間がかかります)" % build.fmt_size(size))
     r = subprocess.run(["gh", "release", "upload", TAG, str(link), "--clobber"], text=True)
     shutil.rmtree(tmp, ignore_errors=True)
     if r.returncode != 0:
         print("アップロードに失敗しました。")
         return 1
-    iw.rewrite_info(info, {"offvocal": url, "offvocal-size": size, "offvocal-type": src.suffix[1:].upper()})
+    updates = {"offvocal": url, "offvocal-size": size, "offvocal-type": "ZIP" if lyr else src.suffix[1:].upper()}
+    if lyr:
+        updates["offvocal-bundle"] = "lyrics"
+    elif old:  # 歌詞なしで置き換えたときは、前の「歌詞つき」の印を外す
+        updates["offvocal-bundle"] = ""
+    iw.rewrite_info(info, updates)
     print("\n完了しました。%s の info.txt に、リンクを書き込みました。" % slug)
     if input("サイトを作り直して、表示を確認しますか? [Y/n]: ").strip().lower() in ("", "y", "yes"):
         build.main()

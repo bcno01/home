@@ -6,6 +6,7 @@ import itertools
 import json
 import re
 import shutil
+import zipfile
 import subprocess
 import sys
 import unicodedata
@@ -369,8 +370,15 @@ def read_work(d):
         url = f.get(stem, "").strip()  # info.txt の offvocal: URL / lyrics: URL(GitHub の Releases に置いたファイルなど。種類と大きさは offvocal-type: / offvocal-size:)
         if url.startswith("http"):
             size = f.get(stem + "-size", "").strip()
-            downloads.append({"name": name, "path": None, "url": url, "size": int(size) if size.isdigit() else 0,
+            bundled = stem == "offvocal" and f.get("offvocal-bundle", "").strip().lower() in ("lyrics", "歌詞", "yes")  # 歌詞も一緒に ZIP にしてある
+            downloads.append({"name": "オフボーカル + 歌詞" if bundled else name, "path": None, "url": url, "size": int(size) if size.isdigit() else 0,
                               "ext": (f.get(stem + "-type", "") or Path(url.split("?")[0]).suffix[1:]).strip().upper()})
+    local_off = [x for x in downloads if x["path"] and x["name"] == "オフボーカル"]
+    local_lyr = [x for x in downloads if x["path"] and x["name"] == "歌詞"]
+    if local_off and local_lyr:  # フォルダに両方あるときは、1つの ZIP にまとめて、ボタンも1つにする(ZIP は、ビルドのときに作る)
+        picked = [("offvocal", local_off[0]["path"]), ("lyrics", local_lyr[0]["path"])]
+        downloads = [x for x in downloads if x not in (local_off[0], local_lyr[0])]
+        downloads.insert(0, {"name": "オフボーカル + 歌詞", "path": None, "url": d.name + "-offvocal.zip", "bundle": picked, "ext": "ZIP", "size": 0})
     w = {
         "downloads": downloads,
         "bpm": parse_bpm(f.get("bpm", "")),
@@ -552,6 +560,22 @@ def svc_of(url):
             "ニコニコ動画": "niconico", "BOOTH": "booth", "SoundCloud": "soundcloud", "Bandcamp": "bandcamp"}.get(name, "")
 
 
+def bundle_readme(title, site_url):
+    """オフボーカルと歌詞をまとめた ZIP に入れる、READMEの文面"""
+    lines = [title, "オフボーカル・歌詞", ""]
+    if site_url:
+        lines += ["ご利用の前に、ガイドラインをご確認ください:", site_url.rstrip("/") + "/#guideline", ""]
+    return "\n".join(lines)
+
+
+def make_bundle(paths, dst, title, site_url):
+    """オフボーカルと歌詞のファイルを、1つの ZIP にまとめる(ZIP の中の名前は、offvocal.wav / lyrics.txt / README.txt)。paths: [(名前の頭, ファイル)]"""
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for stem, p in paths:
+            z.write(p, stem + p.suffix.lower())
+        z.writestr("README.txt", bundle_readme(title, site_url))
+
+
 def fmt_size(n):
     return "%.1fMB" % (n / 1048576) if n >= 1048576 else "%dKB" % max(1, round(n / 1024))
 
@@ -563,7 +587,7 @@ def download_buttons(w):
     def btn(x):
         info = " · ".join(v for v in (esc(x["ext"]), fmt_size(x["size"]) if x["size"] else "") if v)
         return ('<a class="btn dl" href="%s" download%s>%s<span aria-hidden="true"> ↓</span>%s</a>'
-                % (esc(x["url"] or quote(x["path"].name)), ' rel="noopener"' if x["url"] else "", esc(x["name"]),
+                % (esc(x["url"] if x["url"].startswith("http") else quote(x["url"] or x["path"].name)), ' rel="noopener"' if x["url"].startswith("http") else "", esc(x["name"]),
                    "<small>%s</small>" % info if info else ""))
     btns = "\n".join(btn(x) for x in w["downloads"])
     return ('<div class="downloads"><div class="links">%s</div>'
@@ -1158,6 +1182,14 @@ def main():
         for p in w["gallery"]:
             save_image(p, wdir / p.name, 1800, written)
         for x in w["downloads"]:
+            if x.get("bundle"):  # フォルダのオフボーカルと歌詞を、1つの ZIP にまとめる
+                dst = wdir / x["url"]
+                written.add(dst)
+                newest = max(p.stat().st_mtime for _, p in x["bundle"])
+                if not (dst.exists() and dst.stat().st_mtime >= newest):
+                    make_bundle(x["bundle"], dst, w["title"], site.get("url", ""))
+                x["size"] = dst.stat().st_size
+                continue
             if not x["path"]:
                 continue
             p = x["path"]
