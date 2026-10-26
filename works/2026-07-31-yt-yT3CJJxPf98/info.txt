@@ -4,5 +4,9 @@ type: video
 source: youtube-yT3CJJxPf98
 auto: yes
 bpm: 201
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2026-07-31-yt-yT3CJJxPf98-offvocal.zip
+offvocal-size: 59676436
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=yT3CJJxPf98
