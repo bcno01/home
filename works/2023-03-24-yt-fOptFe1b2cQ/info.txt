@@ -4,5 +4,9 @@ type: video
 source: youtube-fOptFe1b2cQ
 auto: yes
 bpm: 175
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2023-03-24-yt-fOptFe1b2cQ-offvocal.zip
+offvocal-size: 56637359
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=fOptFe1b2cQ

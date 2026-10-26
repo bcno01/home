@@ -4,5 +4,9 @@ type: video
 source: youtube-fFGX32poMJI
 auto: yes
 bpm: 80
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2022-11-02-yt-fFGX32poMJI-offvocal.zip
+offvocal-size: 73679151
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=fFGX32poMJI

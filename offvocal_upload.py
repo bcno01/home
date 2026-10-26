@@ -8,12 +8,15 @@
 # しくみ: Releases の「offvocal」(なければ作ります)に、<作品フォルダ名>-offvocal.wav(歌詞つきは .zip)という名前でアップロードし、
 #         作品の info.txt に offvocal: URL・offvocal-size:・offvocal-type:(歌詞つきは offvocal-bundle: lyrics も)を書きます。サイトを作り直すと、ボタンが出ます(公開は、いつもの手順で)。
 # 事前に、gh コマンドのログインが必要です(ターミナルで gh auth login。済んでいなければ、このコマンドが案内します)。
+import atexit
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 import build
@@ -21,7 +24,59 @@ import import_works as iw
 
 TAG = "offvocal"
 EXTS = {".wav", ".mp3", ".flac", ".m4a", ".zip"}
-LYRICS_EXTS = {".txt", ".pdf"}
+LYRICS_EXTS = {".txt", ".pdf", ".docx", ".doc"}  # docx・doc は、txt に変換して、ZIP に入れる
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def docx_to_text(path):
+    """Word(.docx)の歌詞を、プレーンテキストにする(標準ライブラリだけ。段落ごとに1行、空の段落は空行)。
+    ルビ(ふりがな)は読み飛ばして、本文だけにする。書式(太字・色など)は、捨てる"""
+    with zipfile.ZipFile(path) as z:
+        root = ET.fromstring(z.read("word/document.xml"))
+
+    def walk(node, buf):
+        for ch in node:
+            if ch.tag == W + "t":
+                buf.append(ch.text or "")
+            elif ch.tag == W + "tab":
+                buf.append("\t")
+            elif ch.tag in (W + "br", W + "cr"):
+                buf.append("\n")
+            elif ch.tag == W + "rt":  # ルビ(ふりがな)
+                continue
+            else:
+                walk(ch, buf)
+    lines = []
+    for p in root.iter(W + "p"):
+        buf = []
+        walk(p, buf)
+        lines.append("".join(buf))
+    while lines and not lines[-1].strip():  # 最後の空行は、落とす
+        lines.pop()
+    return "\n".join(lines) + "\n"
+
+
+def to_txt(src):
+    """歌詞が docx / doc なら、txt に変換した一時ファイルを返す(そうでなければ、そのまま)。失敗したら None"""
+    if src.suffix.lower() not in (".docx", ".doc"):
+        return src
+    text = None
+    if src.suffix.lower() == ".docx":
+        try:
+            text = docx_to_text(src)
+        except (zipfile.BadZipFile, KeyError, ET.ParseError):
+            text = None
+    if text is None and shutil.which("textutil"):  # .doc(古い形式)と、読めなかった docx は、Mac の textutil で
+        r = subprocess.run(["textutil", "-convert", "txt", "-encoding", "UTF-8", "-stdout", str(src)], capture_output=True)
+        if r.returncode == 0:
+            text = r.stdout.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n").rstrip("\n") + "\n"
+    if text is None:
+        return None
+    d = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, d, ignore_errors=True)
+    out = Path(d) / "lyrics.txt"
+    out.write_text(text, encoding="utf-8")
+    return out
 LIMIT = 2 * 1024 ** 3  # GitHub の Releases は、1ファイル 2GB まで
 
 
@@ -93,14 +148,23 @@ def main():
     if src.suffix.lower() not in EXTS:
         print("対応していない形式です(%s)。%s のどれかにしてください。" % (src.suffix, " ".join(sorted(EXTS))))
         return 1
-    lyr = None
+    lyr, lyr_name = None, ""
     if src.suffix.lower() != ".zip":  # 歌詞も、一緒に ZIP にできる
-        raw2 = args[1] if len(args) > 1 else input("歌詞のファイル(txt か pdf)も一緒に入れるなら、ここにドラッグして Enter(なければ、そのまま Enter): ")
+        raw2 = args[1] if len(args) > 1 else input("歌詞のファイル(txt・pdf・docx)も一緒に入れるなら、ここにドラッグして Enter(docx は txt に変換して入れます。なければ、そのまま Enter): ")
         if raw2.strip():
             lyr = clean_path(raw2)
             if not lyr.is_file() or lyr.suffix.lower() not in LYRICS_EXTS:
-                print("歌詞のファイルを読み取れませんでした(%s)。txt か pdf を指定してください。" % lyr)
+                print("歌詞のファイルを読み取れませんでした(%s)。txt・pdf・docx のどれかを指定してください。" % lyr)
                 return 1
+            lyr_name = lyr.name
+            conv = to_txt(lyr)
+            if conv is None:
+                print("歌詞を txt に変換できませんでした(%s)。txt か pdf で、もう一度試してください。" % lyr.name)
+                return 1
+            if conv != lyr:
+                lines = conv.read_text(encoding="utf-8").splitlines()
+                print("  歌詞を txt に変換しました(%d行)。先頭: %s" % (len(lines), " / ".join(l for l in lines[:3] if l.strip())[:60]))
+            lyr = conv
     size = src.stat().st_size
     if size > LIMIT:
         print("ファイルが大きすぎます(%s)。GitHub の Releases は、1ファイル 2GB までです。" % build.fmt_size(size))
@@ -108,7 +172,7 @@ def main():
     asset = "%s-offvocal%s" % (slug, ".zip" if lyr else src.suffix.lower())
     url = "https://github.com/%s/releases/download/%s/%s" % (repo, TAG, asset)
     print("\n  作品    : %s(%s)\n  ファイル: %s(%s)%s\n  置き場所: GitHub Releases「%s」→ %s\n  リンク  : %s" %
-          (title, slug, src.name, build.fmt_size(size), "\n  歌詞    : %s(オフボーカルと一緒に、1つの ZIP にまとめます)" % lyr.name if lyr else "", TAG, asset, url))
+          (title, slug, src.name, build.fmt_size(size), "\n  歌詞    : %s(オフボーカルと一緒に、1つの ZIP にまとめます)" % lyr_name if lyr else "", TAG, asset, url))
     if old and not dry and input("\nこの MV には、すでにオフボーカルがあります。置き換えますか? [y/N]: ").strip().lower() not in ("y", "yes"):
         print("中止しました。")
         return 0

@@ -4,5 +4,9 @@ type: video
 source: youtube-7z0RNarfLxg
 auto: yes
 bpm: 136
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2024-07-07-yt-7z0RNarfLxg-offvocal.zip
+offvocal-size: 61919686
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=7z0RNarfLxg

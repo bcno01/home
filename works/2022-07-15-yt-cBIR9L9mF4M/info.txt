@@ -4,5 +4,9 @@ type: video
 source: youtube-cBIR9L9mF4M
 auto: yes
 bpm: 139
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2022-07-15-yt-cBIR9L9mF4M-offvocal.zip
+offvocal-size: 63307940
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=cBIR9L9mF4M
