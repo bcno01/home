@@ -605,16 +605,41 @@ def fmt_size(n):
     return "%.1fMB" % (n / 1048576) if n >= 1048576 else "%dKB" % max(1, round(n / 1024))
 
 
+def dl_btn(x, prefix=""):
+    """ダウンロードのボタン1つ。prefix: 作品のフォルダへの相対パス(トップの一覧では w/<フォルダ名>/)"""
+    ext = x["url"].startswith("http")
+    info = " · ".join(v for v in (esc(x["ext"]), fmt_size(x["size"]) if x["size"] else "") if v)
+    return ('<a class="btn dl" href="%s" download%s>%s<span aria-hidden="true"> ↓</span>%s</a>'
+            % (esc(x["url"] if ext else prefix + quote(x["url"] or x["path"].name)), ' rel="noopener"' if ext else "", esc(x["name"]),
+               "<small>%s</small>" % info if info else ""))
+
+
+def render_offvocal(works, g):
+    """メニューの「OffVocal」: オフボーカル・歌詞のダウンロードがある作品の一覧(新しい順)。なければ空"""
+    rows = [w for w in works if w["downloads"]]
+    if not rows:
+        return ""
+    gl = g["link"] if g and g["link"] else ""
+    note = '<p class="note">%s%s</p>' % ("オフボーカル・歌詞のダウンロードです。ご利用の前に、ガイドラインをご確認ください。",
+                                          ' <a href="%s" target="_blank" rel="noopener">ガイドライン全文(note) ↗</a>' % esc(gl) if gl else "")
+    def row(w):  # 1行 = 曲名(作品のページへのリンク)と、その右隣にダウンロードのボタン
+        return ('<div class="ov"><a class="t" href="w/%s/">%s</a><div class="ov-btns">%s</div></div>'
+                % (quote(w["slug"]), esc(video_song(w["title"]) if w["type"] == "video" else w["title"]),
+                   "".join(dl_btn(x, "w/%s/" % quote(w["slug"])) for x in w["downloads"])))
+    # Works と同じ、年ごとのまとまり(JavaScript が使えるときは、年のタブ。いちばん新しい年を開いておく)
+    body = '<div class="yrs">%s</div>' % "".join(
+        '<details class="yr" data-year="%d"%s><summary><span class="y">%d</span><small>%d</small></summary><div class="rows">%s</div></details>'
+        % (year, " open" if i == 0 else "", year, len(ws), "".join(row(w) for w in ws))
+        for i, (year, ws) in enumerate((y, list(g)) for y, g in itertools.groupby(rows, key=lambda w: w["date"].year)))
+    return ('<section class="rpanel" id="offvocal" aria-label="OffVocal"><h2 class="ptitle">OffVocal</h2>%s'
+            '<div class="ov-list"%s>%s</div></section>' % (note, ' data-guideline="%s"' % esc(gl) if gl else "", body))
+
+
 def download_buttons(w):
     """作品のフォルダに置いたオフボーカル・歌詞のファイルを、直接ダウンロードするボタン(あるときだけ)"""
     if not w["downloads"]:
         return ""
-    def btn(x):
-        info = " · ".join(v for v in (esc(x["ext"]), fmt_size(x["size"]) if x["size"] else "") if v)
-        return ('<a class="btn dl" href="%s" download%s>%s<span aria-hidden="true"> ↓</span>%s</a>'
-                % (esc(x["url"] if x["url"].startswith("http") else quote(x["url"] or x["path"].name)), ' rel="noopener"' if x["url"].startswith("http") else "", esc(x["name"]),
-                   "<small>%s</small>" % info if info else ""))
-    btns = "\n".join(btn(x) for x in w["downloads"])
+    btns = "\n".join(dl_btn(x) for x in w["downloads"])
     g = load_guideline()  # ダウンロードを押したときの確認(fx.js)で、読んでもらうガイドライン全文のURL(note)
     gl = g["link"] if g and g["link"] else ""
     return ('<div class="downloads"%s><div class="links">%s</div>'
@@ -804,7 +829,7 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    panel = {"#works": "works", "#events": "events", "#contact": "contact", "#guideline": "guideline"}.get(url)
+    panel = {"#works": "works", "#events": "events", "#offvocal": "offvocal", "#contact": "contact", "#guideline": "guideline"}.get(url)
     attrs = ' target="_blank" rel="noopener"' if ext else (
         ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
@@ -1039,6 +1064,10 @@ def render_index(site, works):
 
     guideline = load_guideline()
     menu = [(lab, u) for lab, u in site["menu"] if u != "#guideline" or guideline]  # guideline.txt がなければ「Guideline」の項目は出さない
+    offvocal = render_offvocal(works, guideline)  # オフボーカル・歌詞がある作品があるときだけ、メニューに「OffVocal」が出る(Shop と Guideline の間)
+    if offvocal:
+        at = next((i for i, (_, u) in enumerate(menu) if u == "#guideline"), len(menu))
+        menu = menu[:at] + [("OffVocal", "#offvocal")] + menu[at:]
     items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + menu
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
@@ -1053,43 +1082,48 @@ def render_index(site, works):
              if site["about"] else "")
     script = """<script>
 (function () {
-  var wrap = document.querySelector('.yrs');
-  var yrs = wrap ? Array.prototype.slice.call(wrap.querySelectorAll('.yr')) : [];
-  var tabs = [], bar = null;
-  // JavaScript が使えるときは、年ごとの折りたたみを、横並びのタブ(スマホでは横スワイプ)に切り替える。使えないときは、折りたたみのまま
-  if (yrs.length > 1) {
-    bar = document.createElement('div');
-    bar.className = 'ytabs';
-    bar.setAttribute('role', 'tablist');
-    bar.setAttribute('aria-label', '年');
-    yrs.forEach(function (y) {
-      var t = document.createElement('button');
-      t.type = 'button';
-      t.className = 'ytab';
-      t.setAttribute('role', 'tab');
-      t.innerHTML = '<span class="y">' + y.dataset.year + '</span><small>' + y.querySelector('summary small').textContent + '</small>';
-      t.addEventListener('click', function () { show(y); });
-      bar.appendChild(t);
-      tabs.push(t);
-    });
-    wrap.insertBefore(bar, wrap.firstChild);
-    wrap.classList.add('tabbed');
-    yrs.forEach(function (y) { y.open = true; });
+  // JavaScript が使えるときは、年ごとの折りたたみを、横並びのタブ(スマホでは横スワイプ)に切り替える。使えないときは、折りたたみのまま(Works と OffVocal の両方)
+  function tabify(wrap) {
+    var yrs = wrap ? Array.prototype.slice.call(wrap.querySelectorAll('.yr')) : [];
+    var tabs = [], bar = null;
+    function show(y, auto) {
+      yrs.forEach(function (o, i) {
+        var on = o === y;
+        o.classList.toggle('cur', on);
+        tabs[i].setAttribute('aria-selected', on);
+        // 自分でタブを押したときは動かさない。絞り込みで年が自動で切り替わったときだけ、そのタブが見える位置まで最小限に動かす
+        if (on && auto) {
+          var tr = tabs[i].getBoundingClientRect(), br = bar.getBoundingClientRect();
+          if (tr.left < br.left) bar.scrollLeft += tr.left - br.left;
+          else if (tr.right > br.right) bar.scrollLeft += tr.right - br.right;
+        }
+      });
+    }
+    if (yrs.length > 1) {
+      bar = document.createElement('div');
+      bar.className = 'ytabs';
+      bar.setAttribute('role', 'tablist');
+      bar.setAttribute('aria-label', '年');
+      yrs.forEach(function (y) {
+        var t = document.createElement('button');
+        t.type = 'button';
+        t.className = 'ytab';
+        t.setAttribute('role', 'tab');
+        t.innerHTML = '<span class="y">' + y.dataset.year + '</span><small>' + y.querySelector('summary small').textContent + '</small>';
+        t.addEventListener('click', function () { show(y); });
+        bar.appendChild(t);
+        tabs.push(t);
+      });
+      wrap.insertBefore(bar, wrap.firstChild);
+      wrap.classList.add('tabbed');
+      yrs.forEach(function (y) { y.open = true; });
+      show(yrs[0]);
+    }
+    return { yrs: yrs, tabs: tabs, bar: bar, show: show };
   }
-  function show(y, auto) {
-    yrs.forEach(function (o, i) {
-      var on = o === y;
-      o.classList.toggle('cur', on);
-      tabs[i].setAttribute('aria-selected', on);
-      // 自分でタブを押したときは動かさない。絞り込みで年が自動で切り替わったときだけ、そのタブが見える位置まで最小限に動かす
-      if (on && auto) {
-        var tr = tabs[i].getBoundingClientRect(), br = bar.getBoundingClientRect();
-        if (tr.left < br.left) bar.scrollLeft += tr.left - br.left;
-        else if (tr.right > br.right) bar.scrollLeft += tr.right - br.right;
-      }
-    });
-  }
-  if (bar) show(yrs[0]);
+  tabify(document.querySelector('#offvocal .yrs'));
+  var W = tabify(document.querySelector('#works .yrs'));
+  var yrs = W.yrs, tabs = W.tabs, bar = W.bar, show = W.show;
   document.querySelectorAll('.chip').forEach(function (b) {
     b.addEventListener('click', function () {
       var t = b.dataset.type;
@@ -1139,12 +1173,13 @@ def render_index(site, works):
 %s
 %s
 %s
+%s
 </div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
          nav, sns,
-         chips, rows, render_events(load_events()), render_guideline(guideline), render_contact(site), about, script)
+         chips, rows, render_events(load_events()), offvocal, render_guideline(guideline), render_contact(site), about, script)
     og = None
     if site.get("url") and site["og_image"] and (ROOT / site["og_image"]).is_file():  # site.txt の og-image: で指定した画像
         og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)

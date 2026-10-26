@@ -42,6 +42,7 @@
     var a = bg.querySelector('video');
     var order = [], pos = 0, last = '';
     var xf = null; // クロスフェード中の {out, inc, t0}(モザイクの描画で使う)
+    var fails = 0; // 続けて読み込みに失敗した回数(再生に成功すると 0 に戻る)
     vids = [a];
     if (all.length > 1) {
       var b = a.cloneNode(false);
@@ -87,7 +88,9 @@
       v.addEventListener('ended', function () { // timeupdate が間に合わなかったとき
         if (all.length > 1 && v === vids[curVid] && !v._swapping) { v._swapping = true; swap(); }
       });
-      v.addEventListener('error', function () { // 読み込めないクリップは飛ばす
+      v.addEventListener('playing', function () { fails = 0; });
+      v.addEventListener('error', function () { // 読み込めないクリップは飛ばす。ネットが切れているときなど、続けて失敗するときは、6回で止める(止めないと、延々と再取得を繰り返す)
+        if (++fails > 6) return;
         load(v);
         if (v === vids[curVid]) v.play().catch(function () {});
       });
@@ -725,8 +728,7 @@
   // ---- オフボーカル・歌詞のダウンロードボタンを押したときの確認(「ガイドラインを確認しましたか」)。同意すると、ダウンロードが始まる ----
   // 同じ訪問(タブを閉じるまで)のあいだは、一度同意したら、聞き直さない。JavaScript が使えない環境では、確認なしで、そのままダウンロードされる
   (function () {
-    var box = document.querySelector('.downloads');
-    if (!box) return;
+    if (!document.querySelector('.downloads, .ov-list')) return;
     var KEY = 'dl-agreed';
     var agreed = function () { try { return sessionStorage.getItem(KEY) === '1'; } catch (e) { return false; } };
     var remember = function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} };
@@ -755,7 +757,8 @@
       p.textContent = 'オフボーカル・歌詞のご利用には、二次利用ガイドラインの確認が必要です。';
       card.appendChild(h);
       card.appendChild(p);
-      var g = box.dataset.guideline;
+      var holder = a.closest('[data-guideline]');
+      var g = holder && holder.dataset.guideline;
       if (g) {
         var link = document.createElement('a');
         link.className = 'dl-read';
@@ -810,8 +813,8 @@
       modal.addEventListener('click', function (e) { if (e.target === modal) shut(); });
       ok.addEventListener('click', function () { remember(); shut(); start(a); });
     }
-    box.addEventListener('click', function (e) {
-      var a = e.target.closest('a.btn.dl');
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('.downloads a.btn.dl, .ov-list a.btn.dl');
       if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // 通常のクリックだけ(新しいタブで開くなどは、そのまま)
       if (agreed()) return; // この訪問では、すでに同意済み
       e.preventDefault();
