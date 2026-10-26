@@ -593,7 +593,7 @@ body::after {
 
 /* 開いたときのフェードイン(順番にふわっと現れる) */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
-.logo, .tagline, .nav a, .sns, .works-list, .about,
+.logo, .tagline, .nav a, .sns, .works-list, .about, .feat,
 .top, .work-head, .embed, .body, .gallery {
   animation: rise .8s cubic-bezier(.2, .7, .2, 1) backwards;
 }
@@ -606,6 +606,7 @@ body::after {
 .nav a:nth-child(n+5) { animation-delay: .58s; }
 .sns { animation-delay: .7s; }
 .works-list { animation-delay: .45s; }
+.feat { animation-delay: .6s; }
 .about { animation-delay: .8s; }
 .work-head { animation-delay: .15s; }
 .embed { animation-delay: .3s; }
@@ -645,7 +646,7 @@ body.bg-on .thanks pre { background: rgba(255, 255, 255, .14); }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .logo, .tagline, .nav a, .sns, .works-list, .about,
+  .logo, .tagline, .nav a, .sns, .works-list, .about, .feat,
   .top, .work-head, .embed, .body, .gallery { animation: none; }
   body { transition: none; }
   .row, .btn, a.ev { transition: none; }
