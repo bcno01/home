@@ -381,8 +381,25 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 .btn.dl { background: transparent; border: 2px solid currentColor; color: var(--fg); display: inline-flex; align-items: baseline; gap: 2px; }
 .btn.dl small { margin-left: 10px; font: 600 11px/1 var(--head); opacity: .6; letter-spacing: .04em; }
 .btn.dl:hover { background: var(--fg); color: var(--white); border-color: var(--fg); }
-.dl-note { margin: 8px 0 0; font: 600 12px/1.6 var(--head); color: var(--muted); }
-.dl-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+/* ダウンロードの前の確認(「ガイドラインを確認しましたか」。fx.js が出す) */
+.dl-modal {
+  position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(10, 12, 30, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; transition: opacity .2s ease;
+}
+.dl-modal.on { opacity: 1; }
+.dl-card {
+  width: min(94vw, 420px); padding: 26px 24px 22px; border-radius: 14px; background: var(--white); color: var(--fg);
+  box-shadow: 0 14px 50px rgba(0, 0, 0, .4); font-family: var(--head);
+}
+.dl-card h2 { margin: 0 0 10px; font: 700 18px/1.4 var(--head); }
+.dl-card p { margin: 0 0 14px; font: 600 14px/1.7 var(--head); color: var(--muted); }
+.dl-card .dl-read { display: inline-block; margin-bottom: 16px; font: 700 14px/1.5 var(--head); color: var(--main); text-underline-offset: 3px; }
+.dl-card label { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: rgba(20, 24, 58, .06); font: 600 14px/1.6 var(--head); cursor: pointer; }
+.dl-card input[type="checkbox"] { flex: none; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--main); cursor: pointer; }
+.dl-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.dl-actions button { min-height: 44px; padding: 0 20px; border-radius: 999px; border: 2px solid currentColor; background: transparent; color: var(--fg); font: 700 14px/1 var(--head); cursor: pointer; }
+.dl-actions .dl-go { background: var(--main); border-color: var(--main); color: var(--white); }
+.dl-actions .dl-go:disabled { opacity: .35; cursor: not-allowed; }
 .btn.primary:hover { border-color: var(--dark); }
 /* サービスごとのイメージカラー */
 .btn[data-svc] { color: #fff; border-color: transparent; }

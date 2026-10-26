@@ -722,6 +722,103 @@
     cover.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
   })();
 
+  // ---- オフボーカル・歌詞のダウンロードボタンを押したときの確認(「ガイドラインを確認しましたか」)。同意すると、ダウンロードが始まる ----
+  // 同じ訪問(タブを閉じるまで)のあいだは、一度同意したら、聞き直さない。JavaScript が使えない環境では、確認なしで、そのままダウンロードされる
+  (function () {
+    var box = document.querySelector('.downloads');
+    if (!box) return;
+    var KEY = 'dl-agreed';
+    var agreed = function () { try { return sessionStorage.getItem(KEY) === '1'; } catch (e) { return false; } };
+    var remember = function () { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} };
+    function start(a) { // 確認が済んだあと、ダウンロードを始める(押したリンクと同じものを、もう一度押す)
+      var go = document.createElement('a');
+      go.href = a.href;
+      go.setAttribute('download', '');
+      if (/^https?:/.test(a.getAttribute('href'))) go.rel = 'noopener';
+      go.style.display = 'none';
+      document.body.appendChild(go);
+      go.click();
+      go.remove();
+    }
+    function ask(a) {
+      var modal = document.createElement('div');
+      modal.className = 'dl-modal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-labelledby', 'dl-title');
+      var card = document.createElement('div');
+      card.className = 'dl-card';
+      var h = document.createElement('h2');
+      h.id = 'dl-title';
+      h.textContent = 'ダウンロードの前に';
+      var p = document.createElement('p');
+      p.textContent = 'オフボーカル・歌詞のご利用には、二次利用ガイドラインの確認が必要です。';
+      card.appendChild(h);
+      card.appendChild(p);
+      var g = box.dataset.guideline;
+      if (g) {
+        var link = document.createElement('a');
+        link.className = 'dl-read';
+        link.href = g;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'ガイドライン全文を読む(note) \u2197';
+        card.appendChild(link);
+        card.appendChild(document.createElement('br'));
+      }
+      var label = document.createElement('label');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode('ガイドラインを確認し、内容に同意します'));
+      card.appendChild(label);
+      var acts = document.createElement('div');
+      acts.className = 'dl-actions';
+      var cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.textContent = 'キャンセル';
+      var ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'dl-go';
+      ok.textContent = 'ダウンロード';
+      ok.disabled = true;
+      acts.appendChild(cancel);
+      acts.appendChild(ok);
+      card.appendChild(acts);
+      modal.appendChild(card);
+      document.body.appendChild(modal);
+      requestAnimationFrame(function () { modal.classList.add('on'); });
+      cb.focus();
+      function shut() {
+        document.removeEventListener('keydown', onKey);
+        modal.classList.remove('on');
+        setTimeout(function () { modal.remove(); }, 220);
+        a.focus();
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') shut();
+        else if (e.key === 'Tab') { // フォーカスを、ダイアログの中に閉じ込める
+          var items = [].filter.call(modal.querySelectorAll('a[href], input, button'), function (n) { return !n.disabled; });
+          var i = items.indexOf(document.activeElement);
+          e.preventDefault();
+          items[(i + (e.shiftKey ? items.length - 1 : 1)) % items.length].focus();
+        }
+      }
+      document.addEventListener('keydown', onKey);
+      cb.addEventListener('change', function () { ok.disabled = !cb.checked; });
+      cancel.addEventListener('click', shut);
+      modal.addEventListener('click', function (e) { if (e.target === modal) shut(); });
+      ok.addEventListener('click', function () { remember(); shut(); start(a); });
+    }
+    box.addEventListener('click', function (e) {
+      var a = e.target.closest('a.btn.dl');
+      if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // 通常のクリックだけ(新しいタブで開くなどは、そのまま)
+      if (agreed()) return; // この訪問では、すでに同意済み
+      e.preventDefault();
+      ask(a);
+    });
+  })();
+
   // ---- 背景動画のレンズ(マウスのある端末だけ) ----
   if (!fine || calm) return;
 
