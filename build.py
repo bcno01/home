@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # works/ の作品フォルダ群から公開用サイト docs/ を生成する(標準ライブラリのみ)
 import datetime
+import hashlib
 import html
 import itertools
 import json
@@ -533,6 +534,11 @@ def render_sitemap(site, works):
             % "\n".join("<url><loc>%s</loc><lastmod>%s</lastmod></url>" % (esc(u), d.isoformat()) for u, d in rows))
 
 
+def asset_version(name):
+    """style.css / fx.js の内容から作る短い印。ファイルを直すと変わるので、ブラウザに古い版が残らない(?v= に付ける)"""
+    return hashlib.md5((THEME / name).read_bytes()).hexdigest()[:8]
+
+
 def page(site, title, desc, body, root, og_image=None, canonical=None, body_class="", jsonld=None):
     meta = ['<meta name="description" content="%s">' % esc(desc)] if desc else []
     meta += ['<meta property="og:title" content="%s">' % esc(title),
@@ -561,15 +567,15 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap">
 <script>document.documentElement.className += " js"</script>
-<link rel="stylesheet" href="%sstyle.css">
-<script src="%sfx.js" defer></script>
+<link rel="stylesheet" href="%sstyle.css?v=%s">
+<script src="%sfx.js?v=%s" defer></script>
 </head>
 <body class="%s">
 %s
 <footer class="foot"><div class="wrap"><p>© %d %s</p></div></footer>
 </body>
 </html>
-""" % (esc(title), "\n".join(meta), root, root, body_class, body,
+""" % (esc(title), "\n".join(meta), root, asset_version("style.css"), root, asset_version("fx.js"), body_class, body,
        datetime.date.today().year, esc(site["name"]))
 
 

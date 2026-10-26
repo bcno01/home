@@ -299,6 +299,9 @@ Apple Music の作品に、対応する Spotify のアルバムのリンクを�
 - **見つからないとき**: 「対応する作品が見つかりません」と出た場合は、Spotify と Apple Music でアルバム名が違うか、その作品がサイトにありません。作品の `info.txt` の `links:` に `Spotify: URL` を直接書いてください。
 - **自動化(任意・Premium が必要)**: Spotify の公式 API を使うと、完全に自動で付きます。ただし開発者アプリの作成に Spotify Premium が必要です。使う場合は、アプリの Client ID と Client Secret を、GitHub の Secrets(`SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET`)に登録してください(`gh secret set SPOTIFY_CLIENT_ID --repo bcno01/home` のように実行すると、値の入力を求められます)。キーは **リポジトリのファイルに絶対に書かないでください**(公開されます)。登録しなければ、この自動処理は何もしません。
 
+### 見た目を直したのに、ブラウザに古い表示が残るとき
+GitHub Pages は、CSS や JavaScript を、約10分間、ブラウザに覚えさせます。そのため、公開した直後は、ページ(HTML)は新しいのに、見た目(CSS)は古いまま、という表示になることがあります(ボタンが、ふつうの文字に見える、など)。いまは、各ページが `style.css?v=…` `fx.js?v=…` という、**ファイルの内容から作った印**つきで読み込むので、ファイルを直して公開すれば、次の読み込みから、自動で新しい版になります。それでも古く見えるときは、再読み込み(Mac は Command + Shift + R)を試してください。
+
 ## 公開のしくみ(GitHub Pages + 自動ビルド)
 
 `works/` や `site.txt` を変えて GitHub に push すると(定時の自動取り込みでも)、GitHub 側が自動でサイトを作り直して公開します(`.github/workflows/pages.yml`)。
