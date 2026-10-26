@@ -4,5 +4,9 @@ type: video
 source: youtube-X5U_hrcv4VY
 auto: yes
 bpm: 129
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2023-06-28-yt-X5U_hrcv4VY-offvocal.zip
+offvocal-size: 59558080
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=X5U_hrcv4VY
