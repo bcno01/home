@@ -397,6 +397,7 @@ def read_work(d):
         "title": f.get("title") or d.name,
         "title_orig": f.get("title-orig", ""),
         "aliases": [x.strip() for x in re.split(r"[,、]", f.get("aliases", "")) if x.strip()],
+        "search": [x.strip() for x in re.split(r"[,、]", f.get("search", "")) if x.strip()],  # OffVocal の検索だけに使う、別の呼び名(例: ∅ → empty set)。画面には出ない
         "date": date,
         "type": t if t in TYPES else infer_type(links),
         "tracks": tracks,
@@ -623,7 +624,18 @@ def dl_btn(x, prefix=""):
 
 def render_offvocal(works, g):
     """メニューの「OffVocal」: オフボーカル・歌詞のダウンロードがある作品の一覧(新しい順)。なければ空"""
-    rows = [w for w in works if w["downloads"]]
+    rows, same = [], {}  # same: 同じダウンロードのURLを指す作品(例: 静物学の2つのバージョン)は、1行にまとめる(最初の作品を表に出す)
+    for w in works:
+        if not w["downloads"]:
+            continue
+        key = tuple(x["url"] for x in w["downloads"]) if all(x["url"] for x in w["downloads"]) else None
+        if key and key in same:
+            same[key]["_also"].append(w)
+            continue
+        w["_also"] = []
+        rows.append(w)
+        if key:
+            same[key] = w
     if not rows:
         return ""
     gl = g["link"] if g and g["link"] else ""
@@ -631,8 +643,9 @@ def render_offvocal(works, g):
     glink = '<a href="%s" target="_blank" rel="noopener">ガイドライン</a>' % esc(gl) if gl else "ガイドライン"
     note = '<p class="note">%s</p>' % ("オフボーカル・歌詞のダウンロードが可能です。<br>ご利用の前に必ず%sをご確認ください。" % glink)
     def row(w):  # 1行 = 曲名(作品のページへのリンク)と、その右隣にダウンロードのボタン
-        return ('<div class="ov"><a class="t" href="w/%s/">%s</a><div class="ov-btns">%s</div></div>'
-                % (quote(w["slug"]), esc(video_song(w["title"]) if w["type"] == "video" else w["title"]),
+        song = video_song(w["title"]) if w["type"] == "video" else w["title"]
+        return ('<div class="ov" data-q="%s"><a class="t" href="w/%s/">%s</a><div class="ov-btns">%s</div></div>'
+                % (esc(" ".join([song, w["title"]] + w["search"] + [a["title"] for a in w["_also"]])), quote(w["slug"]), esc(song),
                    "".join(dl_btn(x, "w/%s/" % quote(w["slug"])) for x in w["downloads"])))
     # Works と同じ、年ごとのまとまり(JavaScript が使えるときは、年のタブ。いちばん新しい年を開いておく)
     body = '<div class="yrs">%s</div>' % "".join(
@@ -1129,7 +1142,45 @@ def render_index(site, works):
     }
     return { yrs: yrs, tabs: tabs, bar: bar, show: show };
   }
-  tabify(document.querySelector('#offvocal .yrs'));
+  var OV = tabify(document.querySelector('#offvocal .yrs'));
+  // OffVocal の曲名検索(JavaScript が使えるときだけ、検索ボックスを出す)。全角・半角、大文字・小文字、カタカナ・ひらがなを区別しない。
+  // 検索中は、年のタブをやめて、全部の年から、該当する曲を並べる。ボックスを空にすると、元の年のタブに戻る
+  (function () {
+    var list = document.querySelector('#offvocal .ov-list'), yrsEl = document.querySelector('#offvocal .yrs');
+    if (!list || !yrsEl) return;
+    var norm = function (s) {
+      return (s || '').normalize('NFKC').toLowerCase().replace(/\s+/g, '').replace(/[\u30a1-\u30f6]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); });
+    };
+    var box = document.createElement('input');
+    box.type = 'search';
+    box.className = 'ov-search';
+    box.placeholder = '曲名で検索';
+    box.setAttribute('aria-label', '曲名で検索');
+    box.autocomplete = 'off';
+    var none = document.createElement('p');
+    none.className = 'empty ov-none';
+    none.textContent = '該当する曲がありません';
+    none.hidden = true;
+    list.insertBefore(box, yrsEl);
+    list.appendChild(none);
+    var rows = [].slice.call(yrsEl.querySelectorAll('.ov'));
+    rows.forEach(function (r) { r._q = norm(r.dataset.q); });
+    function apply() {
+      var q = norm(box.value.trim());
+      var on = q !== '';
+      yrsEl.classList.toggle('searching', on);
+      var hits = 0;
+      rows.forEach(function (r) { var m = !on || r._q.indexOf(q) >= 0; r.hidden = !m; if (m) hits++; });
+      OV.yrs.forEach(function (y) {
+        var n = y.querySelectorAll('.ov:not([hidden])').length;
+        y.hidden = on && !n;
+        if (on) y.open = true;
+      });
+      none.hidden = !on || hits > 0;
+    }
+    box.addEventListener('input', apply);
+    box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && box.value) { box.value = ''; apply(); e.stopPropagation(); } });
+  })();
   var W = tabify(document.querySelector('#works .yrs'));
   var yrs = W.yrs, tabs = W.tabs, bar = W.bar, show = W.show;
   document.querySelectorAll('.chip').forEach(function (b) {
