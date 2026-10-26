@@ -4,5 +4,9 @@ type: video
 source: youtube-aJh2NyttOmA
 auto: yes
 bpm: 131
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2022-04-23-yt-aJh2NyttOmA-offvocal.zip
+offvocal-size: 50134264
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=aJh2NyttOmA
