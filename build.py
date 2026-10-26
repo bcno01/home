@@ -561,11 +561,22 @@ def svc_of(url):
 
 
 def bundle_readme(title, site_url):
-    """オフボーカルと歌詞をまとめた ZIP に入れる、READMEの文面"""
-    lines = [title, "オフボーカル・歌詞", ""]
-    if site_url:
-        lines += ["ご利用の前に、ガイドラインをご確認ください:", site_url.rstrip("/") + "/#guideline", ""]
-    return "\n".join(lines)
+    """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名、ガイドライン全文(note)へのリンク、guideline.txt の要点。
+    Windows のメモ帳でも文字化けしないよう、先頭に BOM を付け、改行は CRLF にする"""
+    g = load_guideline()
+    lines = [title, "オフボーカル・歌詞", "", "【ご利用の前に、必ずお読みください】"]
+    if g:
+        if g["intro"]:
+            lines.append(g["intro"])
+        if g["link"]:
+            lines.append("ガイドライン全文: " + g["link"])
+        if g["updated"]:
+            lines.append("(%s)" % g["updated"])
+        for head, items in g["sections"]:
+            lines += ["", "■ " + head] + ["・" + x for x in items]
+    elif site_url:
+        lines.append("ガイドライン: " + site_url.rstrip("/") + "/#guideline")
+    return "\ufeff" + "\r\n".join(lines) + "\r\n"
 
 
 def make_bundle(paths, dst, title, site_url):
@@ -1185,7 +1196,7 @@ def main():
             if x.get("bundle"):  # フォルダのオフボーカルと歌詞を、1つの ZIP にまとめる
                 dst = wdir / x["url"]
                 written.add(dst)
-                newest = max(p.stat().st_mtime for _, p in x["bundle"])
+                newest = max([p.stat().st_mtime for _, p in x["bundle"]] + [GUIDELINE_FILE.stat().st_mtime if GUIDELINE_FILE.exists() else 0])  # ガイドラインを直したときも、作り直す
                 if not (dst.exists() and dst.stat().st_mtime >= newest):
                     make_bundle(x["bundle"], dst, w["title"], site.get("url", ""))
                 x["size"] = dst.stat().st_size
