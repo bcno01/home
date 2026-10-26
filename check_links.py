@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# サイトに載せているリンク(作品のボタン・BOOTH・メニュー・SNS・Events・Guideline)が切れていないか調べる(標準ライブラリのみ)
+# サイトに載せているリンク(作品のボタン・オフボーカル/歌詞のダウンロード・BOOTH・メニュー・SNS・Events・Guideline)が切れていないか調べる(標準ライブラリのみ)
 # 使い方: python3 check_links.py            調べて、結果を表示する(切れているものがあれば、終了コード 1)
 # 環境変数 LINKCHECK_REPORT にファイルのパスがあれば、切れているもの・要確認のものを Markdown で書き出す(GitHub Actions が Issue にする)
 # 判定:
@@ -43,6 +43,9 @@ def collect():
             if w:
                 for lab, u in w["links"]:
                     add(u, "作品: %s(%s)" % (w["title"], lab))
+                for x in w["downloads"]:  # info.txt の offvocal: / lyrics: に書いたダウンロードのURL(GitHub の Releases など)
+                    if x["url"].startswith("http"):
+                        add(x["url"], "ダウンロード: %s(%s)" % (w["title"], x["name"]))
     for i in build.load_booth():
         add(i["url"], "BOOTH: %s" % i["name"])
     g = build.load_guideline()
