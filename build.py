@@ -739,6 +739,32 @@ def render_tracks(w):
         "<li>%s</li>" % esc(t) for t in w["tracks"]))
 
 
+REL_TAGS_MAX = 4  # ボタンの下に出す、関連作品のタグの数(これより多いときは、「他 N 件」で、下の「関連作品」へ)
+
+
+def rel_tag_name(r):
+    """関連作品のタグに出す短い名前(MV は曲名、Trailer はアルバム名 + Trailer、ほかは作品名)"""
+    if r["type"] == "video":
+        return video_song(r["title"])
+    if r["type"] == "trailer":
+        return trailer_album(r["title"]) + " Trailer"
+    return r["title"]
+
+
+def render_rel_tags(w):
+    """ボタンの下の、関連作品の小さなタグ。多いときは、最初の数件と、下の一覧への「他 N 件」"""
+    if not w["related"]:
+        return ""
+    order = ["music", "trailer", "video", "project"]  # 近いものから: 配信 → Trailer → MV → 案件(同じ種類の作品は、あとに回す)
+    rel = sorted(w["related"], key=lambda r: (r["type"] == w["type"], order.index(r["type"]) if r["type"] in order else 9))
+    tags = "".join('<a class="rel-tag" href="../%s/"><small>%s</small>%s</a>' % (quote(r["slug"]), esc(TYPES[r["type"]]), esc(rel_tag_name(r)))
+                   for r in rel[:REL_TAGS_MAX])
+    more = len(w["related"]) - REL_TAGS_MAX
+    if more > 0:
+        tags += '<a class="rel-tag rel-more" href="#related">他 %d 件 ↓</a>' % more
+    return '<div class="rel-tags"><span class="rel-label">関連</span>%s</div>' % tags
+
+
 def render_related(w):
     if not w["related"]:
         return ""
@@ -746,7 +772,7 @@ def render_related(w):
         '<a class="row" href="../%s/"><time>%s</time><span class="t">%s</span><span class="k">%s</span></a>'
         % (quote(r["slug"]), fmt_date(r["date"]), esc(r["headline"] or r["title"]), TYPES[r["type"]])
         for r in w["related"])
-    return '<section class="related"><h2>%s</h2><div class="rows">%s</div></section>' % ("関連作品", rows)
+    return '<section class="related" id="related"><h2>%s</h2><div class="rows">%s</div></section>' % ("関連作品", rows)
 
 
 def fmt_duration(sec):
@@ -795,6 +821,7 @@ def render_work(site, w):
 <div class="links">%s</div>
 %s
 %s
+%s
 </div>
 </div>
 %s
@@ -808,7 +835,7 @@ def render_work(site, w):
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
-        link_buttons(list(w["links"]) + booth_buttons(w)), download_buttons(w), render_tracks(w),
+        link_buttons(list(w["links"]) + booth_buttons(w)), download_buttons(w), render_rel_tags(w), render_tracks(w),
         "".join(render_embed(e, w["title"]) for e in w["embeds"]),
         paragraphs(w["body"]), render_booth(w) + render_related(w), gallery)
     og = None

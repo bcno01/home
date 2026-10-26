@@ -3,6 +3,7 @@ date: 2022-12-26
 type: project
 source: youtube-hF0leZK-avc
 auto: yes
+related: あかぬけたよね
 links:
 YouTube: https://www.youtube.com/watch?v=hF0leZK-avc
 配信リンク: https://eshikara.lnk.to/akanuketayone

@@ -376,6 +376,15 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 .btn:hover { transform: translateY(-2px); border-color: var(--dark); }
 .btn.primary { background: var(--main); border-color: var(--main); color: var(--white); }
 /* オフボーカル・歌詞のダウンロード(作品のフォルダに offvocal.mp3 / lyrics.txt を置くと出る) */
+.rel-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 16px; }
+.rel-label { font: 700 11px/1 var(--head); letter-spacing: .16em; color: var(--muted); margin-right: 2px; }
+.rel-tag {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1.5px solid rgba(20, 24, 58, .35);
+  color: var(--fg); text-decoration: none; font: 600 13px/1.4 var(--head); transition: background .15s ease, color .15s ease;
+}
+.rel-tag small { font: 700 10px/1 var(--head); letter-spacing: .08em; opacity: .55; }
+.rel-tag:hover { background: var(--fg); color: var(--white); border-color: var(--fg); }
+.rel-more { opacity: .75; }
 .downloads { margin-top: 14px; }
 .downloads .links { margin-top: 0; }
 .btn.dl { background: transparent; border: 2px solid currentColor; color: var(--fg); display: inline-flex; align-items: baseline; gap: 2px; }
