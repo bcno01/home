@@ -205,8 +205,27 @@
   if (pLinks.length) {
     var panelEls = {};
     [].forEach.call(document.querySelectorAll('.rpanel'), function (p) { panelEls[p.id] = p; });
-    var openPanel = function (name) { // name が空なら、全部閉じる
-      Object.keys(panelEls).forEach(function (k) { panelEls[k].classList.toggle('open', k === name); });
+    var feat = panelEls.feature || null; // site.txt の featured: の動画。パネルが全部閉じているとき(と、新しく開いたとき)に出る
+    function resetFeature() { // 動画をサムネイルに戻す(別のパネルを開いたとき、再生を止める)
+      var box = feat && feat.querySelector('.feat');
+      if (!box || !box.querySelector('iframe')) return;
+      box.innerHTML = box._thumb;
+    }
+    if (feat) {
+      var fbox = feat.querySelector('.feat');
+      fbox._thumb = fbox.innerHTML;
+      fbox.addEventListener('click', function (e) { // サムネイルを押すと、その場で再生(YouTube は、ここで初めて読み込む)
+        var a = e.target.closest('.feat-play');
+        if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        fbox.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + fbox.dataset.yt +
+          '?autoplay=1&rel=0&modestbranding=1&playsinline=1" title="動画" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+      });
+    }
+    var openPanel = function (name) { // name が空なら、全部閉じる(動画があれば、動画を出す)
+      var shown = name || (feat ? 'feature' : '');
+      Object.keys(panelEls).forEach(function (k) { panelEls[k].classList.toggle('open', k === shown); });
+      if (shown !== 'feature') resetFeature();
       pLinks.forEach(function (a) {
         var on = a.dataset.panel === name;
         a.classList.add('pn-on');
@@ -223,7 +242,8 @@
     var navType = '';
     try { navType = performance.getEntriesByType('navigation')[0].type; } catch (err) {}
     var fresh = navType === 'navigate';
-    var start = panelEls[hashName] ? hashName : (fresh ? 'works' : (saved === 'none' ? '' : (panelEls[saved] ? saved : 'works')));
+    // 動画(featured:)がなければ、新しく開いたときは Works。動画があれば、新しく開いたときは動画(パネルは、全部閉じる)
+    var start = (panelEls[hashName] && hashName !== 'feature') ? hashName : (fresh ? (feat ? '' : 'works') : (saved === 'none' ? '' : ((panelEls[saved] && saved !== 'feature') ? saved : (feat ? '' : 'works'))));
     openPanel(start);
     // スマホ(「MENU」ボタンが出ている幅)では、メニューを開閉式にする。パネルを選んだら、メニューを閉じて、そのパネルまでスクロールする
     var menuEl = document.querySelector('.menu'), toggleBtn = document.querySelector('.menu-toggle');

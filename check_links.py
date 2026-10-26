@@ -37,6 +37,8 @@ def collect():
         add(u, "メニュー/リンク: %s" % (lab or u))
     if site["form"]:
         add(site["form"], "依頼フォーム")
+    if site.get("featured"):
+        add(site["featured"], "トップの動画(featured:)")
     for d in sorted(build.WORKS.iterdir()) if build.WORKS.exists() else []:
         if d.is_dir() and not d.name.startswith((".", "_")):
             w = build.read_work(d)
