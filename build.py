@@ -653,7 +653,7 @@ def render_feature(site):
         return ""
     return ('<section class="rpanel" id="feature" aria-label="Featured video"><div class="feat" data-yt="%s">'
             '<a class="feat-play" href="https://www.youtube.com/watch?v=%s" target="_blank" rel="noopener" aria-label="動画を再生">'
-            '<img src="https://i.ytimg.com/vi/%s/hqdefault.jpg" alt=""><span class="feat-btn" aria-hidden="true"></span></a></div></section>'
+            '<img src="https://i.ytimg.com/vi/%s/hqdefault.jpg" alt="" loading="lazy"><span class="feat-btn" aria-hidden="true"></span></a></div></section>'
             % (vid, vid, vid))
 
 

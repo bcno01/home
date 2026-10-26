@@ -205,7 +205,12 @@
   if (pLinks.length) {
     var panelEls = {};
     [].forEach.call(document.querySelectorAll('.rpanel'), function (p) { panelEls[p.id] = p; });
-    var feat = panelEls.feature || null; // site.txt の featured: の動画。パネルが全部閉じているとき(と、新しく開いたとき)に出る
+    // site.txt の featured: の動画。パネルが全部閉じているとき(と、新しく開いたとき)に出る。スマホ(幅 760px 以下)では出さない(動画のパネルごと取り除く。新しく開いたときは、Works が開く)
+    if (panelEls.feature && matchMedia('(max-width: 760px)').matches) {
+      panelEls.feature.remove();
+      delete panelEls.feature;
+    }
+    var feat = panelEls.feature || null;
     function resetFeature() { // 動画をサムネイルに戻す(別のパネルを開いたとき、再生を止める)
       var box = feat && feat.querySelector('.feat');
       if (!box || !box.querySelector('iframe')) return;
