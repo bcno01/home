@@ -560,6 +560,24 @@ def svc_of(url):
             "ニコニコ動画": "niconico", "BOOTH": "booth", "SoundCloud": "soundcloud", "Bandcamp": "bandcamp"}.get(name, "")
 
 
+def portable_text(path):
+    """歌詞の txt を、Mac でも Windows でも文字化けしない形(UTF-8 + BOM、改行は CRLF)にした bytes を返す。元のファイルは変えない。
+    元の文字コードは、UTF-8 → Shift-JIS(cp932)→ UTF-16 の順に試す。どれでも読めなければ、そのまま返す"""
+    raw = Path(path).read_bytes()
+    for enc in ("utf-8-sig", "cp932", "utf-16"):
+        try:
+            text = raw.decode(enc)
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    else:
+        return raw
+    text = text.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    if text and not text.endswith("\n"):
+        text += "\n"
+    return ("\ufeff" + text.replace("\n", "\r\n")).encode("utf-8")
+
+
 def bundle_readme(title, site_url):
     """オフボーカルと歌詞をまとめた ZIP に入れる、README.txt の文面: 作品名と、ガイドライン全文(note。guideline.txt の link:)へのURLだけ。
     Windows のメモ帳でも文字化けしないよう、先頭に BOM を付け、改行は CRLF にする"""
@@ -576,7 +594,10 @@ def make_bundle(paths, dst, title, site_url):
     """オフボーカルと歌詞のファイルを、1つの ZIP にまとめる(ZIP の中の名前は、offvocal.wav / lyrics.txt / README.txt)。paths: [(名前の頭, ファイル)]"""
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for stem, p in paths:
-            z.write(p, stem + p.suffix.lower())
+            if stem == "lyrics" and p.suffix.lower() == ".txt":  # 歌詞の txt は、文字化けしない形に直して入れる
+                z.writestr(stem + ".txt", portable_text(p))
+            else:
+                z.write(p, stem + p.suffix.lower())
         z.writestr("README.txt", bundle_readme(title, site_url))
 
 
@@ -1199,8 +1220,11 @@ def main():
             p = x["path"]
             dst = wdir / p.name
             written.add(dst)
-            if not (dst.exists() and dst.stat().st_mtime >= p.stat().st_mtime):
+            if x["name"] == "歌詞" and p.suffix.lower() == ".txt":  # 歌詞の txt は、文字化けしない形に直して出す(UTF-8 + BOM、改行は CRLF)。毎回、作り直す
+                dst.write_bytes(portable_text(p))
+            elif not (dst.exists() and dst.stat().st_mtime >= p.stat().st_mtime):
                 shutil.copy2(p, dst)
+            x["size"] = dst.stat().st_size
         for clip in w["clips"]:
             dst = wdir / clip.name
             written.add(dst)
