@@ -4,5 +4,9 @@ type: video
 source: youtube-b6XxbF_D-M0
 auto: yes
 bpm: 202
+offvocal: https://github.com/bcno01/home/releases/download/offvocal/2025-07-08-yt-b6XxbF_D-M0-offvocal.zip
+offvocal-size: 55165800
+offvocal-type: ZIP
+offvocal-bundle: lyrics
 links:
 YouTube: https://www.youtube.com/watch?v=b6XxbF_D-M0
