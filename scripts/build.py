@@ -607,6 +607,7 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 <title>%s</title>
 %s
 <link rel="preconnect" href="https://fonts.googleapis.com">
