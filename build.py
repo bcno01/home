@@ -645,16 +645,21 @@ def dl_btn(x, prefix=""):
                "<small>%s</small>" % info if info else ""))
 
 
-def render_feature(site):
+def render_feature(site, works=()):
     """サイトを新しく開いたとき・メニューが全部閉じているときに、右側に出す YouTube 動画(site.txt の featured:)。
+    上に動画名(site.txt の featured-title:。なければ、同じ動画をもつ作品の題名)、下に YouTube へのリンク。
     最初はサムネイルだけ(YouTube の読み込みは、押したときだけ)。JavaScript が使えないときは、YouTube へのリンクとして動く"""
     vid = youtube_id(site.get("featured", ""))
     if not vid:
         return ""
-    return ('<section class="rpanel" id="feature" aria-label="Featured video"><div class="feat" data-yt="%s">'
-            '<a class="feat-play" href="https://www.youtube.com/watch?v=%s" target="_blank" rel="noopener" aria-label="動画を再生">'
-            '<img src="https://i.ytimg.com/vi/%s/hqdefault.jpg" alt="" loading="lazy"><span class="feat-btn" aria-hidden="true"></span></a></div></section>'
-            % (vid, vid, vid))
+    title = site.get("featured_title") or next(
+        (w["title"] for w in works if any(youtube_id(u) == vid for _, u in w["links"])), "")
+    watch = "https://www.youtube.com/watch?v=%s" % vid
+    return ('<section class="rpanel" id="feature" aria-label="Featured video"><div class="feat-wrap">%s<div class="feat" data-yt="%s">'
+            '<a class="feat-play" href="%s" target="_blank" rel="noopener" aria-label="動画を再生">'
+            '<img src="https://i.ytimg.com/vi/%s/hqdefault.jpg" alt="" loading="lazy"><span class="feat-btn" aria-hidden="true"></span></a></div>'
+            '<a class="feat-link" href="%s" target="_blank" rel="noopener">YouTubeで見る <span aria-hidden="true">↗</span></a></div></section>'
+            % ('<p class="feat-title">%s</p>' % esc(title) if title else "", vid, watch, vid, watch))
 
 
 def render_offvocal(works, g):
@@ -1308,7 +1313,7 @@ def render_index(site, works):
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
          nav, sns,
-         render_feature(site), chips, rows, render_events(load_events()), offvocal, render_guideline(guideline), render_contact(site), about, script)
+         render_feature(site, works), chips, rows, render_events(load_events()), offvocal, render_guideline(guideline), render_contact(site), about, script)
     og = None
     if site.get("url") and site["og_image"] and (ROOT / site["og_image"]).is_file():  # site.txt の og-image: で指定した画像
         og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)
@@ -1337,6 +1342,7 @@ def load_site():
         "form_endpoint": f.get("form-endpoint", "https://api.web3forms.com/submit").strip(),
         "mosaic_style": f.get("mosaic-style", "grid").strip().lower(),
         "mosaic": mosaic,
+        "featured_title": f.get("featured-title", "").strip(),  # その動画の名前(空なら、同じ動画をもつ作品の題名)
         "featured": f.get("featured", "").strip(),  # サイトを新しく開いたときと、メニューが全部閉じているときに出す YouTube 動画のURL
         "og_image": f.get("og-image", "").strip(),  # リンクのプレビュー(Discord・X など)に出す、サイト全体の画像
         "name": f.get("name") or "My Works",

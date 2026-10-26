@@ -55,6 +55,9 @@ img { max-width: 100%; display: block; }
 .feat-play:hover img { transform: scale(1.03); filter: saturate(1.15) brightness(1); }
 .feat-btn { position: absolute; left: 50%; top: 50%; width: 68px; height: 68px; margin: -34px 0 0 -34px; border-radius: 50%; background: rgba(255, 255, 255, .92); box-shadow: 0 4px 18px rgba(0, 0, 0, .4); }
 .feat-btn::after { content: ""; position: absolute; left: 27px; top: 21px; border-style: solid; border-width: 13px 0 13px 22px; border-color: transparent transparent transparent #14183a; }
+.feat-title { margin: 0 0 10px; text-align: right; font-size: 14px; font-weight: 600; letter-spacing: .04em; line-height: 1.5; }
+.feat-link { display: block; text-align: right; margin-top: 10px; font-size: 13px; letter-spacing: .06em; color: inherit; text-decoration: none; opacity: .8; transition: opacity .2s ease; }
+.feat-link:hover { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 760px) { .feat-btn { width: 56px; height: 56px; margin: -28px 0 0 -28px; } .feat-btn::after { left: 22px; top: 17px; border-width: 11px 0 11px 18px; } }
 .rpanel { max-height: min(72vh, 560px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; margin-bottom: 28px; }
 .js .rpanel { grid-area: 1 / 1; margin-bottom: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s ease, visibility .35s; }
@@ -593,7 +596,7 @@ body::after {
 
 /* 開いたときのフェードイン(順番にふわっと現れる) */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
-.logo, .tagline, .nav a, .sns, .works-list, .about, .feat,
+.logo, .tagline, .nav a, .sns, .works-list, .about, .feat-wrap,
 .top, .work-head, .embed, .body, .gallery {
   animation: rise .8s cubic-bezier(.2, .7, .2, 1) backwards;
 }
@@ -606,7 +609,7 @@ body::after {
 .nav a:nth-child(n+5) { animation-delay: .58s; }
 .sns { animation-delay: .7s; }
 .works-list { animation-delay: .45s; }
-.feat { animation-delay: .6s; }
+.feat-wrap { animation-delay: .6s; }
 .about { animation-delay: .8s; }
 .work-head { animation-delay: .15s; }
 .embed { animation-delay: .3s; }
@@ -646,7 +649,7 @@ body.bg-on .thanks pre { background: rgba(255, 255, 255, .14); }
 body.bg-on .nav a:hover, body.bg-on .row:hover .t { text-decoration-color: #fff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .logo, .tagline, .nav a, .sns, .works-list, .about, .feat,
+  .logo, .tagline, .nav a, .sns, .works-list, .about, .feat-wrap,
   .top, .work-head, .embed, .body, .gallery { animation: none; }
   body { transition: none; }
   .row, .btn, a.ev { transition: none; }
