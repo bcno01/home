@@ -586,6 +586,13 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
              '<meta property="og:locale" content="ja_JP">']
     if canonical:
         meta.append('<link rel="canonical" href="%s">' % esc(canonical))
+    fav = site.get("favicon")
+    if fav and (CONFIG / fav).is_file():  # 設定/site.txt の favicon: で指定した画像(タブやブックマークに出るアイコン)
+        ext = Path(fav).suffix.lower()
+        mime = {".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif"}.get(ext)
+        meta.append('<link rel="icon" href="%s%s"%s>' % (root, quote(Path(fav).name), ' type="%s"' % mime if mime else ""))
+        if ext == ".png":  # スマホのホーム画面に追加したときのアイコン
+            meta.append('<link rel="apple-touch-icon" href="%s%s">' % (root, quote(Path(fav).name)))
     if jsonld:
         meta.append(ld_script(jsonld))
     if desc:
@@ -1507,6 +1514,7 @@ def load_site():
         "mosaic": mosaic,
         "featured_title": f.get("featured-title", "").strip(),  # その動画の名前(空なら、同じ動画をもつ作品の題名)
         "featured": f.get("featured", "").strip(),  # サイトを新しく開いたときと、メニューが全部閉じているときに出す YouTube 動画のURL
+        "favicon": f.get("favicon", "").strip(),  # タブ・ブックマークに出るアイコンの画像(設定/ に置く。png・svg・ico)
         "og_image": f.get("og-image", "").strip(),  # リンクのプレビュー(Discord・X など)に出す、サイト全体の画像
         "name": f.get("name") or "My Works",
         "tagline": f.get("tagline", ""),
@@ -1585,6 +1593,8 @@ def main():
     shutil.copy2(THEME / "fx.js", OUT / "fx.js")
     if site["logo"]:
         shutil.copy2(CONFIG / site["logo"], OUT / site["logo"])
+    if site["favicon"] and (CONFIG / site["favicon"]).is_file():
+        shutil.copy2(CONFIG / site["favicon"], OUT / Path(site["favicon"]).name)
     if site["og_image"] and (CONFIG / site["og_image"]).is_file():
         shutil.copy2(CONFIG / site["og_image"], OUT / Path(site["og_image"]).name)
     sm = render_sitemap(site, works)
