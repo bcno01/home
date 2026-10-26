@@ -132,6 +132,38 @@ def fmt_date(d):
     return "%d.%02d.%02d" % (d.year, d.month, d.day)
 
 
+JST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def parse_time(s):
+    """info.txt の time:(公開の時刻。例 20:00)を (時, 分) にする。なければ 0:00"""
+    m = re.match(r"\s*(\d{1,2})[:時](\d{2})?", s or "")
+    if m and int(m[1]) < 24 and int(m[2] or 0) < 60:
+        return int(m[1]), int(m[2] or 0)
+    return 0, 0
+
+
+def release_at(w):
+    """公開の日時(日本時間)。作品の date: と time:"""
+    h, m = w["time"]
+    return datetime.datetime(w["date"].year, w["date"].month, w["date"].day, h, m, tzinfo=JST)
+
+
+def is_upcoming(w):
+    """まだ公開されていない(date: が、これからの日時)作品か。ビルドした時点の日本時間で決める"""
+    return release_at(w) > datetime.datetime.now(JST)
+
+
+def countdown_html(w):
+    """カウントダウン。数字は JavaScript が入れる(使えないときは、日付だけ)"""
+    return '<span class="soon-cd" data-at="%s"></span>' % release_at(w).isoformat()
+
+
+def fmt_release(w):
+    h, m = w["time"]
+    return fmt_date(w["date"]) + (" %d:%02d" % (h, m) if (h, m) != (0, 0) else "")
+
+
 def infer_type(links):
     names = {platform_label(u) for _, u in links}
     if names & MUSIC_HOSTS:
@@ -417,6 +449,7 @@ def read_work(d):
         "aliases": [x.strip() for x in re.split(r"[,、]", f.get("aliases", "")) if x.strip()],
         "search": [x.strip() for x in re.split(r"[,、]", f.get("search", "")) if x.strip()],  # OffVocal の検索だけに使う、別の呼び名(例: ∅ → empty set)。画面には出ない
         "date": date,
+        "time": parse_time(f.get("time", "")),  # 公開の時刻(日本時間。公開予告のカウントダウンに使う)
         "type": t if t in TYPES else infer_type(links),
         "tracks": tracks,
         "release": f.get("release", "").strip().lower(),
@@ -435,7 +468,7 @@ def read_work(d):
     if w["type"] != "video" and w["bpm"]:  # BPM は MV にだけ出す
         print("  ! %s: bpm: は MV(type: video)にだけ表示します(この作品では表示しません)" % d.name)
         w["bpm"] = None
-    w["headline"] = make_headline(w, f)
+    w["headline"] = "" if is_upcoming(w) else make_headline(w, f)  # 公開前の作品に「〜を公開しました」の見出しは付けない
     songs = {norm_song(clean_track(x)) for x in tracks}
     # 関連作品の判定に使う名前: MV は曲名、Trailer はアルバム・EP の名前(同じ名前の Streaming と結びつき、その BOOTH も付く)、ほかは作品名
     songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else trailer_album(w["title"]) if w["type"] == "trailer" else w["title"]))
@@ -650,13 +683,20 @@ def render_feature(site, works=()):
     """サイトを新しく開いたとき・メニューが全部閉じているときに、右側に出す YouTube 動画(設定/site.txt の featured:)。
     上に動画名(設定/site.txt の featured-title:。なければ、同じ動画をもつ作品の題名)、下に YouTube へのリンク。
     最初はサムネイルだけ(YouTube の読み込みは、押したときだけ)。JavaScript が使えないときは、YouTube へのリンクとして動く"""
+    upcoming = sorted((w for w in works if is_upcoming(w)), key=release_at)
+    if upcoming:  # 公開予告があるときは、動画より先に、いちばん公開が近い作品のカウントダウンを出す(優先順位: 公開予告 → 動画 → 開いているメニュー)
+        w = upcoming[0]
+        return ('<section class="rpanel" id="feature" data-kind="soon" aria-label="Coming Soon"><div class="feat-wrap"><a class="soon-hero" href="w/%s/">'
+                '<b class="sh-title">%s</b><span class="sh-cover">%s</span><span class="sh-body">%s'
+                '<span class="sh-when"><time>%s</time> 公開予定</span></span></a></div></section>'
+                % (quote(w["slug"]), esc(w["title"]), cover_html(w, "w/%s/" % quote(w["slug"])), countdown_html(w), fmt_release(w)))
     vid = youtube_id(site.get("featured", ""))
     if not vid:
         return ""
     title = site.get("featured_title") or next(
         (w["title"] for w in works if any(youtube_id(u) == vid for _, u in w["links"])), "")
     watch = "https://www.youtube.com/watch?v=%s" % vid
-    return ('<section class="rpanel" id="feature" aria-label="Featured video"><div class="feat-wrap">%s<div class="feat" data-yt="%s">'
+    return ('<section class="rpanel" id="feature" data-kind="video" aria-label="Featured video"><div class="feat-wrap">%s<div class="feat" data-yt="%s">'
             '<a class="feat-play" href="%s" target="_blank" rel="noopener" aria-label="動画を再生">'
             '<img src="https://i.ytimg.com/vi/%s/hqdefault.jpg" alt="" loading="lazy"><span class="feat-btn" aria-hidden="true"></span></a></div>'
             '<a class="feat-link" href="%s" target="_blank" rel="noopener">YouTubeで見る <span aria-hidden="true">↗</span></a></div></section>'
@@ -840,6 +880,8 @@ def render_work(site, w):
     if w["bpm"]:
         song += '<span class="sd">BPM <b>%s</b><i class="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></i></span>' % fmt_bpm(w["bpm"])
     meta = '<p class="meta"><span class="badge">%s</span><time>%s</time>%s</p>' % (TYPES[w["type"]], fmt_date(w["date"]), song)
+    if is_upcoming(w):  # 公開前の作品: 「Coming Soon」と、公開までのカウントダウン
+        meta += '<p class="soon-note"><b>Coming Soon</b> <span class="soon-when"><time>%s</time><span class="plan"> 公開予定</span> %s</span></p>' % (fmt_release(w), countdown_html(w))
     gallery = ""
     if w["gallery"]:
         gallery = '<div class="gallery">%s</div>' % "".join(
@@ -1144,10 +1186,23 @@ def render_index(site, works):
     if len(types_present) > 1:
         chips = '<nav class="chips" aria-label="%s"><button class="chip" data-type="all" aria-pressed="true">All</button>%s</nav>' % ("絞り込み", "".join(
             '<button class="chip" data-type="%s" aria-pressed="false">%s</button>' % (t, TYPES[t]) for t in types_present))
+    soon_items = sorted((w for w in works if is_upcoming(w)), key=release_at)
+    soon = ""
+    if soon_items:  # まだ公開されていない作品(date: がこれから)を、公開が近い順に、Works の先頭に出す
+        soon = '<div class="soon-list" aria-label="Coming Soon">%s</div>' % "".join(
+            '<a class="soon-item" href="w/%s/">%s<span class="soon-body"><small>Coming Soon</small><b>%s</b>'
+            '<span class="soon-when"><time>%s</time> %s</span></span></a>'
+            % (quote(w["slug"]), '<span class="soon-cover">%s</span>' % cover_html(w, "w/%s/" % quote(w["slug"])),
+               esc(w["headline"] or w["title"]), fmt_release(w), countdown_html(w))
+            for w in soon_items)
+
     def row_html(w):
-        return ('<a class="row" data-type="%s" data-cover="%s" href="w/%s/"><time>%s</time><span class="t">%s</span>'
+        # data-q: 検索に使う言葉(題名・見出し・別の呼び名・種類・日付)。画面には出ない
+        q = " ".join([w["title"], w["headline"], TYPES[w["type"]], fmt_date(w["date"]), str(w["date"].year)] + w["aliases"] + w["search"])
+        return ('<a class="row%s" data-type="%s" data-q="%s" data-cover="%s" href="w/%s/"><time>%s</time><span class="t">%s</span>'
                 '<span class="k">%s</span></a>'
-                % (w["type"], esc(cover_src(w)), quote(w["slug"]), fmt_date(w["date"]), esc(w["headline"] or w["title"]), TYPES[w["type"]]))
+                % (" soon" if is_upcoming(w) else "", w["type"], esc(q), esc(cover_src(w)), quote(w["slug"]), fmt_date(w["date"]), esc(w["headline"] or w["title"]),
+                   "Coming Soon" if is_upcoming(w) else TYPES[w["type"]]))
     # 年ごとに折りたたむ(いちばん新しい年だけ開いておく)。works は新しい順
     rows = "\n".join(
         '<details class="yr" data-year="%d"%s><summary><span class="y">%d</span><small>%d</small></summary><div class="rows">\n%s\n</div></details>'
@@ -1156,6 +1211,7 @@ def render_index(site, works):
     if not rows:
         rows = '<p class="empty">%s</p>' % "まだ作品がありません。works フォルダに作品フォルダを追加してください。"
 
+    chips = soon + chips
     bgvideo = render_bgvideo(site)
 
     guideline = load_guideline()
@@ -1258,13 +1314,41 @@ def render_index(site, works):
   })();
   var W = tabify(document.querySelector('#works .yrs'));
   var yrs = W.yrs, tabs = W.tabs, bar = W.bar, show = W.show;
-  document.querySelectorAll('.chip').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var t = b.dataset.type;
-      document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
-      document.querySelectorAll('.row').forEach(function (c) { c.hidden = t !== 'all' && c.dataset.type !== t; });
-      // 年ごとのまとまり: 件数を数え直す。タブのときは、該当のない年のタブを隠して、該当のある最新の年を選び直す
-      // 折りたたみのときは、空の年を隠し、種類で絞ったときは該当のある年をすべて開き、「All」に戻したら、いちばん新しい年だけ開く
+  // Works の絞り込み: 種類のボタン(All / MV / Streaming …)と、題名などの検索を、いっしょに使う。
+  // 検索は、OffVocal と同じく、全角・半角、大文字・小文字、カタカナ・ひらがなを区別しない。検索中は年のタブをやめて、全部の年から、該当する作品を並べる。ボックスを空にすると、元の年のタブに戻る
+  (function () {
+    var wrap = document.querySelector('#works .yrs'), panel = document.getElementById('works');
+    if (!wrap || !panel) return;
+    var norm = function (s) {
+      return (s || '').normalize('NFKC').toLowerCase().replace(/\s+/g, '').replace(/[ァ-ヶ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); });
+    };
+    var rows = [].slice.call(wrap.querySelectorAll('.row'));
+    rows.forEach(function (r) { r._q = norm(r.dataset.q); });
+    var type = 'all', query = '', before = null;
+    var box = document.createElement('input');
+    box.type = 'search';
+    box.className = 'ov-search w-search';
+    box.placeholder = '作品を検索(題名・年など)';
+    box.setAttribute('aria-label', '作品を検索');
+    box.autocomplete = 'off';
+    var none = document.createElement('p');
+    none.className = 'empty w-none';
+    none.textContent = '該当する作品がありません';
+    none.hidden = true;
+    var chips = panel.querySelector('.chips');
+    panel.insertBefore(box, chips || wrap);
+    panel.appendChild(none);
+    function refilter() {
+      var on = query !== '';
+      wrap.classList.toggle('searching', on);
+      var hits = 0;
+      rows.forEach(function (r) {
+        var m = (type === 'all' || r.dataset.type === type) && (!on || r._q.indexOf(query) >= 0);
+        r.hidden = !m;
+        if (m) hits++;
+      });
+      // 年ごとのまとまり: 件数を数え直す。タブのときは、該当のない年のタブを隠して、該当のある最新の年を選び直す(検索を終えたときは、検索の前の年に戻す)
+      // 折りたたみのときは、空の年を隠し、絞ったときは該当のある年をすべて開き、絞りを外したら、いちばん新しい年だけ開く
       var first = true, pick = null;
       yrs.forEach(function (y, i) {
         var n = y.querySelectorAll('.row:not([hidden])').length;
@@ -1278,12 +1362,28 @@ def render_index(site, works):
         }
         y.hidden = !n;
         if (!n) return;
-        y.open = t !== 'all' || first;
+        y.open = type !== 'all' || on || first;
         first = false;
       });
-      if (bar && pick) show(pick, true);
+      if (bar && pick && !on) show(before && !before.hidden ? before : pick, true);
+      none.hidden = hits > 0;
+    }
+    document.querySelectorAll('.chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        type = b.dataset.type;
+        document.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b); });
+        before = null;
+        refilter();
+      });
     });
-  });
+    box.addEventListener('input', function () {
+      var q = norm(box.value.trim());
+      if (q && !query) before = yrs.filter(function (y) { return y.classList.contains('cur'); })[0] || null;  // 検索を始める前に開いていた年
+      query = q;
+      refilter();
+    });
+    box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && box.value) { box.value = ''; query = ''; refilter(); e.stopPropagation(); } });
+  })();
 })();
 </script>"""
     body = """%s
@@ -1299,7 +1399,7 @@ def render_index(site, works):
 </section>
 <div class="rpanels">
 %s
-<section class="rpanel works-list" id="works" aria-label="Works">
+<section class="rpanel works-list" id="works" aria-label="Works"><h2 class="ptitle">Works</h2>
 %s
 <div class="yrs">
 %s

@@ -205,8 +205,8 @@
   if (pLinks.length) {
     var panelEls = {};
     [].forEach.call(document.querySelectorAll('.rpanel'), function (p) { panelEls[p.id] = p; });
-    // site.txt の featured: の動画。パネルが全部閉じているとき(と、新しく開いたとき)に出る。スマホ(幅 760px 以下)では出さない(動画のパネルごと取り除く。新しく開いたときは、Works が開く)
-    if (panelEls.feature && matchMedia('(max-width: 760px)').matches) {
+    // site.txt の featured: の動画。パネルが全部閉じているとき(と、新しく開いたとき)に出る。動画は、スマホ(幅 760px 以下)では出さない(動画のパネルごと取り除く。新しく開いたときは、Works が開く)。公開予告(data-kind="soon")は、スマホでも出す
+    if (panelEls.feature && panelEls.feature.dataset.kind === 'video' && matchMedia('(max-width: 760px)').matches) {
       panelEls.feature.remove();
       delete panelEls.feature;
     }
@@ -217,9 +217,9 @@
       box.innerHTML = box._thumb;
     }
     if (feat) {
-      var fbox = feat.querySelector('.feat');
-      fbox._thumb = fbox.innerHTML;
-      fbox.addEventListener('click', function (e) { // サムネイルを押すと、その場で再生(YouTube は、ここで初めて読み込む)
+      var fbox = feat.querySelector('.feat');  // 公開予告のカウントダウンのときは、動画の箱はない
+      if (fbox) fbox._thumb = fbox.innerHTML;
+      if (fbox) fbox.addEventListener('click', function (e) { // サムネイルを押すと、その場で再生(YouTube は、ここで初めて読み込む)
         var a = e.target.closest('.feat-play');
         if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         e.preventDefault();
@@ -967,4 +967,32 @@
     });
     el.addEventListener('pointerleave', function () { el.style.transform = ''; });
   });
+})();
+
+// 公開予告のカウントダウン(.soon-cd の data-at までの残り時間)。0 になったら「公開しました」に変える
+(function () {
+  var els = [].slice.call(document.querySelectorAll('.soon-cd'));
+  if (!els.length) return;
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  function tick() {
+    var now = Date.now(), live = false;
+    els.forEach(function (el) {
+      var left = Date.parse(el.dataset.at) - now;
+      if (isNaN(left)) return;
+      if (left <= 0) {
+        el.textContent = '公開しました';
+        var box = el.closest('.soon-item, .soon-note, .soon-hero');
+        if (box) box.classList.add('done');
+        return;
+      }
+      live = true;
+      var s = Math.floor(left / 1000), d = Math.floor(s / 86400);
+      s %= 86400;
+      var h = Math.floor(s / 3600);
+      s %= 3600;
+      el.textContent = 'あと ' + (d ? d + '日 ' : '') + p(h) + ':' + p(Math.floor(s / 60)) + ':' + p(s % 60);
+    });
+    if (live) setTimeout(tick, 1000 - Date.now() % 1000);
+  }
+  tick();
 })();

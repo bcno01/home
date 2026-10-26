@@ -47,7 +47,7 @@ img { max-width: 100%; display: block; }
 .rpanels { display: grid; align-items: start; }
 /* サイトを新しく開いたとき・メニューが全部閉じているときに出る動画(site.txt の featured:)。最初はサムネイルだけで、押すと再生 */
 #feature { align-self: center; }  /* 動画は、メニューの真右(縦の中央)に置く */
-@media (max-width: 760px) { #feature { display: none !important; } }  /* スマホでは、動画を出さない(fx.js も、パネルごと取り除く) */
+@media (max-width: 760px) { #feature[data-kind="video"] { display: none !important; } }  /* スマホでは、動画を出さない(fx.js も、パネルごと取り除く) */
 .feat { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: 0 8px 28px rgba(0, 0, 0, .35); }
 .feat iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .feat-play { position: absolute; inset: 0; display: block; }
@@ -415,6 +415,46 @@ body.bg-on .ytab[aria-selected="true"] { border-bottom-color: #fff; }
 }
 .ov-search:focus { outline: none; opacity: 1; box-shadow: 0 0 0 3px rgba(80, 90, 255, .35); }
 .ov-none { margin: 14px 0; }
+.w-none { margin: 14px 0; }
+.w-none[hidden] { display: none; }
+.w-search { margin-top: 0; }
+/* 公開予告(Coming Soon): Works の先頭のカードと、作品ページの一行 */
+.soon-list { display: grid; gap: 10px; margin: 0 0 14px; }
+.soon-item { display: flex; gap: 14px; align-items: center; padding: 10px 14px 10px 10px; border: 1.5px solid currentColor; border-radius: var(--radius); text-decoration: none; color: inherit; background: rgba(255, 255, 255, .35); transition: transform .18s ease-out; }
+.soon-item:hover { transform: translateY(-1px); }
+.soon-cover { flex: none; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; background: rgba(20, 24, 58, .15); }
+.soon-cover img, .soon-cover .ph { width: 100%; height: 100%; object-fit: cover; }
+.soon-cover img { display: block; }
+.soon-cover .ph span { font-size: 28px; }
+.soon-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.soon-body small { font: 700 10px/1 var(--head); letter-spacing: .16em; text-transform: uppercase; color: var(--main); }
+.soon-body b { font-size: 15px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
+.soon-when { font: 600 12px/1.5 var(--head); opacity: .85; }
+.soon-cd { font-variant-numeric: tabular-nums; font-weight: 700; }
+.soon-cd:empty { display: none; }
+.soon-item.done .soon-body small, .soon-note.done b { opacity: .6; }
+.soon-note .soon-when { font-size: 14px; }
+.soon-note.done .plan { display: none; }
+.soon-note { margin: 6px 0 14px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.soon-note b { font: 700 11px/1 var(--head); letter-spacing: .16em; text-transform: uppercase; color: var(--main); }
+/* トップ(メニューの右)に出す、公開予告のカウントダウン(動画と同じ大きさ・同じ位置) */
+.soon-hero { display: block; text-decoration: none; color: inherit; }
+.sh-cover { display: block; position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: 0 8px 28px rgba(0, 0, 0, .35); }
+.sh-cover img, .sh-cover .ph { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+.sh-cover img { display: block; }
+.sh-cover .ph span { font-size: 72px; }
+.soon-hero:hover .sh-cover img, .soon-hero:hover .sh-cover .ph { transform: scale(1.03); }
+.sh-body { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-top: 10px; text-align: right; }
+.sh-body small { font: 700 11px/1 var(--head); letter-spacing: .18em; text-transform: uppercase; color: var(--main); }
+.sh-title { display: block; margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: .04em; line-height: 1.5; text-align: right; overflow-wrap: anywhere; }
+.sh-when { font: 600 13px/1.5 var(--head); opacity: .85; }
+.sh-body .soon-cd { font-size: 34px; line-height: 1.15; letter-spacing: .03em; }
+.soon-hero.done .sh-when { display: none; }
+@media (max-width: 760px) { .sh-body .soon-cd { font-size: 26px; } .sh-title { text-align: left; } .sh-body { align-items: flex-start; text-align: left; } }
+body.bg-on .sh-body small { color: #fff; }
+.row.soon .k { color: var(--main); font-weight: 700; }
+body.bg-on .soon-item { background: rgba(255, 255, 255, .1); }
+body.bg-on .soon-body small, body.bg-on .soon-note b, body.bg-on .row.soon .k { color: #fff; }
 /* 検索中は、年のタブをやめて、該当する曲を、全部の年から並べる */
 .yrs.tabbed.searching .ytabs { display: none; }
 .yrs.tabbed.searching .yr:not([hidden]) { display: block; }
@@ -491,6 +531,7 @@ body.bg-on .btn.dl:hover { background: #fff; color: #0f1330; border-color: #fff;
 
   /* スマホ: メニューは開閉式(閉じているときは、名前と「MENU」ボタンだけ) */
   .stage { gap: 22px; padding-top: 36px; }
+  body[data-panel=""] .stage { align-content: start; }  /* メニューが全部閉じていて、公開予告だけが出ているとき: ロゴとメニューのすぐ下に出す */
   .js .menu-toggle {
     display: inline-flex; align-items: center; gap: 10px; margin: 6px 0 0; padding: 12px 18px; min-height: 46px;
     border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; cursor: pointer;
