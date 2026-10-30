@@ -1081,11 +1081,11 @@ def yen(n):
 
 
 def load_guideline():
-    """guideline.txt を {link, embed, updated, intro, sections:[(見出し, [項目])]} に読む。なければ None"""
+    """guideline.txt を {link, updated, intro, sections:[(見出し, [項目])]} に読む。なければ None"""
     path = GUIDELINE_FILE
     if not path.exists():
         return None
-    g = {"link": "", "embed": "", "updated": "", "intro": "", "sections": []}
+    g = {"link": "", "updated": "", "intro": "", "sections": []}
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#") and not line.startswith("##"):
@@ -1093,7 +1093,7 @@ def load_guideline():
         if line.startswith("##"):
             g["sections"].append((line.lstrip("#").strip(), []))
             continue
-        m = re.match(r"^(link|embed|updated|intro)\s*:\s*(.*)$", line)
+        m = re.match(r"^(link|updated|intro)\s*:\s*(.*)$", line)
         if m and not g["sections"]:
             g[m.group(1)] = m.group(2).strip()
         elif g["sections"]:
@@ -1106,11 +1106,8 @@ def render_guideline(g):
     if not g:
         return ""
     body = ""
-    embedded = g["embed"].startswith("https://note.com/embed/")
-    if g["link"] and not embedded:  # 全文へのリンクは、いちばん上に置く(note の埋め込みがあるときは、カードがリンクの代わりになるので、出さない)
+    if g["link"]:  # 全文へのリンクは、いちばん上に置く
         body += '<p class="more-link gl-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>' % (esc(g["link"]), "ガイドライン全文を読む(note) ↗")
-    if g["embed"].startswith("https://note.com/embed/"):  # note の記事の埋め込み(iframe だけ。note の外部スクリプトは読み込まない)
-        body += '<iframe class="note-embed" src="%s" title="ガイドライン全文(note)" height="400" loading="lazy"></iframe>' % esc(g["embed"])
     if g["intro"]:
         body += '<p class="note">%s</p>' % esc(g["intro"])
     for title, items in g["sections"]:
