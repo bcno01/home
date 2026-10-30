@@ -1,6 +1,7 @@
 # Guideline パネルに出る、二次利用ガイドラインの要点。全文は note にあります。
 # 書き方:
 #   link: 全文のURL(パネルの下に「全文を読む」リンクが出ます)
+#   embed: note の埋め込みのURL(任意。note の「埋め込み」のコードの src="…" の中身。例: https://note.com/embed/notes/n○○○)。入れると、パネルの上に、記事のカードが出ます
 #   updated: 最終改定日など(任意)
 #   intro: パネルの最初の一文(任意)
 #   ## 見出し      … 新しい見出し
@@ -8,6 +9,7 @@
 # このファイルを書き換えて「サイトを更新」するだけで、パネルが更新されます。
 
 link: https://note.com/bcno_guideline/n/n703a4426bbe8
+embed: https://note.com/embed/notes/n703a4426bbe8
 updated: 制定 2022年3月27日 / 最終改定 2022年6月7日
 intro: BCNO の楽曲・作品の二次利用についての要点です。正式な内容は、全文(note)をご確認ください。
 

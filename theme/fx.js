@@ -998,3 +998,11 @@
   }
   tick();
 })();
+
+// note の埋め込み(.note-embed)の高さを、note から届く「height::URL::高さ」のメッセージに合わせる(note の外部スクリプトは読み込まない)
+window.addEventListener('message', function (e) {
+  if (e.origin !== 'https://note.com' || typeof e.data !== 'string') return;
+  var p = e.data.split('::'), h = parseInt(p[2], 10);
+  if (p[0] !== 'height' || !(h >= 60 && h <= 1200)) return;
+  [].forEach.call(document.querySelectorAll('iframe.note-embed'), function (f) { if (f.src === p[1]) f.height = h; });
+});
