@@ -15,6 +15,10 @@ const TONICS = {
   minor: [[0, 0], [0, 1], [1, 0], [2, -1], [2, 0], [3, 0], [3, 1], [4, 0], [4, 1], [5, 0], [6, -1], [6, 0]],
 };
 
+// コードの種類ごとの、根音からの半音(鳴らすときに使う)
+const TRIAD_SEMIS = { "": [0, 4, 7], m: [0, 3, 7], dim: [0, 3, 6] };
+const SEVENTH_SEMIS = { maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], "7": [0, 4, 7, 10], "m7♭5": [0, 3, 6, 10] };
+
 const MODES = {
   major: {
     label: "長調",
@@ -61,6 +65,9 @@ export function buildKeyFromSpelling(tl, ta, mode) {
     root: n.name,
     triad: n.name + m.triad[d],
     seventh: n.name + m.seventh[d],
+    rootPc: n.pc,
+    triadSemis: TRIAD_SEMIS[m.triad[d]],
+    seventhSemis: SEVENTH_SEMIS[m.seventh[d]],
     roman: m.roman[d],
     func: m.func[d],
   }));

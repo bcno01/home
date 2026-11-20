@@ -1,4 +1,4 @@
-/* キー・コード早見(サイト内の「Tools」)。LUFS Normalizer と、色の役割をそろえる:
+/* Key & Chord Chart(サイト内の「Tools」)。LUFS Normalizer と、色の役割をそろえる:
    青(--sig)= いまのキー、ピンク(--tgt)= 移調したあとのキー。クラス名は ky- で始め、CSS は .tool-key の中に閉じる。 */
 .tool-key {
   --panel: #fff;
@@ -52,6 +52,14 @@
 .tool-key .ky-piano-to .ky-key.white.root { background: var(--tgt); color: #fff; }
 .tool-key .ky-piano-to .ky-key.black.on { background: var(--tgt); color: #fff; }
 .tool-key .ky-piano-to .ky-key.black.root { background: var(--tgt-ink); color: #fff; box-shadow: 0 0 0 2px var(--tgt-soft); }
+
+/* コード名のボタン(押すと鳴る) */
+.tool-key .ky-play { padding: 2px 6px; margin: -2px -6px; border: 0; border-radius: 5px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color .1s; }
+.tool-key .ky-play:hover { background: rgba(61, 75, 255, .1); }
+.tool-key .ky-play:active, .tool-key .ky-play.is-playing { background: rgba(61, 75, 255, .22); }
+.tool-key .ky-map .ky-play:hover { background: var(--tgt-soft); }
+.tool-key .ky-map .ky-play:active, .tool-key .ky-map .ky-play.is-playing { background: rgba(255, 77, 141, .24); }
+.tool-key .ky-hint { margin: 0 0 8px; font-size: 0.78rem; color: var(--dim); }
 
 /* コードの並び */
 .tool-key .ky-chords { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }

@@ -1,3 +1,4 @@
+import { playChord } from "./audio.js";
 import { buildKey, relativeKey, transposeKey, capoOptions, shiftText, KEY_CHOICES, FUNCTION_LABEL } from "./theory.js";
 
 const MINUS = "−";
@@ -57,14 +58,27 @@ function renderPiano(root, key) {
   for (const b of BLACK) root.appendChild(keyCell(b.pc, "black", (b.after + 1) * w - w * 0.3, w * 0.6));
 }
 
+// コード名のボタン。押すと、そのコードが鳴る(kind: "triad" = 三和音、"seventh" = 四和音)
+function chordButton(cls, chord, kind) {
+  const b = el("button", `ky-play ${cls}`, kind === "triad" ? chord.triad : chord.seventh);
+  b.type = "button";
+  b.setAttribute("aria-label", `${b.textContent} を鳴らす`);
+  b.addEventListener("click", () => {
+    if (!playChord(chord.rootPc, kind === "triad" ? chord.triadSemis : chord.seventhSemis)) return;
+    b.classList.add("is-playing");
+    setTimeout(() => b.classList.remove("is-playing"), 650);
+  });
+  return b;
+}
+
 // --- コードの並び(ダイアトニック。ローマ数字・三和音・四和音・働き) ---
 function renderChords(root, key) {
   root.replaceChildren();
   for (const c of key.chords) {
     const card = el("div", `ky-chord f-${c.func}`);
     card.appendChild(el("span", "ky-roman", c.roman));
-    card.appendChild(el("b", "ky-triad", c.triad));
-    card.appendChild(el("span", "ky-seventh", c.seventh));
+    card.appendChild(chordButton("ky-triad", c, "triad"));
+    card.appendChild(chordButton("ky-seventh", c, "seventh"));
     card.appendChild(el("span", "ky-func", FUNCTION_LABEL[c.func]));
     root.appendChild(card);
   }
@@ -77,10 +91,10 @@ function renderMap(from, to) {
     const d = to.chords[i];
     const card = el("div", `ky-chord f-${c.func}`);
     card.appendChild(el("span", "ky-roman", c.roman));
-    card.appendChild(el("span", "ky-from", c.triad));
+    card.appendChild(chordButton("ky-from", c, "triad"));
     card.appendChild(el("span", "ky-arrow", "↓"));
-    card.appendChild(el("b", "ky-triad", d.triad));
-    card.appendChild(el("span", "ky-seventh", d.seventh));
+    card.appendChild(chordButton("ky-triad", d, "triad"));
+    card.appendChild(chordButton("ky-seventh", d, "seventh"));
     mapEl.appendChild(card);
   });
 }
