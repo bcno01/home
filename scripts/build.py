@@ -792,7 +792,7 @@ TOOLS = [
      "tags": ["音声", "聴き比べ"],
      "foot": ["計測は ITU-R BS.1770-4 と EBU Tech 3342 に準拠しています。",
               '音声ファイルは、端末の外に出ません。ソースコード: <a href="https://github.com/bcno01/lufs_normalizer" target="_blank" rel="noopener">GitHub</a>']},
-    {"id": "key", "title": "キー・コード早見",
+    {"id": "key", "title": "Key & Chord Chart",
      "lead": "キーを選ぶと、音階とコード、移調したあとのコード、カポの位置が分かります。",
      "desc": "キー(長調・短調)の音階とダイアトニックコードを一覧にして、移調したあとのコードと、ギターのカポの位置を表示するツール。ブラウザの中だけで動きます。",
      "tags": ["理論", "移調"],
