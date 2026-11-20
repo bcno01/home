@@ -1,0 +1,36 @@
+<!-- キーを選ぶ → 音階・コード。移調 → 移ったあとのコードと、カポの位置。中身は src/main.js が作る -->
+  <section class="ky-card" aria-labelledby="ky-pick-heading">
+    <h2 id="ky-pick-heading">キー</h2>
+    <div class="ky-controls">
+      <div id="ky-tonics" class="ky-chips" role="group" aria-label="主音"></div>
+      <div id="ky-mode" class="ky-seg" role="group" aria-label="長調と短調">
+        <button type="button" data-mode="major" aria-pressed="true">長調</button>
+        <button type="button" data-mode="minor" aria-pressed="false">短調</button>
+      </div>
+    </div>
+    <p id="ky-summary" class="ky-summary" aria-live="polite"></p>
+    <div id="ky-piano" class="ky-piano" aria-hidden="true"></div>
+    <div id="ky-chords" class="ky-chords"></div>
+    <p class="ky-note">コードは、そのキーの音だけで作る「ダイアトニックコード」です。トニック・サブドミナント・ドミナントは、働きの目安です。</p>
+  </section>
+
+  <section class="ky-card ky-card-to" aria-labelledby="ky-move-heading">
+    <h2 id="ky-move-heading">移調</h2>
+    <div class="ky-controls">
+      <div class="ky-stepper" role="group" aria-label="移調の幅">
+        <button type="button" id="ky-down" aria-label="半音下げる">−</button>
+        <output id="ky-shift" class="ky-shift" aria-live="polite">0</output>
+        <button type="button" id="ky-up" aria-label="半音上げる">+</button>
+      </div>
+      <label class="ky-select">移したいキー
+        <select id="ky-target"></select>
+      </label>
+    </div>
+    <p id="ky-move-summary" class="ky-summary" aria-live="polite"></p>
+    <div id="ky-piano-to" class="ky-piano ky-piano-to" aria-hidden="true"></div>
+    <div id="ky-map" class="ky-chords ky-map"></div>
+    <div class="ky-capo">
+      <h3>ギターで弾くなら(カポ)</h3>
+      <p id="ky-capo" class="ky-capo-list"></p>
+    </div>
+  </section>

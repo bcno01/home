@@ -1,0 +1,572 @@
+/* LUFS Normalizer(サイト内の「Tools」)。色は、サイトの配色に合わせている:
+   青(--sig)= 信号のレベル(計測値・再生中の針・原音/ノーマライズ後の選択)、
+   ピンク(--tgt)= 目標値(目標ラウドネス・ターゲット線・補正ゲイン)。全体で意味をそろえる。 */
+.tool-lufs {
+  --panel: #fff;
+  --line: rgba(20, 24, 58, .14);
+  --line-strong: rgba(20, 24, 58, .28);
+  --strip: #e7eafa;
+  --text: var(--fg);
+  --dim: var(--muted);
+  --sig: var(--main);
+  --on-sig: #fff;
+  --sig-soft: rgba(61, 75, 255, .08);
+  --tgt: #ff4d8d;
+  --tgt-ink: #d4206a;
+  --on-tgt: #fff;
+  --red: #c62828;
+  --red-soft: rgba(198, 40, 40, .1);
+  --font-num: var(--head);
+  --radius-sm: 8px;
+  --page: 1080px;
+}
+.tool-lufs .hidden { display: none !important; }
+.tool-lufs :focus-visible { outline: 2px solid var(--tgt); outline-offset: 2px; }
+.tool-lufs .icon { width: 1.1em; height: 1.1em; flex-shrink: 0; }
+.tool-lufs .tool-main {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 18px 20px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tool-lufs .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: filter 0.12s, border-color 0.12s, color 0.12s;
+}
+.tool-lufs .button:active { transform: translateY(1px); }
+.tool-lufs .button-primary { background: var(--sig); color: var(--on-sig); }
+.tool-lufs .button-primary:hover { filter: brightness(1.08); }
+.tool-lufs .button-ghost { background: transparent; border-color: var(--line-strong); color: var(--text); }
+.tool-lufs .button-ghost:hover { border-color: var(--sig); }
+.tool-lufs .lf-stage {
+  --pad: 44px;
+  --sb: 92px;   /* 目盛り帯の下端から下の余白 */
+  --sh: 38px;   /* 目盛り帯の高さ */
+  --nt: 76px;   /* 針の上端 */
+  position: relative;
+  height: 430px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+body.tool-lufs.app-dragover .lf-stage { border-color: var(--sig); }
+body.tool-lufs.app-dragover .grid-line { background: var(--sig); opacity: 0.35; }
+.tool-lufs #stage-ruler { position: absolute; inset: 0; }
+.tool-lufs .ruler { container-type: inline-size; width: 100%; height: 100%; --ruler-bg: var(--panel); }
+.tool-lufs .ruler-plot { position: absolute; top: 0; bottom: 0; left: var(--pad); right: var(--pad); }
+.tool-lufs .ruler-grid { position: absolute; inset: 0; }
+.tool-lufs .grid-line {
+  position: absolute;
+  top: 0;
+  bottom: var(--sb);
+  width: 1px;
+  background: var(--line);
+  transition: background-color 0.15s;
+}
+.tool-lufs .grid-line.major { background: var(--line-strong); opacity: 0.7; }
+.tool-lufs .ruler-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--sb);
+  height: var(--sh);
+  background: var(--strip);
+  border-radius: 2px;
+}
+.tool-lufs .tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--line-strong);
+}
+.tool-lufs .tick.minor { height: 8px; }
+.tool-lufs .tick.mid { height: 16px; background: var(--dim); }
+.tool-lufs .tick.major { height: 26px; background: var(--dim); }
+.tool-lufs .mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--tgt);
+  opacity: 0.45;
+}
+.tool-lufs .ruler-gap {
+  position: absolute;
+  top: 0;
+  bottom: calc(var(--sb) + var(--sh));
+  background: var(--tgt);
+  opacity: 0.07;
+}
+.tool-lufs .ruler-gap-strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--tgt);
+  opacity: 0.3;
+}
+.tool-lufs .ruler-gap,
+.tool-lufs .ruler-gap-strip,
+.tool-lufs .ruler-gain {
+  transition: left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+}
+/* 補正ゲイン: 計測値から目標までの寸法線。真ん中に、数値(ピンク)が乗る。矢じりは、目標の側 */
+.tool-lufs .ruler-gain {
+  position: absolute;
+  bottom: calc(var(--sb) + var(--sh) + 14px);
+  height: 26px;
+  z-index: 4;
+  pointer-events: none;
+}
+.tool-lufs .gain-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--tgt);
+}
+.tool-lufs .ruler-gain.to-left .gain-line { transform: scaleX(-1); }
+.tool-lufs .gain-line::before {   /* 計測値の側の端の印 */
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -6px;
+  width: 2px;
+  height: 14px;
+  background: var(--tgt);
+}
+.tool-lufs .gain-line::after {   /* 目標の側の矢じり */
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -5px;
+  border-style: solid;
+  border-width: 6px 0 6px 9px;
+  border-color: transparent transparent transparent var(--tgt);
+}
+.tool-lufs .gain-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 10px;
+  background: var(--panel);
+  border-radius: 999px;
+  color: var(--tgt-ink);
+  white-space: nowrap;
+}
+.tool-lufs .gain-label b {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.tool-lufs .gain-label small { font-size: 0.74rem; font-weight: 700; }
+.tool-lufs .ruler-ghost {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 0;
+  border-left: 2px dashed var(--sig);
+  opacity: 0.6;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+}
+.tool-lufs .ruler-labels { position: absolute; left: 0; right: 0; bottom: calc(var(--sb) - 24px); height: 18px; z-index: 2; }
+.tool-lufs .scale-label {
+  position: absolute;
+  transform: translateX(-50%);
+  padding: 0 3px;
+  background: var(--ruler-bg);
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 18px;
+  color: var(--dim);
+}
+.tool-lufs .scale-label.l5 { display: none; }
+@container (min-width: 620px) {
+  .tool-lufs .scale-label.l5 { display: block; }
+}
+.tool-lufs .ruler-needle {
+  position: absolute;
+  top: var(--nt);
+  bottom: var(--sb);
+  left: 0;
+  width: 0;
+  z-index: 3;
+  transition: left 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+}
+.tool-lufs .ruler-needle .stem {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--sig);
+}
+.tool-lufs .ruler-needle .flag {
+  position: absolute;
+  top: -4px;
+  left: 16px;
+  text-align: left;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tool-lufs .ruler-needle .flag.flip { text-align: right; }
+.tool-lufs .flag-line { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.tool-lufs .ruler-needle .flag.flip .flag-line { justify-content: flex-end; }
+.tool-lufs .flag-value {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: clamp(4.6rem, 14cqw, 10.5rem);
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sig);
+}
+.tool-lufs .flag-unit { font-size: 0.95rem; font-weight: 700; color: var(--dim); }
+.tool-lufs .flag-label { display: block; margin-top: 6px; font-size: 0.82rem; font-weight: 700; color: var(--dim); }
+.tool-lufs .ruler-target {
+  position: absolute;
+  top: calc(100% - var(--sb) - var(--sh));
+  bottom: 14px;
+  left: 0;
+  width: 0;
+  z-index: 1;
+  transition: left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+}
+.tool-lufs .ruler-target .stem {
+  position: absolute;
+  top: 0;
+  bottom: 26px;
+  left: -1px;
+  width: 2px;
+  background: var(--tgt);
+}
+.tool-lufs .ruler-target .flag {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-50%);
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--tgt);
+  color: var(--on-tgt);
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.08rem;
+  line-height: 26px;
+  white-space: nowrap;
+}
+.tool-lufs .ruler .is-hidden { opacity: 0; pointer-events: none; }
+.tool-lufs .ruler-notes { position: absolute; inset: 0; }
+.tool-lufs .ruler-note {
+  position: absolute;
+  top: calc(100% - var(--sb));
+  bottom: var(--lvl);
+  border-left: 1px solid var(--tgt);
+}
+.tool-lufs .note-label {
+  position: absolute;
+  left: 7px;
+  bottom: 0;
+  height: 18px;
+  font-size: 0.76rem;
+  line-height: 18px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.tool-lufs .note-label b {
+  margin-right: 6px;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--tgt);
+}
+.tool-lufs .note-short { display: none; }
+@container (max-width: 520px) {
+  .tool-lufs .note-long { display: none; }
+  .tool-lufs .note-short { display: inline; }
+}
+.tool-lufs .lf-stage:not([data-state="idle"]) .ruler-notes { display: none; }
+.tool-lufs .stage-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 18px var(--pad) 0;
+  pointer-events: none;
+}
+.tool-lufs .lf-stage:not([data-state="ready"]) .stage-top { display: none; }
+.tool-lufs .file-chip { min-width: 0; pointer-events: auto; }
+.tool-lufs .file-info { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; }
+.tool-lufs .file-info .name { font-size: 1.02rem; font-weight: 700; overflow-wrap: anywhere; }
+.tool-lufs .file-info .lf-meta { display: flex; flex-wrap: wrap; color: var(--dim); font-size: 0.8rem; }
+.tool-lufs .file-info .lf-meta span + span { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line-strong); }
+.tool-lufs .chip-button {
+  margin: 4px 0 0 -2px;
+  padding: 2px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--line-strong);
+}
+.tool-lufs .chip-button:hover { color: var(--text); text-decoration-color: currentColor; }
+.tool-lufs .lra { flex-shrink: 0; display: flex; align-items: baseline; gap: 8px; }
+.tool-lufs .lra-label { font-size: 0.8rem; font-weight: 700; color: var(--dim); }
+.tool-lufs .lra-value {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 2.2rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.tool-lufs .lra-unit { font-size: 0.8rem; color: var(--dim); }
+.tool-lufs .stage-prompt {
+  position: absolute;
+  top: 56px;
+  left: var(--pad);
+  right: var(--pad);
+  z-index: 6;
+}
+.tool-lufs .lf-stage:not([data-state="idle"]) .stage-prompt { display: none; }
+.tool-lufs .prompt-title { margin: 0 0 8px; font-size: clamp(1.6rem, 4.2cqw, 2.4rem); font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+.tool-lufs .prompt-sub { margin: 0 0 22px; color: var(--dim); font-size: 0.9rem; }
+.tool-lufs .stage-progress {
+  position: absolute;
+  top: 44px;
+  left: var(--pad);
+  right: var(--pad);
+  z-index: 6;
+  max-width: 520px;
+}
+.tool-lufs .lf-stage:not([data-state="analyzing"]) .stage-progress { display: none; }
+.tool-lufs .progress-figure { display: flex; align-items: baseline; gap: 6px; color: var(--sig); }
+.tool-lufs .progress-number {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: clamp(4.6rem, 14cqw, 8rem);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.tool-lufs .progress-sign { font-family: var(--font-num); font-weight: 600; font-size: 2rem; }
+.tool-lufs .progress-name { margin: 10px 0 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-lufs .progress-detail { margin: 0 0 12px; font-size: 0.82rem; color: var(--dim); }
+.tool-lufs .progress-bar { height: 4px; background: var(--strip); }
+.tool-lufs .progress-bar-fill { height: 100%; width: 0%; background: var(--sig); transition: width 0.15s ease-out; }
+.tool-lufs .stage-silent {
+  position: absolute;
+  top: 120px;
+  left: var(--pad);
+  right: var(--pad);
+  z-index: 6;
+  margin: 0;
+  color: var(--dim);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.tool-lufs .deck {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tool-lufs .deck-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.tool-lufs .deck-cell { padding: 20px 24px 24px; min-width: 0; }
+.tool-lufs .deck-cell + .deck-cell { border-left: 1px solid var(--line); }
+.tool-lufs .deck-cell h2 { margin: 0 0 12px; font-size: 0.82rem; font-weight: 700; color: var(--dim); }
+.tool-lufs .segmented {
+  display: grid;
+  gap: 3px;
+  padding: 3px;
+  background: var(--strip);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.tool-lufs .segment {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+.tool-lufs .segment:hover { color: var(--text); }
+.tool-lufs .segment-value { font-family: var(--font-num); font-weight: 600; font-size: 1.1rem; white-space: nowrap; }
+.tool-lufs .target-list { grid-template-columns: repeat(2, 1fr); }
+.tool-lufs .target-list .segment:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.tool-lufs .target-list .segment.active { background: var(--tgt); color: var(--on-tgt); }
+.tool-lufs .segment-custom { align-items: center; padding-top: 5px; padding-bottom: 5px; cursor: text; }
+.tool-lufs .seg-label {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tool-lufs .custom-input {
+  width: 4.6em;
+  padding: 3px 2px;
+  border: 0;
+  border-bottom: 1.5px solid var(--line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-num);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.tool-lufs .custom-input::-webkit-inner-spin-button,
+.tool-lufs .custom-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.tool-lufs .custom-input:focus { outline: none; border-bottom-color: currentColor; }
+.tool-lufs .seg-unit { font-size: 0.72rem; opacity: 0.8; }
+.tool-lufs .segment-custom.active .custom-input { border-bottom-color: rgba(255, 255, 255, 0.7); }
+.tool-lufs .segment-custom.is-invalid .custom-input { background: #fff; color: var(--red); border-bottom-color: var(--red); }
+.tool-lufs .ab-switch { grid-template-columns: repeat(2, 1fr); }
+.tool-lufs .ab-switch .segment { justify-content: center; }
+.tool-lufs .ab-switch .segment.active { background: var(--sig); color: var(--on-sig); }
+.tool-lufs .notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 24px;
+  border-top: 1px solid var(--line);
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.tool-lufs .notice .icon { margin-top: 0.15em; }
+.tool-lufs .listen { display: flex; flex-direction: column; gap: 10px; }
+.tool-lufs .play-button .icon-stop { display: none; }
+.tool-lufs .play-button.is-playing .icon-play { display: none; }
+.tool-lufs .play-button.is-playing .icon-stop { display: inline; }
+@media (max-width: 640px) {
+  .tool-lufs .lf-stage { --pad: 26px; --sb: 88px; --nt: 112px; height: 400px; }
+  .tool-lufs .stage-top { padding-top: 14px; }
+  .tool-lufs .file-chip { flex: 1; max-width: calc(100% - 120px); }
+  .tool-lufs .file-info { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+  .tool-lufs .file-info .name { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-lufs .file-info .lf-meta { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; font-size: 0.74rem; }
+  .tool-lufs .lra-value { font-size: 1.8rem; }
+  .tool-lufs .flag-value { font-size: 3.8rem; }
+  .tool-lufs .flag-line { display: block; }
+  .tool-lufs .flag-unit { display: block; margin-top: 4px; }
+  .tool-lufs .stage-prompt { top: 44px; }
+  .tool-lufs .prompt-sub { margin-bottom: 16px; }
+  .tool-lufs .deck-grid { grid-template-columns: 1fr; }
+  .tool-lufs .deck-cell + .deck-cell { border-left: 0; border-top: 1px solid var(--line); }
+  .tool-lufs .gain-label b { font-size: 1.05rem; }
+  }
+@media (prefers-reduced-motion: reduce) {
+  .tool-lufs *::before,
+.tool-lufs *::after { transition-duration: 0.01ms !important; animation: none !important; }
+}
+/* 数字: サイトの書体(Montserrat)に合わせて、大きさと字間を調整 */
+.tool-lufs .flag-value { font-size: clamp(3rem, 9.5cqw, 6.6rem); letter-spacing: -.03em; line-height: .9; }
+.tool-lufs .scale-label { font-size: .74rem; }
+.tool-lufs .lra-value { font-size: 1.9rem; }
+.tool-lufs .progress-number { font-size: clamp(3.4rem, 10cqw, 5.6rem); }
+.tool-lufs .segment-value { font-size: .92rem; }
+.tool-lufs .note-label b { font-size: .86rem; color: var(--tgt-ink); }
+.tool-lufs .ruler-target .flag { font-size: .9rem; }
+@media (max-width: 640px) {
+  .tool-lufs .flag-value { font-size: 2.8rem; }
+}
+
+/* 配信前チェック(結果のあとに出る一覧)。青 = OK、赤 = 確認したい、灰 = 参考 */
+.tool-lufs .checks {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 24px 16px;
+}
+.tool-lufs .checks-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 8px; }
+.tool-lufs .checks-head h2 { margin: 0; font-size: 0.82rem; font-weight: 700; color: var(--dim); }
+.tool-lufs .checks-summary { margin: 0; font-size: 0.92rem; font-weight: 700; color: var(--sig); }
+.tool-lufs .checks-summary.is-warn { color: var(--red); }
+.tool-lufs .check-list { list-style: none; margin: 0; padding: 0; }
+.tool-lufs .check {
+  display: grid;
+  grid-template-columns: 52px 150px 190px 1fr;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+.tool-lufs .check-state {
+  justify-self: start;
+  min-width: 40px;
+  padding: 3px 0;
+  border-radius: 999px;
+  background: var(--sig-soft);
+  color: var(--sig);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+.tool-lufs .check.is-warn .check-state { background: var(--red-soft); color: var(--red); }
+.tool-lufs .check.is-info .check-state { background: var(--strip); color: var(--dim); }
+.tool-lufs .check-name { font-size: 0.88rem; font-weight: 700; }
+.tool-lufs .check-value { font-family: var(--font-num); font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tool-lufs .check.is-warn .check-value { color: var(--red); }
+.tool-lufs .check-hint { font-size: 0.8rem; line-height: 1.6; color: var(--dim); }
+.tool-lufs .checks-note { margin: 8px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.74rem; color: var(--dim); }
+@media (max-width: 760px) {
+  .tool-lufs .check { grid-template-columns: 52px 1fr; }
+  .tool-lufs .check-value { grid-column: 2; }
+  .tool-lufs .check-hint { grid-column: 1 / -1; }
+}

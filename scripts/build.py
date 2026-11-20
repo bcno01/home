@@ -562,13 +562,14 @@ def home_jsonld(site):
         {"@type": "WebSite", "name": site["name"], "url": base + "/", "inLanguage": "ja"}, group]}
 
 
-def render_sitemap(site, works):
+def render_sitemap(site, works, tools=()):
     """sitemap.xml(トップと全作品ページ)。lastmod は作品の日付"""
     base = site_base(site)
     if not base:
         return None
     latest = max((w["date"] for w in works), default=datetime.date.today())
-    rows = [(base + "/", latest)] + [(base + "/w/%s/" % quote(w["slug"]), w["date"]) for w in works]
+    rows = [(base + "/", latest)] + [(base + "/w/%s/" % quote(w["slug"]), w["date"]) for w in works] \
+        + [(base + "/tools/%s/" % t["id"], datetime.date.today()) for t in tools]
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n%s\n</urlset>\n'
             % "\n".join("<url><loc>%s</loc><lastmod>%s</lastmod></url>" % (esc(u), d.isoformat()) for u, d in rows))
 
@@ -578,7 +579,7 @@ def asset_version(name):
     return hashlib.md5((THEME / name).read_bytes()).hexdigest()[:8]
 
 
-def page(site, title, desc, body, root, og_image=None, canonical=None, body_class="", jsonld=None):
+def page(site, title, desc, body, root, og_image=None, canonical=None, body_class="", jsonld=None, extra_head=""):
     meta = ['<meta name="description" content="%s">' % esc(desc)] if desc else []
     meta += ['<meta property="og:title" content="%s">' % esc(title),
              '<meta property="og:type" content="website">',
@@ -593,6 +594,8 @@ def page(site, title, desc, body, root, og_image=None, canonical=None, body_clas
         meta.append('<link rel="icon" href="%s%s"%s>' % (root, quote(Path(fav).name), ' type="%s"' % mime if mime else ""))
         if ext == ".png":  # スマホのホーム画面に追加したときのアイコン
             meta.append('<link rel="apple-touch-icon" href="%s%s">' % (root, quote(Path(fav).name)))
+    if extra_head:  # そのページだけの <head> の追加(ツールのページの CSS など)
+        meta.append(extra_head)
     if jsonld:
         meta.append(ld_script(jsonld))
     if desc:
@@ -777,6 +780,62 @@ def booth_buttons(w):
     if own:
         return [("BOOTH", i["url"]) for i in own[:2]]
     return [("BOOTH(%s)" % r["title"], i["url"]) for r, i in w["booth_rel"] if _CD.search(i["name"])][:2]
+
+
+# ---- Tools(メニューの「Tools」と、ツールごとのページ)----
+TOOLS_DIR = ROOT / "tools"
+# 1つのツール = tools/<id>/(body.html = 画面の中身、tool.css、src/*.js など)。ページは、サイトの雛形で作り、tools/<id>/ をそのまま docs/tools/<id>/ にコピーする
+TOOLS = [
+    {"id": "lufs", "title": "LUFS Normalizer",
+     "lead": "ラウドネスを測って、配信先の基準との差を確かめます。",
+     "desc": "音声ファイルの LUFS / LRA を測り、Spotify・Apple Music、または自分で決めた目標との差(補正ゲイン)を表示して、原音とノーマライズ後を聴き比べるツール。ブラウザの中だけで動き、音声は外部に送信されません。",
+     "tags": ["音声", "聴き比べ"],
+     "foot": ["計測は ITU-R BS.1770-4 と EBU Tech 3342 に準拠しています。",
+              '音声ファイルは、端末の外に出ません。ソースコード: <a href="https://github.com/bcno01/lufs_normalizer" target="_blank" rel="noopener">GitHub</a>']},
+    {"id": "key", "title": "キー・コード早見",
+     "lead": "キーを選ぶと、音階とコード、移調したあとのコード、カポの位置が分かります。",
+     "desc": "キー(長調・短調)の音階とダイアトニックコードを一覧にして、移調したあとのコードと、ギターのカポの位置を表示するツール。ブラウザの中だけで動きます。",
+     "tags": ["理論", "移調"],
+     "foot": ["コードは、キーの音だけで作る「ダイアトニックコード」です。ジャズのような、キーの外のコードは、含みません。"]},
+]
+
+
+def available_tools():
+    return [t for t in TOOLS if (TOOLS_DIR / t["id"] / "body.html").is_file()]
+
+
+def render_tools_panel(tools):
+    """メニューの「Tools」: ツールの一覧(押すと、そのツールのページへ)。ツールがなければ空"""
+    if not tools:
+        return ""
+    cards = "".join('<a class="tool-card" href="tools/%s/"><b>%s</b><span class="tool-lead">%s</span><i class="tool-tags">%s</i></a>'
+                    % (esc(t["id"]), esc(t["title"]), esc(t["lead"]), "".join("<em>%s</em>" % esc(x) for x in t["tags"])) for t in tools)
+    return ('<section class="rpanel" id="tools" aria-label="Tools"><h2 class="ptitle">Tools</h2>'
+            '<p class="note">ブラウザの中だけで動く、音楽制作のためのツールです。音声ファイルは、外部に送信されません。</p>'
+            '<div class="tool-list">%s</div></section>' % cards)
+
+
+def render_tool_page(site, t):
+    body_html = (TOOLS_DIR / t["id"] / "body.html").read_text(encoding="utf-8")
+    body = ('<header class="top"><div class="wrap"><a href="../../#tools">← %s</a></div></header>\n'
+            '<main class="wrap tool-main">\n<div class="tool-head"><h1>%s</h1><p class="lead">%s</p></div>\n%s\n<div class="tool-foot">%s</div>\n</main>\n'
+            '<script type="module" src="src/main.js"></script>'
+            % (esc(site["name"]), esc(t["title"]), esc(t["lead"]), body_html, "".join("<p>%s</p>" % x for x in t["foot"])))
+    canon = site["url"].rstrip("/") + "/tools/%s/" % t["id"] if site.get("url") else None
+    return page(site, "%s | %s" % (t["title"], site["name"]), t["desc"], body, "../../", None, canon, "tool-page tool-%s" % t["id"],
+                None, '<link rel="stylesheet" href="tool.css">')
+
+
+def copy_tools(site, tools):
+    """tools/<id>/ を docs/tools/<id>/ にコピー(body.html は除く)。毎回、作り直す"""
+    shutil.rmtree(OUT / "tools", ignore_errors=True)
+    for t in tools:
+        src, dst = TOOLS_DIR / t["id"], OUT / "tools" / t["id"]
+        for p in sorted(src.rglob("*")):
+            if p.is_file() and p.name != "body.html" and not p.name.startswith("."):
+                (dst / p.relative_to(src)).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(p, dst / p.relative_to(src))
+        (dst / "index.html").write_text(render_tool_page(site, t), encoding="utf-8")
 
 
 def is_booth_shop(url):
@@ -1023,7 +1082,7 @@ def contact_href(v):
 
 def nav_link(label, url):
     ext = url.startswith("http")
-    panel = {"#works": "works", "#events": "events", "#offvocal": "offvocal", "#contact": "contact", "#guideline": "guideline", "#shop": "shop"}.get(url)
+    panel = {"#works": "works", "#events": "events", "#offvocal": "offvocal", "#contact": "contact", "#guideline": "guideline", "#shop": "shop", "#tools": "tools"}.get(url)
     attrs = ' target="_blank" rel="noopener"' if ext else (
         ' class="pn" data-panel="%s" aria-controls="%s"' % (panel, panel) if panel else "")
     return '<a href="%s"%s>%s</a>' % (esc(url), attrs, esc(label))
@@ -1279,6 +1338,11 @@ def render_index(site, works):
     if offvocal:
         at = next((i for i, (_, u) in enumerate(menu) if u == "#guideline"), len(menu))
         menu = menu[:at] + [("OffVocal", "#offvocal")] + menu[at:]
+    tools = available_tools()
+    tools_panel = render_tools_panel(tools)  # tools/ にツールがあれば、メニューに「Tools」が出る(OffVocal の次)
+    if tools_panel:
+        at = next((i for i, (_, u) in enumerate(menu) if u == "#guideline"), len(menu))
+        menu = menu[:at] + [("Tools", "#tools")] + menu[at:]
     items = ([("Works", "#works"), ("Events", "#events")] + ([("About", "#about")] if site["about"] else []) + menu
              + ([("Contact", "#contact")] if (site["contact"] or site["form"]) else []))
     nav = "\n".join(nav_link(lab or platform_label(u), u) for lab, u in items)
@@ -1479,12 +1543,13 @@ def render_index(site, works):
 %s
 %s
 %s
+%s
 </div>
 </main>
 %s
 %s""" % (bgvideo, logo, '<p class="tagline">%s</p>' % esc(site["tagline"]) if site["tagline"] else "",
          nav, sns,
-         render_feature(site, works), chips, rows, render_events(load_events()), offvocal, shop, render_guideline(guideline), render_contact(site), about, script)
+         render_feature(site, works), chips, rows, render_events(load_events()), offvocal, shop, tools_panel, render_guideline(guideline), render_contact(site), about, script)
     og = None
     if site.get("url") and site["og_image"] and (CONFIG / site["og_image"]).is_file():  # 設定/site.txt の og-image: で指定した画像
         og = site["url"].rstrip("/") + "/" + quote(Path(site["og_image"]).name)
@@ -1598,7 +1663,8 @@ def main():
         shutil.copy2(CONFIG / site["favicon"], OUT / Path(site["favicon"]).name)
     if site["og_image"] and (CONFIG / site["og_image"]).is_file():
         shutil.copy2(CONFIG / site["og_image"], OUT / Path(site["og_image"]).name)
-    sm = render_sitemap(site, works)
+    copy_tools(site, available_tools())
+    sm = render_sitemap(site, works, available_tools())
     if sm:
         (OUT / "sitemap.xml").write_text(sm, encoding="utf-8")
     elif (OUT / "sitemap.xml").exists():

@@ -1,0 +1,80 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2v.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+<!-- ステージ: ドロップ・解析中・結果表示のすべてがここで切り替わる -->
+  <section class="lf-stage" id="stage" data-state="idle">
+    <div id="stage-ruler"></div>
+
+    <div class="stage-top">
+      <div class="file-chip">
+        <div id="file-info" class="file-info"></div>
+        <button type="button" id="reset-button" class="chip-button">別のファイルを選ぶ</button>
+      </div>
+      <div class="lra">
+        <span class="lra-label">LRA</span>
+        <span class="lra-value" id="lra-value">--</span>
+        <span class="lra-unit">LU</span>
+      </div>
+    </div>
+
+    <div class="stage-prompt" id="drop-zone">
+      <h2 class="prompt-title">音声ファイルを<wbr>ここにドロップ</h2>
+      <p class="prompt-sub">mp3 / wav / m4a など。ファイルは端末の外に出ません。</p>
+      <button type="button" id="browse-button" class="button button-primary">
+        <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
+        ファイルを選ぶ
+      </button>
+      <input type="file" id="file-input" accept="audio/*" hidden />
+    </div>
+
+    <div class="stage-progress" role="status" aria-live="polite">
+      <div class="progress-figure"><span class="progress-number" id="analyze-percent">0</span><span class="progress-sign">%</span></div>
+      <p class="progress-name" id="analyze-filename"></p>
+      <p class="progress-detail" id="analyze-label">解析中…</p>
+      <div class="progress-bar"><div class="progress-bar-fill" id="analyze-bar"></div></div>
+    </div>
+
+    <p class="stage-silent hidden" id="silent-note">無音に近く、ラウドネスを計測できませんでした。</p>
+  </section>
+
+  <!-- コントロールデッキ: 結果が出たあとだけ表示。補正ゲインは、上の目盛りの中(2つの針の間)に出る -->
+  <section class="deck hidden" id="app-section">
+    <div class="deck-grid">
+      <section class="deck-cell" aria-labelledby="target-heading">
+        <h2 id="target-heading">目標ラウドネス</h2>
+        <div id="target-list" class="segmented target-list" role="group" aria-labelledby="target-heading"></div>
+      </section>
+
+      <section class="deck-cell" aria-labelledby="listen-heading">
+        <h2 id="listen-heading">聴き比べ</h2>
+        <div class="listen">
+          <div class="segmented ab-switch" role="group" aria-labelledby="listen-heading">
+            <button type="button" id="ab-original" class="segment active" aria-pressed="true">原音</button>
+            <button type="button" id="ab-normalized" class="segment" aria-pressed="false">ノーマライズ後</button>
+          </div>
+          <button type="button" id="play-button" class="button button-ghost play-button">
+            <svg class="icon icon-play" aria-hidden="true"><use href="#i-play"/></svg>
+            <svg class="icon icon-stop" aria-hidden="true"><use href="#i-stop"/></svg>
+            <span id="play-label">再生</span>
+          </button>
+        </div>
+      </section>
+    </div>
+    <p id="clip-warning" class="notice hidden" role="alert">
+      <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+      <span>ピークが0 dBFSを超え、ノーマライズすると歪みます。目標を下げると避けられます。</span>
+    </p>
+  </section>
+
+  <!-- 配信前チェック: 結果が出たあとだけ表示 -->
+  <section class="checks hidden" id="checks-section" aria-labelledby="checks-heading">
+    <div class="checks-head">
+      <h2 id="checks-heading">配信前チェック</h2>
+      <p class="checks-summary" id="checks-summary"></p>
+    </div>
+    <ul class="check-list" id="check-list"></ul>
+    <p class="checks-note">配信サービスの規格ではなく、制作でよく使われる目安です。曲によっては、意図した状態のこともあります。</p>
+  </section>
