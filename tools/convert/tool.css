@@ -1,0 +1,137 @@
+/* File Converter(サイト内の「Tools」)。色の役割は、ほかのツールと同じ:
+   青(--sig)= 入力・いま選んでいるもの、ピンク(--tgt)= 変換したあと(出力)。クラス名は cv- で始め、CSS は .tool-convert の中に閉じる。 */
+.tool-convert {
+  --panel: #fff;
+  --line: rgba(20, 24, 58, .14);
+  --line-strong: rgba(20, 24, 58, .28);
+  --strip: #e7eafa;
+  --text: var(--fg);
+  --dim: var(--muted);
+  --sig: var(--main);
+  --sig-soft: rgba(61, 75, 255, .08);
+  --tgt: #ff4d8d;
+  --tgt-ink: #d4206a;
+  --tgt-soft: rgba(255, 77, 141, .1);
+  --red: #c62828;
+  --font-num: var(--head);
+  --radius-sm: 8px;
+}
+.tool-convert [hidden] { display: none !important; }
+.tool-convert :focus-visible { outline: 2px solid var(--tgt); outline-offset: 2px; }
+.tool-convert .tool-main { max-width: 1080px; margin: 0 auto; padding: 18px 20px 36px; display: flex; flex-direction: column; gap: 14px; }
+
+/* タブ */
+.tool-convert .cv-tabs { display: inline-grid; grid-template-columns: repeat(2, auto); gap: 3px; padding: 3px; align-self: flex-start; background: var(--strip); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.tool-convert .cv-tabs button { padding: 10px 22px; border: 0; border-radius: 3px; background: transparent; color: var(--dim); font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+.tool-convert .cv-tabs button:hover { color: var(--text); }
+.tool-convert .cv-tabs button[aria-selected="true"] { background: var(--sig); color: #fff; }
+
+/* 設定(左)とファイル(右) */
+.tool-convert .cv-panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); grid-template-areas: "drop settings" "files settings"; grid-template-rows: auto 1fr; gap: 14px; align-items: start; }
+.tool-convert .cv-drop { grid-area: drop; }
+.tool-convert .cv-settings-card { grid-area: settings; }
+.tool-convert .cv-files { grid-area: files; }
+.tool-convert .cv-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px 22px; }
+.tool-convert .cv-card h2 { margin: 0 0 16px; font-size: 0.82rem; font-weight: 700; color: var(--dim); }
+.tool-convert .cv-panel.is-running .cv-settings { opacity: .5; pointer-events: none; }
+
+.tool-convert .cv-settings { display: flex; flex-direction: column; gap: 18px; }
+.tool-convert .cv-label { display: block; margin-bottom: 8px; font-size: 0.8rem; font-weight: 700; color: var(--dim); }
+.tool-convert .cv-hint { margin: 8px 0 0; font-size: 0.74rem; line-height: 1.6; color: var(--dim); }
+.tool-convert .cv-hint:empty { display: none; }
+
+.tool-convert .cv-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; padding: 3px; background: var(--strip); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.tool-convert .cv-seg-grid { grid-auto-flow: row; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); }
+.tool-convert .cv-seg-btn { padding: 9px 6px; border: 0; border-radius: 3px; background: transparent; color: var(--dim); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.tool-convert .cv-seg-btn:hover { color: var(--text); }
+.tool-convert .cv-seg-btn[aria-pressed="true"] { background: var(--sig); color: #fff; }
+
+.tool-convert .cv-check { display: flex; align-items: flex-start; gap: 10px; font-size: 0.86rem; font-weight: 700; cursor: pointer; }
+.tool-convert .cv-check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--sig); }
+
+.tool-convert .cv-range { display: flex; align-items: center; gap: 14px; }
+.tool-convert .cv-range input { flex: 1; min-width: 0; accent-color: var(--sig); }
+.tool-convert .cv-range-value { min-width: 2.4em; text-align: right; font-family: var(--font-num); font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.tool-convert .cv-num-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tool-convert .cv-num { display: inline-flex; align-items: baseline; gap: 6px; margin-right: 6px; font-size: 0.82rem; color: var(--dim); }
+.tool-convert .cv-num input { width: 5.5em; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; color: var(--text); font: inherit; font-family: var(--font-num); font-size: 1rem; font-weight: 700; }
+.tool-convert .cv-chip { padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--text); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.tool-convert .cv-chip:hover { border-color: var(--sig); color: var(--sig); }
+
+.tool-convert .cv-color { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.tool-convert .cv-color input { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; cursor: pointer; }
+.tool-convert .cv-color-code { font-family: var(--font-num); font-size: 0.86rem; font-weight: 700; color: var(--dim); }
+
+/* ボタン */
+.tool-convert .cv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border: 1px solid transparent; border-radius: var(--radius-sm); font: inherit; font-size: 0.92rem; font-weight: 700; line-height: 1.3; cursor: pointer; text-decoration: none; transition: filter .12s, border-color .12s, color .12s; }
+.tool-convert .cv-btn:active { transform: translateY(1px); }
+.tool-convert .cv-btn-primary { background: var(--sig); color: #fff; }
+.tool-convert .cv-btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.tool-convert .cv-btn-primary:disabled { opacity: .35; cursor: default; }
+.tool-convert .cv-btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--text); }
+.tool-convert .cv-btn-ghost:hover:not(:disabled) { border-color: var(--tgt); color: var(--tgt-ink); }
+.tool-convert .cv-btn-text { background: transparent; color: var(--dim); padding-inline: 8px; }
+.tool-convert .cv-btn-text:hover { color: var(--text); }
+
+/* ドロップする場所(いちばん上。ファイルを入れたあとは、細い帯になる) */
+.tool-convert .cv-drop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 22px; padding: 34px 32px; background: var(--sig-soft); border: 2px dashed var(--sig); border-radius: var(--radius); transition: background-color .15s, border-color .15s; }
+.tool-convert .cv-drop-icon { color: var(--sig); width: 44px; height: 44px; }
+.tool-convert .cv-drop-title { margin: 0; font: 700 clamp(18px, 2.4vw, 26px)/1.35 var(--head); word-break: auto-phrase; text-wrap: balance; }
+.tool-convert .cv-drop-sub { margin: 4px 0 0; font-size: 0.84rem; color: var(--dim); }
+.tool-convert .cv-drop .cv-btn { padding: 14px 28px; font-size: 1rem; }
+.tool-convert .cv-panel.is-over .cv-drop { background: rgba(61, 75, 255, .16); border-style: solid; }
+.tool-convert .cv-panel.has-files .cv-drop { padding: 14px 20px; gap: 6px 16px; }
+.tool-convert .cv-panel.has-files .cv-drop-icon { width: 26px; height: 26px; }
+.tool-convert .cv-panel.has-files .cv-drop-title { font-size: 0.98rem; }
+.tool-convert .cv-panel.has-files .cv-drop-sub { display: none; }
+.tool-convert .cv-panel.has-files .cv-drop .cv-btn { padding: 9px 18px; font-size: 0.88rem; }
+.tool-convert .cv-list:empty { padding: 22px 0; text-align: center; font-size: 0.84rem; color: var(--dim); }
+.tool-convert .cv-list:empty::before { content: "追加したファイルが、ここに並びます。"; }
+.tool-convert .cv-panel.has-files .cv-list:empty::before { content: none; }
+
+/* ファイルの一覧 */
+.tool-convert .cv-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tool-convert .cv-list:not(:empty) { margin-top: 14px; }
+.tool-convert .cv-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+.tool-convert .cv-row:first-child { border-top: 0; }
+.tool-convert .cv-main { grid-column: 1 / 3; min-width: 0; position: relative; }
+.tool-convert .cv-row:has(.cv-thumb) .cv-main { grid-column: 2; }
+.tool-convert .cv-name { margin: 0; font-size: 0.9rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-convert .cv-meta { margin: 3px 0 0; font-size: 0.76rem; color: var(--dim); font-variant-numeric: tabular-nums; }
+.tool-convert .cv-meta.is-error { color: var(--red); }
+.tool-convert .cv-row[data-state="done"] .cv-name { color: var(--tgt-ink); }
+.tool-convert .cv-bar { height: 3px; margin-top: 8px; background: var(--strip); border-radius: 2px; overflow: hidden; display: none; }
+.tool-convert .cv-row[data-state="busy"] .cv-bar { display: block; }
+.tool-convert .cv-bar i { display: block; height: 100%; background: var(--tgt); transform-origin: left; transform: scaleX(0); transition: transform .15s linear; }
+.tool-convert .cv-side { display: flex; align-items: center; gap: 8px; }
+.tool-convert .cv-save { padding: 8px 16px; background: var(--tgt); color: #fff; font-size: 0.84rem; }
+.tool-convert .cv-save:hover { filter: brightness(1.06); }
+.tool-convert .cv-x { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--dim); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.tool-convert .cv-x:hover:not(:disabled) { background: var(--strip); color: var(--text); }
+.tool-convert .cv-x:disabled { opacity: .3; cursor: default; }
+.tool-convert .cv-thumb { width: 56px; height: 56px; border-radius: 6px; background: var(--strip); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.tool-convert .cv-thumb-audio:not(.has-img) { background: var(--strip) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cg fill='%238a90c2'%3E%3Crect x='10' y='24' width='3' height='8' rx='1'/%3E%3Crect x='16' y='18' width='3' height='20' rx='1'/%3E%3Crect x='22' y='10' width='3' height='36' rx='1'/%3E%3Crect x='28' y='16' width='3' height='24' rx='1'/%3E%3Crect x='34' y='22' width='3' height='12' rx='1'/%3E%3Crect x='40' y='19' width='3' height='18' rx='1'/%3E%3C/g%3E%3C/svg%3E") center / 100% no-repeat; }
+.tool-convert .cv-thumb img { display: none; max-width: 100%; max-height: 100%; object-fit: contain; }
+.tool-convert .cv-thumb.has-img img { display: block; }
+
+.tool-convert .cv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.tool-convert .cv-summary { margin: 10px 0 0; min-height: 1.2em; font-size: 0.8rem; color: var(--dim); }
+
+@media (max-width: 860px) {
+  .tool-convert .cv-panel { grid-template-columns: minmax(0, 1fr); grid-template-areas: "drop" "settings" "files"; grid-template-rows: none; }
+}
+@media (max-width: 640px) {
+  .tool-convert .cv-card { padding: 16px 16px 18px; }
+  .tool-convert .cv-tabs { align-self: stretch; grid-template-columns: 1fr 1fr; }
+  .tool-convert .cv-tabs button { padding: 10px 8px; }
+  .tool-convert .cv-drop { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: 26px 16px; }
+  .tool-convert .cv-drop .cv-btn { width: 100%; }
+  .tool-convert .cv-panel.has-files .cv-drop { grid-template-columns: auto minmax(0, 1fr); justify-items: start; text-align: left; padding: 12px 14px; }
+  .tool-convert .cv-panel.has-files .cv-drop .cv-btn { grid-column: 1 / -1; width: 100%; }
+  .tool-convert .cv-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
+  .tool-convert .cv-actions .cv-btn-primary { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tool-convert * { transition-duration: 0.01ms !important; }
+}

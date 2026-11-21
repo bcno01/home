@@ -1,0 +1,55 @@
+<!-- 音声 → 音声 / 画像 → 画像。ドロップ領域は、いちばん上。設定の項目は、src/main.js が作る -->
+  <div class="cv-tabs" role="tablist" aria-label="変換の種類">
+    <button type="button" role="tab" id="cv-tab-audio" aria-controls="cv-audio" aria-selected="true">音声 → 音声</button>
+    <button type="button" role="tab" id="cv-tab-image" aria-controls="cv-image" aria-selected="false" tabindex="-1">画像 → 画像</button>
+  </div>
+
+  <section class="cv-panel" id="cv-audio" role="tabpanel" aria-labelledby="cv-tab-audio">
+    <div class="cv-drop">
+      <svg class="cv-drop-icon" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="cv-drop-text">
+        <p class="cv-drop-title">音声ファイルを<wbr>ここにドロップ</p>
+        <p class="cv-drop-sub">wav / mp3 / m4a / flac / ogg など。複数まとめて選べます。</p>
+      </div>
+      <button type="button" class="cv-btn cv-btn-primary cv-browse">ファイルを選ぶ</button>
+      <input type="file" class="cv-input" multiple hidden />
+    </div>
+    <div class="cv-card cv-settings-card">
+      <h2>変換の設定</h2>
+      <div class="cv-settings"></div>
+    </div>
+    <div class="cv-card cv-files">
+      <ul class="cv-list"></ul>
+      <div class="cv-actions">
+        <button type="button" class="cv-btn cv-btn-primary cv-run" disabled>変換する</button>
+        <button type="button" class="cv-btn cv-btn-ghost cv-zip" hidden>ZIP でまとめて保存</button>
+        <button type="button" class="cv-btn cv-btn-text cv-clear" hidden>リストを空にする</button>
+      </div>
+      <p class="cv-summary" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="cv-panel" id="cv-image" role="tabpanel" aria-labelledby="cv-tab-image" hidden>
+    <div class="cv-drop">
+      <svg class="cv-drop-icon" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="cv-drop-text">
+        <p class="cv-drop-title">画像ファイルを<wbr>ここにドロップ</p>
+        <p class="cv-drop-sub">png / jpg / webp / gif / avif / svg など。複数まとめて選べます。</p>
+      </div>
+      <button type="button" class="cv-btn cv-btn-primary cv-browse">ファイルを選ぶ</button>
+      <input type="file" class="cv-input" multiple hidden />
+    </div>
+    <div class="cv-card cv-settings-card">
+      <h2>変換の設定</h2>
+      <div class="cv-settings"></div>
+    </div>
+    <div class="cv-card cv-files">
+      <ul class="cv-list"></ul>
+      <div class="cv-actions">
+        <button type="button" class="cv-btn cv-btn-primary cv-run" disabled>変換する</button>
+        <button type="button" class="cv-btn cv-btn-ghost cv-zip" hidden>ZIP でまとめて保存</button>
+        <button type="button" class="cv-btn cv-btn-text cv-clear" hidden>リストを空にする</button>
+      </div>
+      <p class="cv-summary" role="status" aria-live="polite"></p>
+    </div>
+  </section>
