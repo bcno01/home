@@ -21,6 +21,14 @@ BCNO/
 
 ダブルクリックで使う `.command` ファイルは、`コマンド/` フォルダにまとめてあります(作品を追加・MVを追加・サイトを更新・イベントを追加・背景動画を追加・Spotifyリンクを追加)。以下で「○○.command」と書いてあるものは、すべてこのフォルダの中にあります。
 
+### Windows で使う場合
+
+同じフォルダの、同じ名前の `.bat` ファイルをダブルクリックします(「○○.command」を「○○.bat」に読み替えてください)。ターミナルで直接動かすときは、`python3` を `python` に読み替えます。
+
+- 必要なもの: Python、Git、GitHub CLI(`gh auth login` 済み。オフボーカルを置くときに使います)。画像の縮小は `python -m pip install pillow`、背景動画の追加は `winget install Gyan.FFmpeg`
+- `.bat` は、始めに GitHub の最新を取り込みます。公開する前に、送る変更の一覧が出るので、`y` を入力したときだけ公開します(Enter だけでは公開しません)
+- 歌詞の古い形式(`.doc`)の変換は Mac だけです。`.docx`・`txt`・`pdf` を使ってください
+
 ### 方法1: ウィザードで追加(おすすめ)
 
 1. `作品を追加.command` をダブルクリック
@@ -33,10 +41,10 @@ BCNO/
 自動の取り込みは、チャンネルの新着(直近15本)だけが対象です。それより前の MV は、`MVを追加.command` をダブルクリックして、YouTube の URL を1行ずつ貼り付けます(何本でも。終わったら空 Enter)。
 
 - タイトルと**公開日**、概要欄の**オフボーカルなどの配布リンク**は、動画のページから自動で読み取ります。サムネイルが表紙になります。
-- すでにサイトにあるものは、飛ばします。以前に消した(または Trailer などで除外した)動画は、確認が出て、「y」で追加できます。
+- すでにサイトにあるものは、飛ばします。以前に消した(または除外した)動画は、確認が出て、「y」で追加できます。
 - 追加した MV は、同じ曲名の配信の作品(Apple Music など)と、自動で相互にリンクされます。
 - 最後に「公開しますか?」で Enter を押すと、ビルドして公開まで行います。
-- **プレイリストの URL**(`https://www.youtube.com/playlist?list=…`)を貼ると、その中の動画を、まとめて追加できます(公開されているプレイリストの先頭100本まで)。本数を確認してから追加します。Trailer など、`設定/import.txt` の `youtube-exclude` に書いた言葉を含む動画と、以前に消した動画は飛ばします。プレイリストに他のチャンネルの動画が入っていることがあるので、載せたくないものは、その作品の `info.txt` に `draft: yes` と書くか、フォルダを消してください。
+- **プレイリストの URL**(`https://www.youtube.com/playlist?list=…`)を貼ると、その中の動画を、まとめて追加できます(公開されているプレイリストの先頭100本まで)。本数を確認してから追加します。Teaser など、`設定/import.txt` の `youtube-exclude` に書いた言葉を含む動画と、以前に消した動画は飛ばします。プレイリストに他のチャンネルの動画が入っていることがあるので、載せたくないものは、その作品の `info.txt` に `draft: yes` と書くか、フォルダを消してください。
 - **「案件」として追加する**(関わらせて頂いた作品など、自分のチャンネルではない動画): ウィザードで「分類」を聞かれたら `2` を選ぶか、ターミナルで `python3 scripts/add_youtube.py --type 案件 URL` と打ちます。Works に「Projects」(案件)の絞り込みが付き、MV とは別の分類で並びます。案件の作品は、配信との自動リンクや BOOTH の紐づけはされません。すでにサイトにある動画は、そのままです(分類も変えたいときは `--reclassify` を付けます)。案件の長い題名は、自動で短くします(ハッシュタグ・「Official Music Video」などの注記・末尾の MV を除き、「○○に「曲名」を歌ってもらったよ」は「曲名(○○)」にします)。元の題名は、`info.txt` の `yt-title:` に残るので、題名を直したいときは `title:` を書き換えてください。`info.txt` に `type: 案件` と書いても、同じ分類になります。
 - **概要欄の配信リンク(案件)**: 案件の動画は、概要欄にある配信・販売のリンク(Spotify の曲/アルバム・Apple Music・ニコニコ動画・Bandcamp・BOOTH・linkco.re / orcd.co / lnk.to のリンクまとめ)が、自動でボタンになります(同じサービスは最初の1つだけ。ユーザーやアーティストのページ、linktr.ee・lit.link・X・Instagram は対象外です)。すでに追加した案件には、`python3 scripts/add_youtube.py --refresh-links`(`--dry-run` を付けると、足す予定の一覧だけ表示)で、まとめて足せます。すでに同じサービスのリンクがある作品には足さず、手で足したリンクも消しません。追加する前に、リンクが切れていないか(404 など)を確かめて、切れているものは飛ばします。カバー動画の概要欄にある元の曲のリンクなど、合わないものがあったら、その作品の `info.txt` の `links:` から、その行を消してください。
 - ターミナルなら `python3 scripts/add_youtube.py URL URL …`(`--dry-run` で確認だけ、`--force` で除外した動画も追加)。
@@ -202,11 +210,11 @@ YouTube / Spotify / Apple Music / SoundCloud / ニコニコ動画。
 アルバム・EP の予告(Trailer)や、クロスフェードデモ(XFD)の動画は、**Trailer** という分類にまとまります。Works の絞り込みのボタンは、「All」「MV」「**Trailer**」「Streaming」「Projects」の順で、MV と Streaming の間に出ます(作品ページのバッジや、一覧の右端の表示も「Trailer」です)。
 
 - **Trailer になる動画は、「プレイリストに入っている動画」に限ります**: `設定/import.txt` の `trailer-playlist:`(いまは「オリジナル曲」のプレイリスト)に入っていて、**かつ**、タイトルに `XFD`・`Trailer`・`トレーラー` のどれかを含む動画だけが、Trailer です(大文字・小文字は区別しません)。同じ XFD でも、このプレイリストに入っていない動画(関わらせて頂いた作品の XFD など)は、Projects のままです。
-- **自動で入ります**: `MVを追加.command`(`scripts/add_youtube.py`)で追加するときと、毎日の自動取り込みで、上の条件に合う動画は、自動で Trailer になります(プレイリストは、先頭100本までを調べます)。ただし、毎日の自動取り込みは、`youtube-exclude: Trailer, Teaser` の除外ワードにより、タイトルに Trailer を含む動画は、取り込みません。Trailer を足すときは、プレイリストに入れてから、`python3 scripts/add_youtube.py --force URL` で追加してください(`--force` が、除外ワードを飛ばします。分類は、自動で Trailer になります)。
+- **自動で入ります**: `MVを追加.command`(`scripts/add_youtube.py`)で追加するときと、毎日の自動取り込みで、上の条件に合う動画は、自動で Trailer になります(プレイリストは、先頭100本までを調べます)。分類は取り込むときに決まるので、**投稿したら、自動取り込み(毎日 6:17 ごろ)より前に、プレイリストに入れてください**。入れる前に取り込まれると MV になり、あとからプレイリストに入れても変わりません(`info.txt` を `type: trailer` に直します)。タイトルに `Teaser` を含む動画は、除外ワードにより取り込みません。以前に消した動画は自動では戻らないので、`python3 scripts/add_youtube.py --force URL` で追加します。
 - **手で変えるとき**: その作品の `info.txt` の `type:` を `trailer`(または `トレーラー`)にします。
 - BPM・オフボーカルは、MV にだけ付きます。Trailer と Projects には出ません。
 - **Streaming との関連づけと、BOOTH**: Trailer のタイトルから、アルバム・EP の名前を取り出し(「D.C. / BCNO」2nd Album Trailer → `D.C.`、`BCNO 5th Album - Kith and Kin - Trailer` → `Kith and Kin`、`1st EP「Day Breaks」XFD` → `Day Breaks`)、**同じ名前の Streaming の作品と、お互いの「関連作品」に、自動でリンクします**。その Streaming に BOOTH の商品があれば、Trailer のページにも、「BOOTH(作品名)」のボタンが付きます(MV と同じ仕組みです)。同じ名前の Streaming がない Trailer(「Periodic Table」「Day Breaks」「二〇一六」など)には、何も付きません。名前が合わないときは、`info.txt` に `related: 作品名` を書きます。
-- いまの Trailer は、8本です(「二〇一六」「D.C.」「途中」「Day Breaks」XFD「Periodic Table」「COLLAGE」「Nightfall」「Kith and Kin」)。「Tribute Album - 経緯 - Trailer」は、以前に消した記録があるため、入れていません(入れたいときは、`python3 scripts/add_youtube.py --force --type trailer URL`)。
+- いまの Trailer は、13本です(「二〇一六」「D.C.」「途中」「Day Breaks」XFD「Periodic Table」「COLLAGE」「Nightfall」「Kith and Kin」「姿」「経緯」と、コンピの「SCRUM vol.1」「RED BOX」「Rainbow」)。プレイリストに入っていない動画を Trailer にするときは、`python3 scripts/add_youtube.py --force --type trailer URL` で追加します。
 
 ## Works の一覧(年のタブ)
 
@@ -352,7 +360,7 @@ YouTube の概要欄に「OffVocal / 歌詞 - https://…」のような行(オ�
 - **目印**: 取り込まれた作品の `info.txt` には `auto: yes` と `source:` が入ります。
 - **載せたくない作品**: その `info.txt` に `draft: yes` と書くか、フォルダごと消します。消しても、`works/.imported.txt` に記録が残るので、復活しません。
 - **手で直す**: 取り込まれた作品も普通の作品フォルダです。タイトルや説明を直したり、Spotify などのリンクを `links:` に足したりできます(自動で上書きはしません)。
-- **設定**: Apple Music は `apple:`(アーティストページのURL)、YouTube は `youtube:`(チャンネルのURLか UC から始まるID)。ショート動画は `youtube-shorts: yes` で取り込めます。タイトルに特定の言葉を含む動画は、`youtube-exclude:` で除外できます(いまは Trailer と Teaser)。
+- **設定**: Apple Music は `apple:`(アーティストページのURL)、YouTube は `youtube:`(チャンネルのURLか UC から始まるID)。ショート動画は `youtube-shorts: yes` で取り込めます。タイトルに特定の言葉を含む動画は、`youtube-exclude:` で除外できます(いまは Teaser)。
 - **Mac で試す**: `python3 scripts/import_works.py --dry-run` で、何が取り込まれるかだけ確認できます。
 
 ### 新作の通知

@@ -18,7 +18,7 @@ trailer-playlist: https://youtube.com/playlist?list=PL8O-SJ_gM65IE0SW9J-Aodw4blV
 # オフボーカルは、サイトから直接ダウンロードする形に変えたので、no にしています(直接ダウンロードは README の「オフボーカル・歌詞のダウンロード」)
 materials: no
 # タイトルにこれらの言葉を含む YouTube 動画は取り込まない(カンマ区切り。大文字小文字は区別しません)
-youtube-exclude: Trailer, Teaser
+youtube-exclude: Teaser
 
 # 【任意・Spotify Premium が必要】Spotify の公式 API でリンクを完全自動で付ける設定。
 # 使わない場合は、この下の spotify: の行を消すか、空にしてください(通常は「Spotifyリンクを追加.command」で足りるので不要です)。

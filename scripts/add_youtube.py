@@ -97,7 +97,7 @@ def video_id(text):
     return text if re.fullmatch(r"[\w-]{11}", text) else None
 
 
-EXCLUDE = []  # 設定/import.txt の youtube-exclude(Trailer など)。プレイリストをまとめて追加するときだけ、これを含む動画を飛ばす
+EXCLUDE = []  # 設定/import.txt の youtube-exclude(Teaser など)。プレイリストをまとめて追加するときだけ、これを含む動画を飛ばす
 
 
 def reclassify(vid, wtype, dry):
