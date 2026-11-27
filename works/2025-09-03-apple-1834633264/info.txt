@@ -13,3 +13,7 @@ copyright: ℗ 2025 My Ship
 links:
 Apple Music: https://music.apple.com/jp/album/regolith-single/1834633264
 Spotify: https://open.spotify.com/album/0F2TA1H7O1poxO6OBwPxdY
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_nEYYtWvE8URATeZ99BJQnwC7E_GFesQ9I
+Amazon Music: https://music.amazon.co.jp/albums/B0FNBKZ4W9
+LINE MUSIC: https://music.line.me/launch?target=album&item=mb0000000004a1c260&cc=JP&v=1
+AWA: https://s.awa.fm/album/a4bd9abc1cba06916a01

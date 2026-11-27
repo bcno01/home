@@ -12,3 +12,7 @@ copyright: ℗ 2022 My Ship
 links:
 Apple Music: https://music.apple.com/jp/album/kith-and-kin/1649531291
 Spotify: https://open.spotify.com/album/3V6otT2TftidGZ369cbelG
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_lNrwuRqFQ01IHiEZlYOS9GtZTHvLRDZ6Q
+Amazon Music: https://www.amazon.co.jp/music/player/albums/B0BJ6BZZ2G
+LINE MUSIC: https://music.line.me/album/mb00000000029c6921
+AWA: https://s.awa.fm/album/c41f7036ad24ff747736

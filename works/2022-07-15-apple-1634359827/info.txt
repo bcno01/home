@@ -12,3 +12,7 @@ copyright: ℗ 2022 My Ship
 links:
 Apple Music: https://music.apple.com/jp/album/%E3%81%AA%E3%81%8F%E3%81%A6%E3%81%AA%E3%81%AA%E3%81%8F%E3%81%9B-single/1634359827
 Spotify: https://open.spotify.com/album/0Wdl0ITN2FGGVuoaSw3stl
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_kvrLF_CMjF_DgxYrveHd-p8S31fFO3vHQ
+Amazon Music: https://www.amazon.co.jp/music/player/albums/B0B6FSJYT7
+LINE MUSIC: https://music.line.me/album/mb0000000002831025
+AWA: https://s.awa.fm/album/60de8d7a11e332f51229

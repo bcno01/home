@@ -12,3 +12,7 @@ copyright: ℗ 2020 BCNO
 links:
 Apple Music: https://music.apple.com/jp/album/collage/6788971199
 Spotify: https://open.spotify.com/album/7E2fnsMK2TQvEDMHuVEWxF
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_m_M4e_0bIKuzkPFOCIGTN9EtCWUHS94rI
+Amazon Music: https://www.amazon.co.jp/dp/B0H88JWHC8
+LINE MUSIC: https://music.line.me/launch?target=album&item=mb000000000576c0e5&cc=JP&v=1
+AWA: https://s.awa.fm/album/43ba02dc0c91d77cd040

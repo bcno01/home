@@ -13,3 +13,7 @@ copyright: ℗ 2025 BCNO
 links:
 Apple Music: https://music.apple.com/jp/album/gestalt-ep/1836335027
 Spotify: https://open.spotify.com/album/4MdghitAUJ9a4oPUDn5zvQ
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_lNSLbUvd3635g2yFUKLAgT2qjN2cxOXqs
+Amazon Music: https://www.amazon.co.jp/dp/B0FP4TYFPY
+LINE MUSIC: https://music.line.me/launch?target=album&item=mb0000000004a5bcf1&cc=JP&v=1
+AWA: https://s.awa.fm/album/17c37d585f7d2dfb0620
