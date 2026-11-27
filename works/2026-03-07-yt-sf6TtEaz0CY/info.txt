@@ -5,9 +5,3 @@ source: youtube-sf6TtEaz0CY
 auto: yes
 links:
 YouTube: https://www.youtube.com/watch?v=sf6TtEaz0CY
-Apple Music: https://music.apple.com/jp/album/1883476641
-Spotify: https://open.spotify.com/album/1I7Fzstu5cbrxK9sAW8cH7
-YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_l0Bn8c_wjyiSxCagWit2My_QmZRMqn4zU
-Amazon Music: https://www.amazon.co.jp/music/player/albums/B0GRR32H29
-LINE MUSIC: https://music.line.me/album/mb00000000051857f8
-AWA: https://s.awa.fm/album/9d1087a4e88abd6d3499

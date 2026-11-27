@@ -1,0 +1,20 @@
+title: 経緯
+date: 2026-03-13
+type: music
+description: Various Artists
+title-orig: The Way
+release: album
+link-tracks: no
+tracks: ["静物学 (Remix)", "透明感 (Remix)", "なくてななくせ (Remix)", "Imaginary Line (Remix)", "ルナ・エクリプス (Remix)", "モノリス (Remix)", "象牙の塔 (Remix)", "UnderStand (Remix)", "人間未遂 (Remix)", "微笑んだ羊 (Remix)", "情もわかない (Remix)", "Das Gemeine (Remix)", "All in Good Time (Remix)"]
+genre: Alternative
+duration: 3020
+copyright: ℗ 2026 MY SHIP
+source: apple-1883476641
+auto: yes
+links:
+Apple Music: https://music.apple.com/jp/album/the-way/1883476641
+Spotify: https://open.spotify.com/album/1I7Fzstu5cbrxK9sAW8cH7
+YouTube Music: https://music.youtube.com/playlist?list=OLAK5uy_l0Bn8c_wjyiSxCagWit2My_QmZRMqn4zU
+Amazon Music: https://www.amazon.co.jp/music/player/albums/B0GRR32H29
+LINE MUSIC: https://music.line.me/album/mb00000000051857f8
+AWA: https://s.awa.fm/album/9d1087a4e88abd6d3499
