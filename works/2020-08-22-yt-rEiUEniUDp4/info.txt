@@ -1,0 +1,7 @@
+title: RED BOX [ バンドマンコンピ ] ─ Trailer
+date: 2020-08-22
+type: trailer
+source: youtube-rEiUEniUDp4
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=rEiUEniUDp4

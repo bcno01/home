@@ -1,0 +1,7 @@
+title: SCRUM vol.1 ─ Trailer
+date: 2020-06-14
+type: trailer
+source: youtube-ixcG4MeWK9I
+auto: yes
+links:
+YouTube: https://www.youtube.com/watch?v=ixcG4MeWK9I
