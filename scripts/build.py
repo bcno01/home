@@ -517,7 +517,8 @@ def read_work(d):
         print("  ! %s: bpm: は MV(type: video)にだけ表示します(この作品では表示しません)" % d.name)
         w["bpm"] = None
     w["headline"] = "" if is_upcoming(w) else make_headline(w, f)  # 公開前の作品に「〜を公開しました」の見出しは付けない
-    songs = {norm_song(clean_track(x)) for x in tracks}
+    # link-tracks: no の作品は、収録曲では結びつけない(トリビュート盤などで、原曲の作品やその BOOTH の商品が混ざらないように)
+    songs = {norm_song(clean_track(x)) for x in tracks} if truthy(f.get("link-tracks", "yes")) else set()
     # 関連作品の判定に使う名前: MV は曲名、Trailer はアルバム・EP の名前(同じ名前の Streaming と結びつき、その BOOTH も付く)、ほかは作品名
     songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else trailer_album(w["title"]) if w["type"] == "trailer" else w["title"]))
     songs |= {norm_song(x) for x in w["aliases"]}  # 別名(aliases:)でも結びつく(Apple は「Gestalt」、ほかは「姿」など)
