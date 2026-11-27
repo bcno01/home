@@ -444,6 +444,9 @@ def read_work(d):
     # Spotify / Apple Music のプレーヤーがある作品では、YouTube Music のリンクはボタンだけにする(動画のプレーヤーを出さない)
     has_player = any(host_of(u) in ("open.spotify.com", "music.apple.com") for _, u in links)
     embeds = [e for e in (embed_for(u) for _, u in links if not (has_player and host_of(u) == "music.youtube.com")) if e]
+    # Trailer は、動画があれば音楽プレーヤーは出さない(配信の直リンクは、ボタンだけ)
+    if (t if t in TYPES else infer_type(links)) == "trailer" and any(e[0] == "video" for e in embeds):
+        embeds = [e for e in embeds if e[0] != "audio"]
     audio = [e for e in embeds if e[0] == "audio"]
     if len(audio) > 1:
         spotify = next((e for e in audio if "open.spotify.com" in e[1]), None)
@@ -820,6 +823,16 @@ def link_buttons(links):
     return "\n".join(out)
 
 
+LISTEN_SERVICES = {"Spotify", "Apple Music", "YouTube Music", "Amazon Music", "LINE MUSIC", "AWA"}
+
+
+def page_links(w):
+    """ボタンにする links:。配信(Streaming)の作品がある Trailer は、各サービスの直リンクをそちらのページに任せる"""
+    if w["type"] == "trailer" and any(r["type"] == "music" for r in w["related"]):
+        return [(lab, u) for lab, u in w["links"] if lab not in LISTEN_SERVICES]
+    return list(w["links"])
+
+
 def booth_buttons(w):
     """BOOTH のボタン。自分の CD、なければ関連作品の CD(最大2つ)"""
     # Trailer は、商品名に EP「 などがなくても、BOOTH の分類が「音楽」なら CD として扱う
@@ -1077,7 +1090,7 @@ def render_work(site, w):
         meta, esc(w["headline"] or w["title"]),
         '<p class="lead">%s</p>' % esc(w["desc"]) if w["desc"] else "",
         orig_line(w),
-        link_buttons(list(w["links"]) + booth_buttons(w)), download_buttons(w), render_rel_tags(w), render_tracks(w),
+        link_buttons(page_links(w) + booth_buttons(w)), download_buttons(w), render_rel_tags(w), render_tracks(w),
         render_embeds(w),
         paragraphs(w["body"]), render_booth(w) + render_related(w), gallery)
     og = None

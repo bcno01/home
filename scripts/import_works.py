@@ -451,6 +451,7 @@ def stream_links(desc):
 STORE_PAGE = re.compile(r"https?://(?:linkco\.re/[A-Za-z0-9]+|nodee\.net/a/[A-Za-z0-9]+)")
 # 配信作品に足せるサービス: 名前 → (linkco.re の中継リンクの名前, 転送先として認める URL の形, すでにリンクがあるかを調べる言葉)
 STORES = {
+    "Apple Music": ("apple_music", r"music\.apple\.com/[a-z]{2}/album/(?:[^/?]+/)?\d+", "music.apple.com"),
     "Spotify": ("spotify", r"open\.spotify\.com/(?:intl-[a-z]+/)?album/\w+", "open.spotify.com"),
     "YouTube Music": ("youtube_music_key", r"music\.youtube\.com/playlist\?list=[\w-]+", "music.youtube.com"),
     "Amazon Music": ("amazon_music", r"(?:www|music)\.amazon\.co\.jp/(?:(?:music/player/)?albums|dp)/\w+", "amazon."),
@@ -491,15 +492,62 @@ def video_description(imp, vid):
 
 
 def store_page(url):
-    """配信まとめページから (Apple Music のアルバムID, {サービス名: 中継リンク})。Apple Music がないページの ID は None"""
+    """配信まとめページから (Apple Music のアルバムID, {サービス名: 中継リンク}, 作品の題名)。Apple Music がないページの ID は None"""
     page = fetch(url).decode("utf-8", "replace")
     if "nodee.net/" in url:  # ページに埋め込まれた JSON を読む
         data = json.loads(html.unescape(re.search(r'="(\{&quot;[^"]*)"', page).group(1)))["props"]["album"]
-        return str(data["playerPayload"]["apple"]["album"]), {s["name"]: s["href"] for s in data["stores"]}
+        title = data.get("title") or ""
+        title = " ".join(title.values()) if isinstance(title, dict) else str(title)
+        return str(data["playerPayload"]["apple"]["album"]), {s["name"]: s["href"] for s in data["stores"]}, title
     via = {k: "https://www.tunecore.co.jp/to/%s/%s" % (k, n)
            for k, n in re.findall(r"tunecore\.co\.jp/to/(\w+)/(\d+)", page)}
     m = re.search(r"/album/(?:[^/?]+/)?(\d+)", redirect_target(via["apple_music"])) if "apple_music" in via else None
-    return m.group(1) if m else None, {name: via[s[0]] for name, s in STORES.items() if s[0] in via}
+    t = re.search(r"<title>\s*(.*?)(?:\s+by\s|\s*\|)", page, re.S)
+    return (m.group(1) if m else None, {name: via[s[0]] for name, s in STORES.items() if s[0] in via},
+            html.unescape(t.group(1)) if t else "")
+
+
+def store_links(via, services):
+    """中継リンクの転送先を調べて、[(サービス名, 直リンク)]"""
+    out = []
+    for s in services:
+        m = re.search(STORES[s][1], redirect_target(via[s])) if s in via else None
+        if m:
+            out.append((s, "https://" + m.group(0)))
+        time.sleep(0.2)
+    return out
+
+
+def trailer_store_links(imp, w, services, pages):
+    """配信の作品がない Trailer に足す直リンク。概要欄(と links:)の配信まとめページのうち、題名がアルバム名を含むものを使い、
+    足りないサービスは、概要欄に直接書かれたアルバムのURL(そのサービスのものが1つだけのとき)を使う"""
+    missing = [s for s in services if not any(STORES[s][2] in u for _, u in w["links"])]
+    vid = next((build.youtube_id(u) for _, u in w["links"] if build.youtube_id(u)), None)
+    if not missing or not vid:
+        return []
+    desc = video_description(imp, vid)
+    names = {build.norm_song(x) for x in [build.trailer_album(w["title"])] + w["aliases"]} - {""}
+    new = []
+    for url in dict.fromkeys(STORE_PAGE.findall(" ".join([u for _, u in w["links"]] + [desc]))):
+        try:
+            if url not in pages:
+                pages[url] = store_page(url)
+            _, via, title = pages[url]
+            if not via:
+                continue
+            if not any(n in build.norm_song(title) for n in names):
+                print("  - %s: まとめページの題名「%s」がアルバム名と合わないので、使いません(%s)" % (w["title"], title, url))
+                continue
+            new += store_links(via, [s for s in missing if s not in dict(new)])
+        except Exception as e:
+            pages[url] = (None, {}, "")
+            print("  ! %s: 配信まとめページを読み込めませんでした(%s)" % (url, e))
+    urls = [u for u in re.findall(r"https?://[^\s<>\"'　]+", desc) if "?i=" not in u]  # ?i= は1曲だけのリンク
+    for s in [s for s in missing if s not in dict(new)]:
+        hits = {m.group(0) for m in (re.search(STORES[s][1], u) for u in urls) if m}
+        if len(hits) == 1:
+            new.append((s, "https://" + hits.pop()))
+    return sorted(new, key=lambda x: services.index(x[0]))
 
 
 def store_page_urls(imp, w):
@@ -515,7 +563,8 @@ def store_page_urls(imp, w):
 
 
 def import_stores(imp, cfg):
-    """配信作品に、各サービスへの直リンクを足す。配信まとめページのうち、Apple Music の ID が作品と同じものだけを使う"""
+    """配信作品に、各サービスへの直リンクを足す。配信まとめページのうち、Apple Music の ID が作品と同じものだけを使う。
+    配信の作品がない Trailer(BOOTH の商品の有無は問わない)には、概要欄の配信リンクを足す"""
     wanted = [s.strip() for s in re.split(r"[,、]", cfg["stores"]) if s.strip()]
     for s in [s for s in wanted if s not in STORES]:
         print("  ! 設定/import.txt の stores: の「%s」には対応していません(%s)" % (s, "・".join(STORES)))
@@ -526,9 +575,19 @@ def import_stores(imp, cfg):
     everything = "--all-stores" in sys.argv
     pages = {}  # 配信まとめページの URL → store_page の結果
     for w in works:
+        if not everything and (datetime.date.today() - w["date"]).days > STORE_DAYS:
+            continue
+        if w["type"] == "trailer" and not any(r["type"] == "music" for r in w["related"]):
+            services = list(dict.fromkeys(["Apple Music"] + [s for s in wanted if s in STORES]))
+            new = trailer_store_links(imp, w, services, pages)
+            if new:
+                imp.stores.append("%s → %s" % (w["title"], "・".join(s for s, _ in new)))
+                if not imp.dry:
+                    rewrite_info(w["dir"] / "info.txt", {}, add_links=new)
+            continue
         aid = next((m.group(1) for m in (re.search(r"music\.apple\.com/[a-z]{2}/album/(?:[^/?]+/)?(\d+)", u)
                                          for _, u in w["links"]) if m), None)
-        if w["type"] != "music" or not aid or (not everything and (datetime.date.today() - w["date"]).days > STORE_DAYS):
+        if w["type"] != "music" or not aid:
             continue
         missing = [s for s in wanted if s in STORES and not any(STORES[s][2] in u for _, u in w["links"])]
         if not missing:
@@ -537,18 +596,13 @@ def import_stores(imp, cfg):
             try:
                 if url not in pages:
                     pages[url] = store_page(url)
-                found, via = pages[url]
+                found, via, _ = pages[url]
                 if found != aid:  # 別の作品のまとめページ
                     continue
-                new = []
-                for s in missing:
-                    m = re.search(STORES[s][1], redirect_target(via[s])) if s in via else None
-                    if m:
-                        new.append((s, "https://" + m.group(0)))
-                        missing = [x for x in missing if x != s]
-                    time.sleep(0.2)
+                new = store_links(via, missing)
+                missing = [s for s in missing if s not in dict(new)]
             except Exception as e:
-                pages[url] = (None, {})  # 同じページは、もう一度読まない
+                pages[url] = (None, {}, "")  # 同じページは、もう一度読まない
                 print("  ! %s: 配信まとめページを読み込めませんでした(%s)" % (url, e))
                 continue
             if new:
