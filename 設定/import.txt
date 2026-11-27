@@ -26,5 +26,9 @@ youtube-exclude: Teaser
 # 手元で試すときは spotify-keys.txt(GitHub には載りません)に書きます。キーがなければスキップされます。
 spotify: https://open.spotify.com/intl-ja/artist/24phm8J2V68m162CRCIw7b
 
+# 配信作品のページに、直リンクのボタンを自動で足すサービス(カンマ区切り。空なら足しません。キーは不要です)
+# 関連する Trailer・MV の概要欄(または作品の links:)にある linkco.re か nodee のページから、Apple Music の ID が同じものを使います
+stores: Spotify, YouTube Music, Amazon Music, LINE MUSIC, AWA
+
 # BOOTH のショップのURL。ショップの全商品を booth-items.json に保存し、名前の合う作品のページに「BOOTH」として載せます
 booth: https://myship.booth.pm/

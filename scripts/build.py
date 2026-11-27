@@ -303,7 +303,12 @@ def trailer_album(title):
         name = m.group(1)
     else:
         m = re.search(r"\s-\s(.+?)\s-\s*(?:Trailer|XFD)", title, re.I)
-        name = m.group(1) if m else title
+        if m:
+            name = m.group(1)
+        else:  # 「SCRUM vol.1 ─ Trailer」のような形: 末尾の Trailer と、[ ] の注記を落とす
+            name = re.sub(r"\s+[-─—–―]\s*(?:Trailer|XFD|トレーラー)\s*$", "", title, flags=re.I)
+            if name != title:
+                name = re.sub(r"\s*[\[［【].*?[\]］】]\s*", " ", name)
     return re.sub(r"\s*/\s*BCNO\s*$", "", name).strip()
 
 
@@ -331,8 +336,16 @@ def load_booth():
         return []
 
 
+def booth_titles(name):
+    """商品名に含まれる作品名(比較用)。「」の中(なければ商品名全体)を、前後に空白のある - や / で区切る
+    (3rd EP「姿 - Gestalt」→ 姿・Gestalt、SCRUM vol.1 ー ブックレット&CD → SCRUM vol.1・ブックレット&CD)"""
+    parts = re.findall(r"[「『](.+?)[」』]", name) or [name]
+    return {norm_song(x) for p in parts for x in re.split(r"\s+[-─—–―ー/／]\s+", p)} - {""}
+
+
 def attach_booth(works, items):
     """作品の名前(別名・原題も)が商品名に含まれていれば、その商品を作品に紐づける。
+    Trailer は、先に BOOTH の商品を作品名(完全一致)で探し、同じ商品を持つ Streaming を関連作品にする。
     info.txt の booth: 商品ID(カンマ区切り)で、手で指定もできる。自分の商品は w["booth"]、関連作品の商品は w["booth_rel"]"""
     by_id = {str(i["id"]): i for i in items}
     inorm = {i["id"]: norm_song(i["name"]) for i in items}
@@ -342,6 +355,20 @@ def attach_booth(works, items):
         own = [i for i in items if w["type"] not in ("video", "project", "trailer") and any(n in inorm[i["id"]] for n in names)]
         own += [by_id[x] for x in w["booth_ids"] if x in by_id and by_id[x] not in own]
         w["booth"] = sorted(own, key=lambda i: (not _CD.search(i["name"]), -i["id"]))
+    trailers = [w for w in works if w["type"] == "trailer"]
+    found = {}
+    order = {w["slug"]: n for n, w in enumerate(works)}
+    for t in trailers:
+        names = {norm_song(x) for x in [trailer_album(t["title"])] + t["aliases"] if x} - {""}
+        found[t["slug"]] = [i for i in items if names & booth_titles(i["name"])]
+        ids = {i["id"] for i in found[t["slug"]]}
+        for m in works:
+            if m["type"] != "music" or not ids & {i["id"] for i in m["booth"]}:
+                continue
+            if m["slug"] not in {r["slug"] for r in t["related"]}:
+                for a, b in ((t, m), (m, t)):
+                    a["related"].append(b)
+                    a["related"].sort(key=lambda x: order[x["slug"]])
     for w in works:
         seen = {i["id"] for i in w["booth"]}
         rel = []
@@ -351,6 +378,9 @@ def attach_booth(works, items):
                     seen.add(i["id"])
                     rel.append((r, i))
         w["booth_rel"] = sorted(rel, key=lambda ri: (not _CD.search(ri[1]["name"]), -ri[1]["id"]))
+    for t in trailers:  # Streaming 経由で商品が付かない Trailer には、見つけた商品を直接付ける
+        if not t["booth"] and not t["booth_rel"]:
+            t["booth"] = sorted(found[t["slug"]], key=lambda i: (not _CD.search(i["name"]), -i["id"]))
 
 
 def link_related(works):
@@ -411,7 +441,9 @@ def read_work(d):
             if vid:
                 cover_url = "https://i.ytimg.com/vi/%s/hqdefault.jpg" % vid
                 break
-    embeds = [e for e in (embed_for(u) for _, u in links) if e]
+    # Spotify / Apple Music のプレーヤーがある作品では、YouTube Music のリンクはボタンだけにする(動画のプレーヤーを出さない)
+    has_player = any(host_of(u) in ("open.spotify.com", "music.apple.com") for _, u in links)
+    embeds = [e for e in (embed_for(u) for _, u in links if not (has_player and host_of(u) == "music.youtube.com")) if e]
     audio = [e for e in embeds if e[0] == "audio"]
     if len(audio) > 1:
         spotify = next((e for e in audio if "open.spotify.com" in e[1]), None)
@@ -485,6 +517,7 @@ def read_work(d):
     songs = {norm_song(clean_track(x)) for x in tracks}
     # 関連作品の判定に使う名前: MV は曲名、Trailer はアルバム・EP の名前(同じ名前の Streaming と結びつき、その BOOTH も付く)、ほかは作品名
     songs.add(norm_song(video_song(w["title"]) if w["type"] == "video" else trailer_album(w["title"]) if w["type"] == "trailer" else w["title"]))
+    songs |= {norm_song(x) for x in w["aliases"]}  # 別名(aliases:)でも結びつく(Apple は「Gestalt」、ほかは「姿」など)
     w["songs"] = {x for x in songs if x}
     return w
 
@@ -789,7 +822,8 @@ def link_buttons(links):
 
 def booth_buttons(w):
     """BOOTH のボタン。自分の CD、なければ関連作品の CD(最大2つ)"""
-    own = [i for i in w["booth"] if _CD.search(i["name"])]
+    # Trailer は、商品名に EP「 などがなくても、BOOTH の分類が「音楽」なら CD として扱う
+    own = [i for i in w["booth"] if _CD.search(i["name"]) or (w["type"] == "trailer" and i.get("category") == "音楽")]
     if own:
         return [("BOOTH", i["url"]) for i in own[:2]]
     return [("BOOTH(%s)" % r["title"], i["url"]) for r, i in w["booth_rel"] if _CD.search(i["name"])][:2]

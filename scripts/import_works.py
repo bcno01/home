@@ -3,6 +3,7 @@
 # Spotify のリンクだけは、Spotify の開発者アプリのキー(SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET)が必要。なければスキップする
 # 使い方: python3 scripts/import_works.py            取り込み
 #         python3 scripts/import_works.py --dry-run  何が取り込まれるか表示するだけ
+#         python3 scripts/import_works.py --all-stores  古い配信作品にも、各サービスへの直リンクを探して足す
 # 設定は 設定/import.txt。取り込み済みの記録は works/.imported.txt(消した作品が復活しないように残す)
 import base64
 import datetime
@@ -12,6 +13,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -66,6 +68,8 @@ class Importer:
         self.booth_new = []       # 新しく見つかった BOOTH の商品名
         self.enriched = []
         self.linked = []
+        self.stores = []          # 各サービスへの直リンクを付けた作品
+        self.descs = {}           # 動画ID → 概要欄
         self.materials = []       # 素材(オフボーカルなど)のリンクを付けた作品
         self.booth = []
 
@@ -443,6 +447,118 @@ def stream_links(desc):
     return out
 
 
+# 配信まとめページ(TuneCore Japan の linkco.re と、nodee)
+STORE_PAGE = re.compile(r"https?://(?:linkco\.re/[A-Za-z0-9]+|nodee\.net/a/[A-Za-z0-9]+)")
+# 配信作品に足せるサービス: 名前 → (linkco.re の中継リンクの名前, 転送先として認める URL の形, すでにリンクがあるかを調べる言葉)
+STORES = {
+    "Spotify": ("spotify", r"open\.spotify\.com/(?:intl-[a-z]+/)?album/\w+", "open.spotify.com"),
+    "YouTube Music": ("youtube_music_key", r"music\.youtube\.com/playlist\?list=[\w-]+", "music.youtube.com"),
+    "Amazon Music": ("amazon_music", r"(?:www|music)\.amazon\.co\.jp/(?:(?:music/player/)?albums|dp)/\w+", "amazon."),
+    "LINE MUSIC": ("line", r"music\.line\.me/(?:(?:webapp/)?album/\w+|launch\?target=album&item=\w+(?:&cc=\w+)?(?:&v=\d+)?)",
+                   "music.line.me"),
+    "AWA": ("awa", r"s\.awa\.fm/album/\w+", "awa.fm"),
+}
+STORE_DAYS = 90    # ふだんの取り込みで直リンクを探すのは、配信日がこの日数以内の作品だけ(--all-stores で全部)
+STORE_VIDEOS = 8   # 1作品につき、概要欄を調べる関連動画の本数の上限
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args):
+        return None
+
+
+def redirect_target(url):
+    """転送先のURL(転送されなければ空)。転送先のページは開かない"""
+    try:
+        with urllib.request.build_opener(_NoRedirect).open(urllib.request.Request(url, headers=HEADERS), timeout=25):
+            return ""
+    except urllib.error.HTTPError as e:
+        if 300 <= e.code < 400:
+            return e.headers.get("Location", "")
+        raise
+
+
+def video_description(imp, vid):
+    """動画の概要欄(新着の一覧で読んでいればそれを使う。読めなければ空)"""
+    if vid not in imp.descs:
+        import add_youtube  # 相互に読み込むので、使うときに読み込む
+        try:
+            imp.descs[vid] = add_youtube.parse_page(add_youtube.watch_page(vid))[2]
+        except Exception:
+            imp.descs[vid] = ""
+        time.sleep(0.4)
+    return imp.descs[vid]
+
+
+def store_page(url):
+    """配信まとめページから (Apple Music のアルバムID, {サービス名: 中継リンク})。Apple Music がないページの ID は None"""
+    page = fetch(url).decode("utf-8", "replace")
+    if "nodee.net/" in url:  # ページに埋め込まれた JSON を読む
+        data = json.loads(html.unescape(re.search(r'="(\{&quot;[^"]*)"', page).group(1)))["props"]["album"]
+        return str(data["playerPayload"]["apple"]["album"]), {s["name"]: s["href"] for s in data["stores"]}
+    via = {k: "https://www.tunecore.co.jp/to/%s/%s" % (k, n)
+           for k, n in re.findall(r"tunecore\.co\.jp/to/(\w+)/(\d+)", page)}
+    m = re.search(r"/album/(?:[^/?]+/)?(\d+)", redirect_target(via["apple_music"])) if "apple_music" in via else None
+    return m.group(1) if m else None, {name: via[s[0]] for name, s in STORES.items() if s[0] in via}
+
+
+def store_page_urls(imp, w):
+    """作品の info.txt と、関連する Trailer・MV の概要欄にある配信まとめページのURL(Trailer を先に、新しい順)"""
+    for _, u in w["links"]:
+        yield from STORE_PAGE.findall(u)
+    videos = sorted((r for r in w["related"] if r["type"] in ("trailer", "video")), key=lambda r: r["date"], reverse=True)
+    videos.sort(key=lambda r: r["type"] != "trailer")
+    for r in videos[:STORE_VIDEOS]:
+        vid = next((build.youtube_id(u) for _, u in r["links"] if build.youtube_id(u)), None)
+        if vid:
+            yield from STORE_PAGE.findall(video_description(imp, vid))
+
+
+def import_stores(imp, cfg):
+    """配信作品に、各サービスへの直リンクを足す。配信まとめページのうち、Apple Music の ID が作品と同じものだけを使う"""
+    wanted = [s.strip() for s in re.split(r"[,、]", cfg["stores"]) if s.strip()]
+    for s in [s for s in wanted if s not in STORES]:
+        print("  ! 設定/import.txt の stores: の「%s」には対応していません(%s)" % (s, "・".join(STORES)))
+    works = [w for w in (build.read_work(d) for d in sorted(WORKS.iterdir())
+                         if d.is_dir() and not d.name.startswith((".", "_"))) if w]
+    build.link_related(works)
+    build.attach_booth(works, build.load_booth())
+    everything = "--all-stores" in sys.argv
+    pages = {}  # 配信まとめページの URL → store_page の結果
+    for w in works:
+        aid = next((m.group(1) for m in (re.search(r"music\.apple\.com/[a-z]{2}/album/(?:[^/?]+/)?(\d+)", u)
+                                         for _, u in w["links"]) if m), None)
+        if w["type"] != "music" or not aid or (not everything and (datetime.date.today() - w["date"]).days > STORE_DAYS):
+            continue
+        missing = [s for s in wanted if s in STORES and not any(STORES[s][2] in u for _, u in w["links"])]
+        if not missing:
+            continue
+        for url in store_page_urls(imp, w):
+            try:
+                if url not in pages:
+                    pages[url] = store_page(url)
+                found, via = pages[url]
+                if found != aid:  # 別の作品のまとめページ
+                    continue
+                new = []
+                for s in missing:
+                    m = re.search(STORES[s][1], redirect_target(via[s])) if s in via else None
+                    if m:
+                        new.append((s, "https://" + m.group(0)))
+                        missing = [x for x in missing if x != s]
+                    time.sleep(0.2)
+            except Exception as e:
+                pages[url] = (None, {})  # 同じページは、もう一度読まない
+                print("  ! %s: 配信まとめページを読み込めませんでした(%s)" % (url, e))
+                continue
+            if new:
+                imp.stores.append("%s → %s" % (w["title"], "・".join(s for s, _ in new)))
+                if not imp.dry:
+                    rewrite_info(w["dir"] / "info.txt", {}, add_links=new)
+            if not missing:
+                break
+
+
 def import_youtube(imp, cfg):
     ch = youtube_channel_id(cfg["youtube"])
     if not ch:
@@ -458,6 +574,7 @@ def import_youtube(imp, cfg):
         key = "youtube-" + vid
         link = e.find("a:link", ns)
         desc_el = e.find("m:group/m:description", ns)
+        imp.descs[vid] = (desc_el.text or "") if desc_el is not None else ""
         mats = material_links(desc_el.text or "") if desc_el is not None else []
         if mats and imp.known(key, vid):  # すでに取り込んだ作品に、素材のリンクがなければ足す(自動で取り込んだ作品だけ)
             info = WORKS / ("%s-yt-%s" % (e.find("a:published", ns).text[:10], vid)) / "info.txt"
@@ -493,6 +610,8 @@ def summary_text(imp, base_url):
         parts.append("## 新しい作品\n" + "\n".join(lines))
     if imp.linked:
         parts.append("## Spotify のリンクを付けた作品\n" + "\n".join("- " + x for x in imp.linked))
+    if imp.stores:
+        parts.append("## 配信サービスの直リンクを付けた作品\n" + "\n".join("- " + x for x in imp.stores))
     if imp.materials:
         parts.append("## 素材(オフボーカルなど)のリンクを付けた作品\n" + "\n".join("- " + x for x in imp.materials))
     if imp.booth_new:
@@ -509,7 +628,7 @@ def main():
     cfg = build.parse_info(cfg_path.read_text(encoding="utf-8"))[0] if cfg_path.exists() else {}
     WORKS.mkdir(exist_ok=True)
     imp = Importer(dry)
-    for name, fn in (("apple", import_apple), ("youtube", import_youtube), ("spotify", import_spotify), ("booth", import_booth)):
+    for name, fn in (("apple", import_apple), ("youtube", import_youtube), ("spotify", import_spotify), ("booth", import_booth), ("stores", import_stores)):
         if cfg.get(name):
             try:
                 fn(imp, cfg)
@@ -527,13 +646,17 @@ def main():
         print("%s %d 件(Spotify のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.linked)))
         for line in imp.linked:
             print("  " + line)
+    if imp.stores:
+        print("%s %d 件(配信サービスの直リンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.stores)))
+        for line in imp.stores:
+            print("  " + line)
     if imp.materials:
         print("%s %d 件(オフボーカルなど素材のリンク):" % ("リンク予定" if dry else "リンクを付けました", len(imp.materials)))
         for line in imp.materials:
             print("  " + line)
     if imp.booth:
         print("%s BOOTH の商品一覧: %s" % ("更新予定" if dry else "更新しました", imp.booth[0]))
-    if not imp.created and not imp.enriched and not imp.linked and not imp.booth and not imp.materials:
+    if not imp.created and not imp.enriched and not imp.linked and not imp.booth and not imp.materials and not imp.stores:
         print("新しい作品・リンクはありませんでした")
     # 環境変数 IMPORT_SUMMARY にファイルのパスがあれば、新作などの通知用の文章を書き出す(GitHub Actions が、これを Issue や Discord に送る)
     out = os.environ.get("IMPORT_SUMMARY")
