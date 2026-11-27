@@ -5,7 +5,9 @@ import hashlib
 import html
 import itertools
 import json
+import os
 import re
+import shlex
 import shutil
 import zipfile
 import subprocess
@@ -27,6 +29,17 @@ DL_KINDS = (("offvocal", "オフボーカル", {".mp3", ".wav", ".m4a", ".flac",
 
 TYPES = {"video": "MV", "trailer": "Trailer", "music": "Streaming", "project": "Projects", "goods": "通販・グッズ", "other": "その他"}  # この順で、Works の絞り込みのボタンが並ぶ
 TYPES_JA = {"video": "MV", "trailer": "トレーラー(Trailer)", "music": "Streaming(配信)", "project": "案件(Projects)", "goods": "通販・グッズ", "other": "その他"}  # コマンドの画面に出す名前
+
+
+def dropped_path(raw):
+    """ターミナルにドラッグ&ドロップして貼ったパスを Path にする(空なら None)"""
+    raw = raw.strip()
+    if os.name == "nt":  # Windows は \\ がパスの区切りなので、引用符だけを外す
+        p = raw.strip("\"'")
+    else:  # Mac は空白などが \\ で escape されるので shlex で戻す
+        parts = shlex.split(raw)
+        p = parts[0] if parts else ""
+    return Path(p).expanduser() if p else None
 
 
 def is_trailer_title(title):

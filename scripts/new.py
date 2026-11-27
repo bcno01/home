@@ -3,7 +3,6 @@
 import datetime
 import json
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -66,7 +65,7 @@ def main():
     desc = ask("一言説明: ")
     today = datetime.date.today().isoformat()
     date = ask("日付 [%s]: " % today) or today
-    cover = ask("表紙画像(Finderからドラッグ&ドロップ。なければEnter): ")
+    cover = ask("表紙画像(ここにドラッグ&ドロップ。なければEnter): ")
 
     base = ROOT / "works" / ("%s-%s" % (date, slugify(title)))
     folder, n = base, 2
@@ -85,8 +84,7 @@ def main():
     (folder / "info.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     if cover:
-        parts = shlex.split(cover)
-        src = Path(parts[0]).expanduser() if parts else None
+        src = build.dropped_path(cover)
         if src and src.is_file() and src.suffix.lower() in build.IMG_EXT:
             shutil.copy2(src, folder / ("cover" + src.suffix.lower()))
         else:

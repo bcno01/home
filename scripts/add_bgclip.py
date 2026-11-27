@@ -6,8 +6,8 @@
 # 作られた works/<作品>/bg.mp4(2本目以降は bg-<名前>.mp4)は、ビルドするとサイトに載り、トップの背景でランダムに再生される。
 #   1つの作品に何本でも置ける。--name 名前 で bg-名前.mp4 として追加する。
 import argparse
+import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -36,9 +36,9 @@ def fmt_time(sec):
 def probe(path):
     """(長さ[秒], 音声があるか)"""
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
-                         capture_output=True, text=True).stdout.strip()
+                         capture_output=True, encoding="utf-8", errors="replace").stdout.strip()
     audio = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
-                            "-of", "csv=p=0", str(path)], capture_output=True, text=True).stdout.strip()
+                            "-of", "csv=p=0", str(path)], capture_output=True, encoding="utf-8", errors="replace").stdout.strip()
     return float(out), bool(audio)
 
 
@@ -47,7 +47,7 @@ def detect_crop(src, start, length):
     暗い場面での誤検出を避けるため、サンプルした全フレームのうち一番大きい枠を採用する"""
     out = subprocess.run(["ffmpeg", "-ss", str(start), "-t", str(length), "-i", str(src), "-vf",
                           "fps=2,cropdetect=limit=24:round=2:reset=0", "-f", "null", "-"],
-                         capture_output=True, text=True).stderr
+                         capture_output=True, encoding="utf-8", errors="replace").stderr
     boxes = [tuple(map(int, m)) for m in re.findall(r"crop=(\d+):(\d+):(\d+):(\d+)", out)]
     if not boxes:
         return None
@@ -60,7 +60,7 @@ def detect_crop(src, start, length):
 
 def probe_size(path):
     out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
-                          "-of", "csv=p=0:s=x", str(path)], capture_output=True, text=True).stdout.strip()
+                          "-of", "csv=p=0:s=x", str(path)], capture_output=True, encoding="utf-8", errors="replace").stdout.strip()
     w, h = out.split("x")
     return int(w), int(h)
 
@@ -110,14 +110,14 @@ def main():
     a = ap.parse_args()
 
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
-        print("ffmpeg が見つかりません。ターミナルで brew install ffmpeg を実行してから、もう一度試してください。")
+        install = "winget install Gyan.FFmpeg" if os.name == "nt" else "brew install ffmpeg"
+        print("ffmpeg が見つかりません。ターミナルで %s を実行してから、もう一度試してください。" % install)
         return 1
 
     if a.video:  # コマンドの引数は、空白を含むパスもそのまま使う
         src = Path(a.video).expanduser()
-    else:  # ドラッグ&ドロップで貼り付けたパスは、空白が \ で escape されているので shlex で戻す
-        parts = shlex.split(input("動画ファイル(Finderからドラッグ&ドロップして Enter): ").strip() or "''")
-        src = Path(parts[0]).expanduser() if parts and parts[0] else None
+    else:
+        src = build.dropped_path(input("動画ファイル(ここにドラッグ&ドロップして Enter): "))
     if not src or not src.is_file():
         print("動画ファイルが見つかりません。")
         return 1

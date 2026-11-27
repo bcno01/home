@@ -13,6 +13,7 @@
 # 以前の一覧にあった Key の列は、読み飛ばします(Key は、サイトに表示しません)。
 # BPM は 30〜300 の数字だけ有効です。何度でも書き出し・取り込みを繰り返せます(書き出しは、入力済みの値も入れ直します)。
 import csv
+import os
 import subprocess
 import sys
 
@@ -143,6 +144,17 @@ def import_csv():
     return changed
 
 
+def open_file(path):
+    """標準のアプリ(Numbers・Excel など)で開く。開けなければ、場所を表示する"""
+    if os.name != "nt":
+        subprocess.run(["open", str(path)], check=False)
+        return
+    try:
+        os.startfile(path)
+    except OSError:
+        print("自動で開けませんでした。このファイルを開いてください: %s" % path)
+
+
 def main():
     argv = sys.argv[1:]
     y_from, y_to, count, ranged = 0, DEFAULT_TO, DEFAULT_COUNT, False
@@ -188,7 +200,7 @@ def main():
     if not export(y_from, y_to, count):
         print("対象の MV がありませんでした(2021 年以前は、すべて入力済みか見送り済みです)。" if count else "対象の MV がありませんでした。")
         return 1
-    subprocess.run(["open", str(CSV_PATH)], check=False)  # 標準のアプリ(Numbers・Excel など)で開く
+    open_file(CSV_PATH)
     print("\nBPM の列に入力して、保存してください(形式は CSV のままで構いません)。")
     print("入力しない行は、何もしません。途中までの入力でも、取り込めます。")
     input("保存できたら、Enter を押してください(取り込みます): ")

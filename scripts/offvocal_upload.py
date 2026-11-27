@@ -83,13 +83,15 @@ LIMIT = 2 * 1024 ** 3  # GitHub の Releases は、1ファイル 2GB まで
 
 
 def gh(*args, check=True):
-    return subprocess.run(["gh", *args], capture_output=True, text=True, check=check)
+    return subprocess.run(["gh", *args], capture_output=True, encoding="utf-8", errors="replace", check=check)
 
 
 def clean_path(raw):
     """ターミナルにドラッグして貼ったパス(引用符や、空白の \\ つき)を、ふつうのパスにする"""
     p = raw.strip().strip("'\"")
-    return Path(p.replace("\\ ", " ").replace("\\(", "(").replace("\\)", ")")).expanduser()
+    if os.name != "nt":  # Windows では \ がパスの区切りなので、置き換えない
+        p = p.replace("\\ ", " ").replace("\\(", "(").replace("\\)", ")")
+    return Path(p).expanduser()
 
 
 def mv_works():
